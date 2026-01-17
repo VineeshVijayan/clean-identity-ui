@@ -135,7 +135,7 @@
     position: relative;
   }
 
-  .animated-border::before {
+  /* .animated-border::before {
     content: '';
     position: absolute;
     inset: -1px;
@@ -146,7 +146,7 @@
     mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
-  }
+  } */
 
   .pattern-grid {
     background-image: 
