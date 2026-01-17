@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Header } from "@/components/layout/Header";
 import { Shield, Mail, Lock, Eye, EyeOff, ArrowRight, Chrome } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { sessionApiFetch } from "@/services/api-config";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -19,23 +20,29 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1500));
-    
+    var response = await sessionApiFetch<any>('/authenticate', {
+      method: 'POST',
+      body: JSON.stringify({ email: email, password }),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
     toast({
       title: "Welcome back!",
       description: "You have successfully signed in.",
     });
-    
     setIsLoading(false);
+    localStorage.setItem("auth-token", response.token)
     navigate("/dashboard");
   };
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <main className="min-h-screen flex items-center justify-center pt-16 px-4">
         {/* Background Effects */}
         <div className="fixed inset-0 hero-glow pointer-events-none" />
