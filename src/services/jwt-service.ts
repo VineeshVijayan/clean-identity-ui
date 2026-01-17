@@ -14,8 +14,8 @@ interface DecodedToken {
 }
 
 interface UserDetails {
-  name: string;
-  role: string;
+  userName: string;
+  roles: string |string[];
   userId: string;
   employeeId: string;
 }
@@ -60,8 +60,8 @@ export const getUserDetails = (): UserDetails | null => {
     }
 
     return {
-      name: decodedToken.userName || decodedToken.name || "",
-      role: decodedToken.role || "",
+      userName: decodedToken.userName || decodedToken.name || "",
+      roles: decodedToken.roles || "",
       userId: decodedToken.userId || decodedToken.sub || "",
       employeeId: decodedToken.employeeId || "",
     };
@@ -121,7 +121,8 @@ export const getLoggedInUserId = (): string | null => {
  */
 export const getUserRoles = (): string[] => {
   try {
-    const parsed = JSON.parse(localStorage.getItem("roles") || "[]");
+    
+    const parsed = getUserDetails()?.roles;
     if (Array.isArray(parsed)) {
       return parsed;
     }
