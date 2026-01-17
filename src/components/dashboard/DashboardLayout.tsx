@@ -14,7 +14,7 @@ export const DashboardLayout = () => {
   useEffect(() => {
     const checkAuth = () => {
       const loggedIn = isUserLoggedIn();
-      
+
       if (!loggedIn) {
         // Check if we have demo token
         const token = localStorage.getItem("auth-token");
@@ -25,7 +25,7 @@ export const DashboardLayout = () => {
       }
 
       setIsLoggedIn(true);
-      
+
       // Get user from localStorage
       try {
         const storedUser = localStorage.getItem("user");
@@ -36,13 +36,13 @@ export const DashboardLayout = () => {
       } catch {
         setUser({ name: "User", email: "user@example.com" });
       }
-
+      console.log(getUserRoles())
       setRoles(getUserRoles());
     };
 
     checkAuth();
     window.addEventListener("auth-change", checkAuth);
-    
+
     return () => window.removeEventListener("auth-change", checkAuth);
   }, [navigate]);
 
