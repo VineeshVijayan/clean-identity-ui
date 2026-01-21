@@ -1,4 +1,4 @@
-import { Bell, Menu, Search } from "lucide-react";
+import { Bell, Menu, Search, Sun, Moon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
 import { User, Settings, Key, LogOut } from "lucide-react";
+import { useTheme } from "@/hooks/useTheme";
 
 interface DashboardNavbarProps {
   user: {
@@ -23,6 +24,7 @@ interface DashboardNavbarProps {
 
 export const DashboardNavbar = ({ user, onMenuClick, onLogout }: DashboardNavbarProps) => {
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
 
   return (
     <header className="h-16 border-b border-border bg-card/50 backdrop-blur-sm flex items-center justify-between px-4 sm:px-6">
@@ -46,6 +48,16 @@ export const DashboardNavbar = ({ user, onMenuClick, onLogout }: DashboardNavbar
       </div>
 
       <div className="flex items-center gap-3">
+        {/* Dark Mode Toggle */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleTheme}
+          className="text-muted-foreground hover:text-foreground"
+        >
+          {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+        </Button>
+
         {/* Notifications */}
         <button className="relative p-2 text-muted-foreground hover:text-foreground transition-colors">
           <Bell className="h-5 w-5" />

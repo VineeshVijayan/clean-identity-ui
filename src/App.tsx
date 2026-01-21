@@ -11,6 +11,14 @@ import { DashboardLayout } from "./components/dashboard/DashboardLayout";
 import { DashboardHome } from "./components/dashboard/DashboardHome";
 import { UsersListPage } from "./pages/dashboard/UsersListPage";
 import { CreateUserPage } from "./pages/dashboard/CreateUserPage";
+import { RequestAppPage } from "./pages/dashboard/RequestAppPage";
+import { RemoveAppPage } from "./pages/dashboard/RemoveAppPage";
+import { NewRolePage } from "./pages/dashboard/NewRolePage";
+import { ManageRolesPage } from "./pages/dashboard/ManageRolesPage";
+import { AuthSourcesPage } from "./pages/dashboard/AuthSourcesPage";
+import { ConnectorsPage } from "./pages/dashboard/ConnectorsPage";
+import { CheckoutPage } from "./pages/dashboard/CheckoutPage";
+import { IDFSettingsPage } from "./pages/dashboard/IDFSettingsPage";
 
 const queryClient = new QueryClient();
 
@@ -35,23 +43,23 @@ const App = () => (
           <Route path="/users" element={<DashboardLayout />}>
             <Route index element={<UsersListPage />} />
             <Route path="create" element={<CreateUserPage />} />
-            <Route path="request" element={<DashboardHome />} />
-            <Route path="remove" element={<DashboardHome />} />
+            <Route path="request" element={<RequestAppPage />} />
+            <Route path="remove" element={<RemoveAppPage />} />
           </Route>
 
           {/* Role Management Routes */}
           <Route path="/roles" element={<DashboardLayout />}>
-            <Route path="new" element={<DashboardHome />} />
-            <Route path="manage" element={<DashboardHome />} />
+            <Route path="new" element={<NewRolePage />} />
+            <Route path="manage" element={<ManageRolesPage />} />
           </Route>
 
           {/* Admin Routes */}
           <Route path="/admin" element={<DashboardLayout />}>
             <Route path="users" element={<UsersListPage />} />
             <Route path="permissions" element={<DashboardHome />} />
-            <Route path="auth-sources" element={<DashboardHome />} />
-            <Route path="connectors" element={<DashboardHome />} />
-            <Route path="settings" element={<DashboardHome />} />
+            <Route path="auth-sources" element={<AuthSourcesPage />} />
+            <Route path="connectors" element={<ConnectorsPage />} />
+            <Route path="settings" element={<IDFSettingsPage />} />
           </Route>
 
           {/* Other Routes */}
@@ -61,7 +69,7 @@ const App = () => (
           </Route>
           
           <Route path="/checkout" element={<DashboardLayout />}>
-            <Route index element={<DashboardHome />} />
+            <Route index element={<CheckoutPage />} />
           </Route>
           
           <Route path="/profile" element={<DashboardLayout />}>
