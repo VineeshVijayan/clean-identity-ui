@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { UserPlus, ArrowLeft, Save } from "lucide-react";
+import { UserPlus, ArrowLeft, Save, Camera, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,11 +13,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export const CreateUserPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -27,6 +30,17 @@ export const CreateUserPage = () => {
     role: "",
     manager: "",
   });
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,6 +77,55 @@ export const CreateUserPage = () => {
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="glass-card p-6 space-y-6">
+        {/* Photo Upload Section */}
+        <div className="flex flex-col items-center gap-4 pb-6 border-b border-border">
+          <div className="relative">
+            <Avatar className="w-24 h-24">
+              <AvatarImage src={photoPreview || ""} alt="User photo" />
+              <AvatarFallback className="text-2xl bg-primary/10 text-primary">
+                {formData.firstName ? formData.firstName.charAt(0).toUpperCase() : "U"}
+                {formData.lastName ? formData.lastName.charAt(0).toUpperCase() : ""}
+              </AvatarFallback>
+            </Avatar>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="absolute bottom-0 right-0 p-2 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              <Camera className="h-4 w-4" />
+            </button>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handlePhotoChange}
+            className="hidden"
+          />
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              className="gap-2"
+            >
+              <Upload className="h-4 w-4" />
+              Upload Photo
+            </Button>
+            {photoPreview && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setPhotoPreview(null)}
+                className="text-destructive"
+              >
+                Remove
+              </Button>
+            )}
+          </div>
+        </div>
         <div className="grid sm:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="firstName">First Name</Label>
