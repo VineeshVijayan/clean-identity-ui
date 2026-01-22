@@ -1,31 +1,3 @@
-import { useState, useEffect } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Shield,
-  LayoutDashboard,
-  Users,
-  UserPlus,
-  FileText,
-  Settings,
-  LogOut,
-  ChevronDown,
-  ChevronUp,
-  Home,
-  ShieldCheck,
-  Database,
-  ClipboardList,
-  ShoppingCart,
-  X,
-  Key,
-  UserMinus,
-  UserX,
-  Cog,
-  Link as LinkIcon,
-  Palette,
-  Image,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,6 +9,29 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  ChevronDown,
+  ChevronUp,
+  ClipboardList,
+  Cog,
+  Database,
+  FileText,
+  Home,
+  Key,
+  LayoutDashboard,
+  Link as LinkIcon,
+  LogOut,
+  Settings,
+  ShieldCheck,
+  ShoppingCart,
+  UserMinus,
+  UserPlus,
+  Users,
+  X
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 interface SidebarProps {
   open: boolean;
@@ -114,7 +109,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
       { label: "User Administration", href: "/admin/users", icon: Users },
       { label: "Permission", href: "/admin/permissions", icon: ShieldCheck },
       { label: "Manage Auth Sources", href: "/admin/auth-sources", icon: LinkIcon },
-      { label: "Manage Outbound Connectors", href: "/admin/connectors", icon: Database },
+      { label: "Outbound Connectors", href: "/admin/connectors", icon: Database },
       { label: "IDF Settings", href: "/admin/settings", icon: Cog },
     ],
   };
@@ -203,17 +198,16 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
         {/* Logo Header */}
         <div className="h-16 flex items-center justify-between px-6 border-b border-sidebar-border">
           <Link to="/dashboard" className="flex items-center gap-3">
-            {dynamicIcon ? (
-              <img src={dynamicIcon} alt="Logo" className="w-8 h-8 rounded" />
-            ) : (
-              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Shield className="h-5 w-5 text-primary" />
-              </div>
-            )}
+            <img
+              src="/assets/Identity.png"
+              alt="Identity Framework"
+              className="w-8 h-8 object-contain rounded"
+            />
             <span className="text-lg font-bold text-sidebar-foreground">
               Identity<span className="text-primary">Framework</span>
             </span>
           </Link>
+
           <button
             className="lg:hidden text-sidebar-foreground/60 hover:text-sidebar-foreground"
             onClick={onClose}

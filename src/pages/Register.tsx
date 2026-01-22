@@ -1,13 +1,13 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Link, useNavigate } from "react-router-dom";
+import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Header } from "@/components/layout/Header";
-import { Shield, Mail, Lock, Eye, EyeOff, ArrowRight, Chrome, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { motion } from "framer-motion";
+import { ArrowRight, Chrome, Eye, EyeOff, Lock, Mail, User } from "lucide-react";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -21,7 +21,7 @@ const Register = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!agreeTerms) {
       toast({
         title: "Terms Required",
@@ -30,17 +30,17 @@ const Register = () => {
       });
       return;
     }
-    
+
     setIsLoading(true);
-    
+
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1500));
-    
+
     toast({
       title: "Account created!",
       description: "Welcome to IdentityHub.",
     });
-    
+
     setIsLoading(false);
     navigate("/dashboard");
   };
@@ -58,7 +58,7 @@ const Register = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <main className="min-h-screen flex items-center justify-center pt-16 pb-8 px-4">
         {/* Background Effects */}
         <div className="fixed inset-0 hero-glow pointer-events-none" />
@@ -76,11 +76,14 @@ const Register = () => {
             <div className="flex justify-center mb-8">
               <div className="relative">
                 <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
-                <div className="relative w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20">
-                  <Shield className="h-8 w-8 text-primary" />
-                </div>
+                <img
+                  src="/assets/Identity.png"
+                  alt="Identity Framework"
+                  className="relative w-16 h-16 rounded-2xl object-contain border border-primary/20 bg-white p-2"
+                />
               </div>
             </div>
+
 
             {/* Header */}
             <div className="text-center mb-8">

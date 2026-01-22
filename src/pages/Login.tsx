@@ -1,13 +1,13 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Link, useNavigate } from "react-router-dom";
+import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Header } from "@/components/layout/Header";
-import { Shield, Mail, Lock, Eye, EyeOff, ArrowRight, Chrome } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { sessionApiFetch } from "@/services/api-config";
+import { motion } from "framer-motion";
+import { ArrowRight, Chrome, Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -57,14 +57,18 @@ const Login = () => {
           {/* Card */}
           <div className="glass-card p-8 sm:p-10 animated-border">
             {/* Logo */}
+            {/* Logo */}
             <div className="flex justify-center mb-8">
               <div className="relative">
                 <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
-                <div className="relative w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20">
-                  <Shield className="h-8 w-8 text-primary" />
-                </div>
+                <img
+                  src="/assets/Identity.png"
+                  alt="Identity Framework"
+                  className="relative w-16 h-16 rounded-2xl object-contain border border-primary/20 bg-white p-2"
+                />
               </div>
             </div>
+
 
             {/* Header */}
             <div className="text-center mb-8">

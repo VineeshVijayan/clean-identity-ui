@@ -1,5 +1,5 @@
+import { Github, Linkedin, Shield, Twitter } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Shield, Github, Twitter, Linkedin } from "lucide-react";
 
 const footerLinks = {
   product: [
@@ -31,7 +31,7 @@ export const Footer = () => {
             <Link to="/" className="flex items-center gap-2 mb-4">
               <Shield className="h-7 w-7 text-primary" />
               <span className="text-lg font-bold">
-                Identity<span className="text-primary">Hub</span>
+                Identity<span className="text-primary">Framework</span>
               </span>
             </Link>
             <p className="text-sm text-muted-foreground mb-4">
@@ -104,11 +104,14 @@ export const Footer = () => {
 
         <div className="border-t border-border mt-12 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            © 2026 IdentityHub. All rights reserved.
+            © 2025 Identity Framework. All rights reserved.
           </p>
-          <p className="text-sm text-muted-foreground">
-            Built with security in mind.
-          </p>
+          <span className="footer-text crafted-by">
+            Crafted by
+            <a href="https://ndashdigital.com/" target="_blank" className="company-link ms-1">
+              nDash Private Limited
+            </a>
+          </span>
         </div>
       </div>
     </footer>

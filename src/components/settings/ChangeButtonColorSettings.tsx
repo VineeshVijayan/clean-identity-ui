@@ -1,192 +1,233 @@
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
+import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
+import { Check, Palette } from "lucide-react";
+import { useState } from "react";
 
-// Brand color palette from requirements
-const brandColors = [
-  { name: "Light Gray", hex: "#e6e7e8", hsl: "220 7% 91%" },
-  { name: "Deep Navy", hex: "#333366", hsl: "240 33% 30%" },
-  { name: "Ocean Blue", hex: "#005d90", hsl: "200 100% 28%" },
-  { name: "Cyan", hex: "#06a6cb", hsl: "193 95% 41%" },
-  { name: "Orange", hex: "#f58b1f", hsl: "30 92% 54%" },
-  { name: "Red", hex: "#cf2027", hsl: "358 77% 48%" },
-];
-
-// Button types that can be customized
-const buttonTypes = [
-  { id: "primary", label: "Primary Button", description: "Main action buttons" },
-  { id: "secondary", label: "Secondary Button", description: "Secondary actions" },
-  { id: "destructive", label: "Destructive Button", description: "Delete and danger actions" },
-  { id: "accent", label: "Accent Button", description: "Highlighted actions" },
+/* ---------- Color Presets ---------- */
+const colorPresets = [
+  { id: 1, name: "Identity Blue", primary: "#333366", accent: "#06a6cb" },
+  { id: 2, name: "Ocean", primary: "#005d90", accent: "#06a6cb" },
+  { id: 3, name: "Sunset", primary: "#f58b1f", accent: "#cf2027" },
+  { id: 4, name: "Forest", primary: "#2d5a3f", accent: "#4ade80" },
+  { id: 5, name: "Royal", primary: "#4c1d95", accent: "#a78bfa" },
+  { id: 6, name: "Slate", primary: "#334155", accent: "#64748b" },
 ];
 
 export const ChangeButtonColorSettings = () => {
   const { toast } = useToast();
-  const [colorSelections, setColorSelections] = useState<Record<string, string>>({
-    primary: "#06a6cb",
-    secondary: "#333366",
-    destructive: "#cf2027",
-    accent: "#f58b1f",
-  });
-  const [customColor, setCustomColor] = useState("#06a6cb");
 
-  const handleColorChange = (buttonType: string, color: string) => {
-    setColorSelections((prev) => ({
-      ...prev,
-      [buttonType]: color,
-    }));
-  };
+  const [selectedPreset, setSelectedPreset] = useState(1);
+  const [borderRadius, setBorderRadius] = useState<number[]>([8]);
 
-  const handleSave = () => {
+  const activePreset = colorPresets.find(
+    (preset) => preset.id === selectedPreset
+  )!;
+
+  const handleApply = () => {
     toast({
-      title: "Button Colors Updated",
-      description: "Button color settings have been saved successfully.",
+      title: "Changes Applied",
+      description: "Button styles have been updated successfully.",
     });
   };
 
   const handleReset = () => {
-    setColorSelections({
-      primary: "#06a6cb",
-      secondary: "#333366",
-      destructive: "#cf2027",
-      accent: "#f58b1f",
-    });
+    setSelectedPreset(1);
+    setBorderRadius([8]);
     toast({
-      title: "Colors Reset",
-      description: "Button colors have been reset to defaults.",
+      title: "Reset Successful",
+      description: "Button styles have been reset to default values.",
     });
   };
 
   return (
     <div className="space-y-6">
+      {/* Page Title (replaces PageHeader) */}
       <div>
-        <h3 className="text-lg font-semibold">Change Button Colors</h3>
-        <p className="text-sm text-muted-foreground">
-          Customize the colors used for different button types throughout the application
+        <div className="flex items-center gap-3">
+          <Palette className="h-6 w-6 text-primary" />
+          <h1 className="text-xl font-semibold">Change Button Colour</h1>
+        </div>
+        <p className="text-sm text-muted-foreground mt-1">
+          Customize button styles and colors across the application
         </p>
       </div>
 
-      {/* Brand Color Palette */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Brand Color Palette</CardTitle>
-          <CardDescription>These are the approved brand colors for the application</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-            {brandColors.map((color) => (
-              <div key={color.hex} className="text-center">
-                <div
-                  className="w-full h-16 rounded-lg border shadow-sm mb-2"
-                  style={{ backgroundColor: color.hex }}
-                />
-                <p className="text-xs font-medium">{color.name}</p>
-                <p className="text-xs text-muted-foreground">{color.hex}</p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Button Color Configuration */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {buttonTypes.map((buttonType) => (
-          <Card key={buttonType.id}>
-            <CardHeader>
-              <CardTitle className="text-base">{buttonType.label}</CardTitle>
-              <CardDescription>{buttonType.description}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Color Selection */}
-              <div className="flex flex-wrap gap-2">
-                {brandColors.map((color) => (
-                  <button
-                    key={color.hex}
-                    onClick={() => handleColorChange(buttonType.id, color.hex)}
-                    className={`w-10 h-10 rounded-lg border-2 transition-all ${
-                      colorSelections[buttonType.id] === color.hex
-                        ? "border-foreground scale-110 shadow-lg"
-                        : "border-transparent hover:scale-105"
+      {/* Main Grid */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Color Presets */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Color Presets</CardTitle>
+            <CardDescription>
+              Choose a predefined color scheme
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4">
+              {colorPresets.map((preset) => (
+                <button
+                  key={preset.id}
+                  onClick={() => setSelectedPreset(preset.id)}
+                  className={`relative p-4 rounded-lg border-2 transition-all text-left hover:border-accent ${selectedPreset === preset.id
+                    ? "border-accent bg-accent/10"
+                    : "border-border"
                     }`}
-                    style={{ backgroundColor: color.hex }}
-                    title={color.name}
-                  />
-                ))}
-              </div>
+                >
+                  {selectedPreset === preset.id && (
+                    <div className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-accent flex items-center justify-center">
+                      <Check className="h-3 w-3 text-accent-foreground" />
+                    </div>
+                  )}
 
-              {/* Custom Color Input */}
-              <div className="flex items-center gap-2">
-                <Label htmlFor={`custom-${buttonType.id}`} className="text-sm">
-                  Custom:
-                </Label>
-                <Input
-                  id={`custom-${buttonType.id}`}
-                  type="color"
-                  value={colorSelections[buttonType.id]}
-                  onChange={(e) => handleColorChange(buttonType.id, e.target.value)}
-                  className="w-12 h-8 p-0 border-0"
-                />
-                <Input
-                  type="text"
-                  value={colorSelections[buttonType.id]}
-                  onChange={(e) => handleColorChange(buttonType.id, e.target.value)}
-                  className="w-24 h-8 text-xs"
-                  placeholder="#000000"
-                />
-              </div>
+                  <div className="flex gap-2 mb-3">
+                    <div
+                      className="h-8 w-8 rounded-full border shadow"
+                      style={{ backgroundColor: preset.primary }}
+                    />
+                    <div
+                      className="h-8 w-8 rounded-full border shadow"
+                      style={{ backgroundColor: preset.accent }}
+                    />
+                  </div>
 
-              {/* Preview */}
-              <div className="pt-2">
-                <Label className="text-xs text-muted-foreground mb-2 block">Preview:</Label>
+                  <p className="text-sm font-medium">{preset.name}</p>
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Button Styling */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Button Styling</CardTitle>
+            <CardDescription>
+              Adjust button appearance settings
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Border Radius */}
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <Label>Border Radius</Label>
+                <span className="text-sm text-muted-foreground">
+                  {borderRadius[0]}px
+                </span>
+              </div>
+              <Slider
+                value={borderRadius}
+                onValueChange={setBorderRadius}
+                max={24}
+                step={1}
+              />
+            </div>
+
+            {/* Preview */}
+            <div className="space-y-3">
+              <Label>Preview</Label>
+              <div className="flex flex-wrap gap-3 p-4 bg-muted rounded-lg">
                 <Button
-                  style={{ backgroundColor: colorSelections[buttonType.id] }}
+                  style={{
+                    backgroundColor: activePreset.primary,
+                    borderRadius: `${borderRadius[0]}px`,
+                  }}
                   className="text-white"
                 >
-                  Sample {buttonType.label}
+                  Primary
+                </Button>
+                <Button
+                  variant="secondary"
+                  style={{ borderRadius: `${borderRadius[0]}px` }}
+                >
+                  Secondary
+                </Button>
+                <Button
+                  variant="outline"
+                  style={{ borderRadius: `${borderRadius[0]}px` }}
+                >
+                  Outline
+                </Button>
+                <Button
+                  variant="destructive"
+                  style={{ borderRadius: `${borderRadius[0]}px` }}
+                >
+                  Destructive
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Live Preview */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Live Preview</CardTitle>
+            <CardDescription>
+              See how your changes will look in the application
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="p-6 bg-background border rounded-lg space-y-4">
+              <div className="flex flex-wrap gap-4">
+                <Button
+                  style={{
+                    backgroundColor: activePreset.primary,
+                    borderRadius: `${borderRadius[0]}px`,
+                  }}
+                  className="text-white"
+                >
+                  Submit Request
+                </Button>
+                <Button
+                  variant="outline"
+                  style={{ borderRadius: `${borderRadius[0]}px` }}
+                >
+                  Cancel
+                </Button>
+              </div>
+
+              <div className="flex flex-wrap gap-4">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  style={{ borderRadius: `${borderRadius[0]}px` }}
+                >
+                  Edit
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  style={{ borderRadius: `${borderRadius[0]}px` }}
+                >
+                  View Details
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  style={{ borderRadius: `${borderRadius[0]}px` }}
+                >
+                  Delete
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Full Preview */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Button Preview</CardTitle>
-          <CardDescription>Preview all button styles with your selected colors</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-4">
-            <Button style={{ backgroundColor: colorSelections.primary }} className="text-white">
-              Primary Action
-            </Button>
-            <Button style={{ backgroundColor: colorSelections.secondary }} className="text-white">
-              Secondary Action
-            </Button>
-            <Button style={{ backgroundColor: colorSelections.destructive }} className="text-white">
-              Delete
-            </Button>
-            <Button style={{ backgroundColor: colorSelections.accent }} className="text-white">
-              Highlight
-            </Button>
-            <Button variant="outline">Outline</Button>
-            <Button variant="ghost">Ghost</Button>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Actions */}
-      <div className="flex justify-end gap-2">
+      <div className="flex gap-3">
+        <Button
+          className="gradient-primary text-primary-foreground"
+          onClick={handleApply}
+        >
+          Apply Changes
+        </Button>
         <Button variant="outline" onClick={handleReset}>
           Reset to Default
         </Button>
-        <Button onClick={handleSave}>Save Changes</Button>
       </div>
     </div>
   );

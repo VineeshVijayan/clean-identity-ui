@@ -1,27 +1,27 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Link, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
 import {
-  Shield,
-  Users,
-  Key,
   Activity,
-  Settings,
-  LogOut,
+  AlertCircle,
   Bell,
-  Search,
-  Plus,
-  MoreVertical,
   ChevronRight,
+  Clock,
+  Key,
+  LogOut,
+  Menu,
+  MoreVertical,
+  Plus,
+  Search,
+  Settings,
+  Shield,
   TrendingUp,
   UserCheck,
-  Clock,
-  AlertCircle,
-  Menu,
+  Users,
   X,
 } from "lucide-react";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 const mockStats = [
   { label: "Total Users", value: "12,847", change: "+12%", icon: Users, color: "text-primary" },
@@ -66,16 +66,19 @@ const Dashboard = () => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-card border-r border-border flex flex-col transition-transform duration-300 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        }`}
+        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-card border-r border-border flex flex-col transition-transform duration-300 ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+          }`}
       >
         {/* Logo */}
         <div className="h-16 flex items-center justify-between px-6 border-b border-border">
           <Link to="/" className="flex items-center gap-2">
-            <Shield className="h-7 w-7 text-primary" />
+            <img
+              src="/assets/Identity.png"
+              alt="Identity Framework"
+              className="h-7 w-7 object-contain rounded"
+            />
             <span className="text-lg font-bold">
-              Identity<span className="text-primary">Hub</span>
+              Identity<span className="text-primary">Framework</span>
             </span>
           </Link>
           <button
@@ -92,11 +95,10 @@ const Dashboard = () => {
             <Link
               key={item.label}
               to={item.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                item.active
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-              }`}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${item.active
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                }`}
             >
               <item.icon className="h-5 w-5" />
               <span className="font-medium">{item.label}</span>

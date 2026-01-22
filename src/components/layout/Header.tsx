@@ -1,8 +1,8 @@
-import { Link, useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Shield, Menu, X } from "lucide-react";
+import { motion } from "framer-motion";
+import { Menu, X } from "lucide-react";
 import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -27,15 +27,21 @@ export const Header = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
+          {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
             <div className="relative">
               <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full group-hover:bg-primary/30 transition-colors" />
-              <Shield className="relative h-8 w-8 text-primary" />
+              <img
+                src="/assets/Identity.png"
+                alt="Identity Framework"
+                className="relative h-8 w-8 object-contain rounded"
+              />
             </div>
             <span className="text-xl font-bold tracking-tight">
-              Identity<span className="text-primary">Hub</span>
+              Identity<span className="text-primary">Framework</span>
             </span>
           </Link>
+
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-1">
@@ -43,11 +49,10 @@ export const Header = () => {
               <Link
                 key={link.href}
                 to={link.href}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  location.pathname === link.href
-                    ? "text-primary bg-primary/10"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                }`}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${location.pathname === link.href
+                  ? "text-primary bg-primary/10"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  }`}
               >
                 {link.label}
               </Link>
@@ -91,11 +96,10 @@ export const Header = () => {
                 key={link.href}
                 to={link.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className={`px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-                  location.pathname === link.href
-                    ? "text-primary bg-primary/10"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                }`}
+                className={`px-4 py-3 text-sm font-medium rounded-lg transition-colors ${location.pathname === link.href
+                  ? "text-primary bg-primary/10"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                  }`}
               >
                 {link.label}
               </Link>
