@@ -19,6 +19,16 @@ import { AuthSourcesPage } from "./pages/dashboard/AuthSourcesPage";
 import { ConnectorsPage } from "./pages/dashboard/ConnectorsPage";
 import { CheckoutPage } from "./pages/dashboard/CheckoutPage";
 import { IDFSettingsPage } from "./pages/dashboard/IDFSettingsPage";
+import { ChangePasswordPage } from "./pages/dashboard/ChangePasswordPage";
+import FeaturesPage from "./pages/FeaturesPage";
+import DocsPage from "./pages/DocsPage";
+import AboutPage from "./pages/AboutPage";
+import BlogPage from "./pages/BlogPage";
+import CareersPage from "./pages/CareersPage";
+import ContactPage from "./pages/ContactPage";
+import PrivacyPage from "./pages/PrivacyPage";
+import TermsPage from "./pages/TermsPage";
+import SecurityPage from "./pages/SecurityPage";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +42,15 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/features" element={<FeaturesPage />} />
+          <Route path="/docs" element={<DocsPage />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/careers" element={<CareersPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/security" element={<SecurityPage />} />
           
           {/* Dashboard Routes with Layout */}
           <Route path="/dashboard" element={<DashboardLayout />}>
@@ -81,7 +100,7 @@ const App = () => (
           </Route>
           
           <Route path="/change-password" element={<DashboardLayout />}>
-            <Route index element={<DashboardHome />} />
+            <Route index element={<ChangePasswordPage />} />
           </Route>
           
           <Route path="/approvals" element={<DashboardLayout />}>
