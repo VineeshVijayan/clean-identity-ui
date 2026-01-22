@@ -4,13 +4,12 @@ import { Link } from "react-router-dom";
 const footerLinks = {
   product: [
     { label: "Features", href: "/features" },
-    { label: "Pricing", href: "/pricing" },
+
     { label: "Documentation", href: "/docs" },
-    { label: "API Reference", href: "/api" },
+
   ],
   company: [
     { label: "About", href: "/about" },
-    { label: "Blog", href: "/blog" },
     { label: "Careers", href: "/careers" },
     { label: "Contact", href: "/contact" },
   ],
