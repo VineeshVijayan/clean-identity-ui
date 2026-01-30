@@ -79,8 +79,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     submenu: [
       { label: "All Users", href: "/users", icon: Users },
       { label: "Create New User", href: "/users/create", icon: UserPlus },
-      { label: "Request App Access", href: "/users/request", icon: FileText },
-      { label: "Remove App Access", href: "/users/remove", icon: UserMinus },
+      { label: "Manage Applications", href: "/users/applications", icon: FileText },
     ],
   };
 

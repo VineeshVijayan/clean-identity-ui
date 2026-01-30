@@ -11,8 +11,7 @@ import { DashboardLayout } from "./components/dashboard/DashboardLayout";
 import { DashboardHome } from "./components/dashboard/DashboardHome";
 import { UsersListPage } from "./pages/dashboard/UsersListPage";
 import { CreateUserPage } from "./pages/dashboard/CreateUserPage";
-import { RequestAppPage } from "./pages/dashboard/RequestAppPage";
-import { RemoveAppPage } from "./pages/dashboard/RemoveAppPage";
+import { ApplicationManagementPage } from "./pages/dashboard/ApplicationManagementPage";
 import { NewRolePage } from "./pages/dashboard/NewRolePage";
 import { ManageRolesPage } from "./pages/dashboard/ManageRolesPage";
 import { AuthSourcesPage } from "./pages/dashboard/AuthSourcesPage";
@@ -62,8 +61,7 @@ const App = () => (
           <Route path="/users" element={<DashboardLayout />}>
             <Route index element={<UsersListPage />} />
             <Route path="create" element={<CreateUserPage />} />
-            <Route path="request" element={<RequestAppPage />} />
-            <Route path="remove" element={<RemoveAppPage />} />
+            <Route path="applications" element={<ApplicationManagementPage />} />
           </Route>
 
           {/* Role Management Routes */}
