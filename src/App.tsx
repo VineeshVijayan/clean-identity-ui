@@ -19,6 +19,7 @@ import { ConnectorsPage } from "./pages/dashboard/ConnectorsPage";
 import { CheckoutPage } from "./pages/dashboard/CheckoutPage";
 import { IDFSettingsPage } from "./pages/dashboard/IDFSettingsPage";
 import { ChangePasswordPage } from "./pages/dashboard/ChangePasswordPage";
+import { DetailedReportPage } from "./pages/dashboard/DetailedReportPage";
 import FeaturesPage from "./pages/FeaturesPage";
 import DocsPage from "./pages/DocsPage";
 import AboutPage from "./pages/AboutPage";
@@ -83,6 +84,7 @@ const App = () => (
           <Route path="/reports" element={<DashboardLayout />}>
             <Route path="new" element={<DashboardHome />} />
             <Route path="run" element={<DashboardHome />} />
+            <Route path="detailed" element={<DetailedReportPage />} />
           </Route>
           
           <Route path="/checkout" element={<DashboardLayout />}>
