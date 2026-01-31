@@ -1,16 +1,16 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Plus, Shield, Users, Key, Save, ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { useNavigate } from "react-router-dom";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { motion } from "framer-motion";
+import { ArrowLeft, Key, Save, Shield, Users } from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 // Permission categories and their permissions
 const permissionCategories = [
@@ -68,7 +68,7 @@ export const NewRolePage = () => {
     const allSelected = categoryPermissions.every((p) =>
       selectedPermissions.includes(p.id)
     );
-    
+
     if (allSelected) {
       setSelectedPermissions((prev) =>
         prev.filter((id) => !categoryPermissions.map((p) => p.id).includes(id))
@@ -104,7 +104,7 @@ export const NewRolePage = () => {
       title: "Role Created",
       description: `Role "${roleName}" has been created with ${selectedPermissions.length} permissions.`,
     });
-    
+
     navigate("/roles/manage");
   };
 
@@ -225,11 +225,10 @@ export const NewRolePage = () => {
                     {category.permissions.map((permission) => (
                       <label
                         key={permission.id}
-                        className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                          selectedPermissions.includes(permission.id)
+                        className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${selectedPermissions.includes(permission.id)
                             ? "bg-primary/5 border-primary/30"
                             : "hover:bg-muted/50"
-                        }`}
+                          }`}
                       >
                         <Checkbox
                           checked={selectedPermissions.includes(permission.id)}

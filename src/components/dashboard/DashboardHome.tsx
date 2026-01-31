@@ -1,30 +1,27 @@
+import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import {
+  Activity,
+  FileText,
+  Shield,
+  ThumbsUp,
+  TrendingUp,
+  UserPlus,
+  Users
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
-  UserPlus,
-  FileText,
-  ThumbsUp,
-  Users,
-  Activity,
-  TrendingUp,
-  Shield,
-  Clock,
-  AlertTriangle,
-  ChevronRight,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  BarChart,
   Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
 } from "recharts";
 
 // Chart data matching original repo
@@ -82,7 +79,7 @@ export const DashboardHome = () => {
         </button>
 
         <button
-          onClick={() => navigate("/users/request")}
+          onClick={() => navigate("/users/appManage")}
           className="glass-card p-6 flex items-center gap-4 hover:bg-primary/5 transition-colors group"
           style={{ background: "linear-gradient(135deg, hsl(20 90% 45% / 0.3), hsl(20 90% 35% / 0.2))" }}
         >
@@ -153,9 +150,9 @@ export const DashboardHome = () => {
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: "hsl(var(--card))", 
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "hsl(var(--card))",
                   borderColor: "hsl(var(--border))",
                   borderRadius: "8px"
                 }}
@@ -174,8 +171,8 @@ export const DashboardHome = () => {
               <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
               <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
               <Tooltip
-                contentStyle={{ 
-                  backgroundColor: "hsl(var(--card))", 
+                contentStyle={{
+                  backgroundColor: "hsl(var(--card))",
                   borderColor: "hsl(var(--border))",
                   borderRadius: "8px"
                 }}
@@ -199,7 +196,7 @@ export const DashboardHome = () => {
         {/* App Access Overview */}
         <div className="lg:col-span-2 glass-card p-6">
           <h3 className="text-lg font-semibold mb-6">Application Access Overview</h3>
-          
+
           <div className="space-y-6">
             <div>
               <div className="flex justify-between mb-2">

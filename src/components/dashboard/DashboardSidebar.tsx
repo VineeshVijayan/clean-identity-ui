@@ -25,7 +25,6 @@ import {
   Settings,
   ShieldCheck,
   ShoppingCart,
-  UserMinus,
   UserPlus,
   Users,
   X
@@ -79,8 +78,8 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     submenu: [
       { label: "All Users", href: "/users", icon: Users },
       { label: "Create New User", href: "/users/create", icon: UserPlus },
-      { label: "Request App Access", href: "/users/request", icon: FileText },
-      { label: "Remove App Access", href: "/users/remove", icon: UserMinus },
+      { label: "App Management Page ", href: "/users/appManage", icon: FileText },
+
     ],
   };
 
@@ -107,7 +106,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     icon: Database,
     submenu: [
       { label: "User Administration", href: "/admin/users", icon: Users },
-      { label: "Permission", href: "/admin/permissions", icon: ShieldCheck },
+      // { label: "Permission", href: "/admin/permissions", icon: ShieldCheck },
       { label: "Manage Auth Sources", href: "/admin/auth-sources", icon: LinkIcon },
       { label: "Outbound Connectors", href: "/admin/connectors", icon: Database },
       { label: "IDF Settings", href: "/admin/settings", icon: Cog },
@@ -115,12 +114,12 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
   };
 
   const reporting: MenuItem = {
-    label: "Reporting",
+    label: "Reports",
     icon: ClipboardList,
-    submenu: [
-      { label: "Create New Report", href: "/reports/new", icon: FileText },
-      { label: "Run Report", href: "/reports/run", icon: ClipboardList },
-    ],
+    // submenu: [
+    //   { label: "Create New Report", href: "/reports/new", icon: FileText },
+    //   { label: "Run Report", href: "/reports/run", icon: ClipboardList },
+    // ],
   };
 
   const checkout: MenuItem = {

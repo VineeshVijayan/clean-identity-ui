@@ -1,20 +1,12 @@
-import { motion } from "framer-motion";
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  Users,
-  Search,
-  Filter,
-  MoreVertical,
-  Edit,
-  Trash2,
-  Eye,
-  UserPlus,
-  Download,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -24,34 +16,72 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { motion } from "framer-motion";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Edit,
+  Eye,
+  Filter,
+  MoreVertical,
+  Search,
+  Trash2,
+  UserPlus,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-// Mock data
-const mockUsers = [
-  { id: 1, name: "John Doe", email: "john@example.com", role: "Admin", status: "Active", lastLogin: "2 hours ago" },
-  { id: 2, name: "Sarah Wilson", email: "sarah@example.com", role: "User", status: "Active", lastLogin: "1 day ago" },
-  { id: 3, name: "Mike Johnson", email: "mike@example.com", role: "Manager", status: "Active", lastLogin: "3 hours ago" },
-  { id: 4, name: "Emma Davis", email: "emma@example.com", role: "User", status: "Inactive", lastLogin: "1 week ago" },
-  { id: 5, name: "Alex Brown", email: "alex@example.com", role: "User", status: "Active", lastLogin: "5 hours ago" },
-  { id: 6, name: "Lisa Garcia", email: "lisa@example.com", role: "Admin", status: "Active", lastLogin: "Just now" },
-  { id: 7, name: "Tom Wilson", email: "tom@example.com", role: "User", status: "Pending", lastLogin: "Never" },
-  { id: 8, name: "Amy Lee", email: "amy@example.com", role: "Manager", status: "Active", lastLogin: "12 hours ago" },
-];
+const API_BASE_URL = "https://identity-api.ndashdigital.com/api"; // or REACT_APP_API_BASE_URL
+
+type User = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: string;
+  status: string;
+  lastLogin: string;
+};
 
 export const UsersListPage = () => {
   const navigate = useNavigate();
+  const [users, setUsers] = useState<User[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filteredUsers = mockUsers.filter(
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/users`, {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch users");
+        return res.json();
+      })
+      .then((response) => {
+        const mappedUsers = response.data.map((u: any) => ({
+          id: u.id || u.username,
+          firstName: u.firstName || "",
+          lastName: u.lastName || "",
+          email: u.email,
+          role: u.roles?.join(", ") || "N/A",
+          status: u.status || "Active",
+          lastLogin: u.lastLogin || "—",
+        }));
+        setUsers(mappedUsers);
+      })
+      .catch((err) => {
+        console.error("User fetch failed:", err);
+      });
+  }, []);
+
+  const filteredUsers = users.filter(
     (user) =>
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      `${user.firstName} ${user.lastName}`
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -78,7 +108,9 @@ export const UsersListPage = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">All Users</h1>
-          <p className="text-muted-foreground">Manage and view all users in the system</p>
+          <p className="text-muted-foreground">
+            Manage and view all users in the system
+          </p>
         </div>
         <Button onClick={() => navigate("/users/create")}>
           <UserPlus className="h-4 w-4 mr-2" />
@@ -92,10 +124,13 @@ export const UsersListPage = () => {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
+              id="user-search"
+              name="userSearch"
               placeholder="Search users..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
+              autoComplete="off"
             />
           </div>
           <div className="flex gap-2">
@@ -116,39 +151,55 @@ export const UsersListPage = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>User</TableHead>
+              <TableHead>First Name</TableHead>
+              <TableHead>Last Name</TableHead>
               <TableHead>Role</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="hidden sm:table-cell">Last Login</TableHead>
+              <TableHead className="hidden sm:table-cell">Email</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
+
           <TableBody>
             {filteredUsers.map((user) => (
               <TableRow key={user.id}>
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <Avatar className="h-9 w-9">
-                      <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`} />
-                      <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                      <AvatarImage
+                        src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`}
+                      />
+                      <AvatarFallback>
+                        {user.firstName.charAt(0)}
+                      </AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="font-medium">{user.name}</p>
-                      <p className="text-sm text-muted-foreground">{user.email}</p>
+                      <p className="font-medium">
+                        {user.firstName} {user.lastName}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {user.email}
+                      </p>
                     </div>
                   </div>
                 </TableCell>
+
                 <TableCell>
                   <Badge variant="outline">{user.role}</Badge>
                 </TableCell>
+
                 <TableCell>
-                  <Badge className={getStatusColor(user.status)} variant="outline">
+                  <Badge
+                    variant="outline"
+                    className={getStatusColor(user.status)}
+                  >
                     {user.status}
                   </Badge>
                 </TableCell>
+
                 <TableCell className="hidden sm:table-cell text-muted-foreground">
                   {user.lastLogin}
                 </TableCell>
+
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -180,7 +231,7 @@ export const UsersListPage = () => {
         {/* Pagination */}
         <div className="flex items-center justify-between p-4 border-t border-border">
           <p className="text-sm text-muted-foreground">
-            Showing {filteredUsers.length} of {mockUsers.length} users
+            Showing {filteredUsers.length} of {users.length} users
           </p>
           <div className="flex gap-2">
             <Button variant="outline" size="icon" disabled>

@@ -1,0 +1,16 @@
+{
+    "rewrites": [
+        {
+            "source": "/session-api/(.*)",
+            "destination": "https://idf-session-api.ndashdigital.com/api/$1"
+        },
+        {
+            "source": "/identity-api/(.*)",
+            "destination": "https://identity-api.ndashdigital.com/api/$1"
+        },
+        {
+            "source": "/connector-api/(.*)",
+            "destination": "https://idf-connector.ndashdigital.com/api/$1"
+        }
+    ]
+}
