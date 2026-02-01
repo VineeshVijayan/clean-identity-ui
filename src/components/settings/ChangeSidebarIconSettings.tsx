@@ -1,3 +1,4 @@
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -16,7 +17,6 @@ import {
   Briefcase,
   Calendar,
   Check,
-  CheckSquare,
   Database,
   FileText,
   Folder,
@@ -34,8 +34,8 @@ import {
   UserCog,
   Users,
   Zap,
+  X,
 } from "lucide-react";
-import { useState } from "react";
 
 /* ---------- Available Icons ---------- */
 const availableIcons: { name: string; icon: LucideIcon }[] = [
@@ -55,7 +55,6 @@ const availableIcons: { name: string; icon: LucideIcon }[] = [
   { name: "Bell", icon: Bell },
   { name: "Mail", icon: Mail },
   { name: "Calendar", icon: Calendar },
-  { name: "CheckSquare", icon: CheckSquare },
   { name: "Layers", icon: Layers },
   { name: "Zap", icon: Zap },
   { name: "Heart", icon: Heart },
@@ -72,6 +71,7 @@ const sidebarItems = [
 
 export const ChangeSidebarIconSettings = () => {
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
   const [iconSelections, setIconSelections] = useState<Record<string, string>>(
@@ -80,6 +80,13 @@ export const ChangeSidebarIconSettings = () => {
         sidebarItems.map((item) => [item.id, item.defaultIcon])
       )
   );
+  
+  // Custom logo state
+  const [customLogo, setCustomLogo] = useState<string | null>(() => {
+    return localStorage.getItem("sidebarLogo");
+  });
+  const [logoUrl, setLogoUrl] = useState("");
+  const [previewLogo, setPreviewLogo] = useState<string | null>(null);
 
   const getIconComponent = (iconName: string): LucideIcon =>
     availableIcons.find((i) => i.name === iconName)?.icon || Home;
@@ -89,6 +96,63 @@ export const ChangeSidebarIconSettings = () => {
       ...prev,
       [itemId]: iconName,
     }));
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast({
+          title: "File Too Large",
+          description: "Please select an image under 2MB.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setPreviewLogo(result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleLoadUrl = () => {
+    if (logoUrl.trim()) {
+      setPreviewLogo(logoUrl.trim());
+      toast({
+        title: "Image Loaded",
+        description: "Preview updated with the provided URL.",
+      });
+    }
+  };
+
+  const handleApplyLogo = () => {
+    if (previewLogo) {
+      setCustomLogo(previewLogo);
+      localStorage.setItem("sidebarLogo", previewLogo);
+      // Dispatch custom event to notify sidebar
+      window.dispatchEvent(new CustomEvent("sidebarLogoChanged", { detail: previewLogo }));
+      toast({
+        title: "Logo Applied",
+        description: "The sidebar logo has been updated.",
+      });
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setCustomLogo(null);
+    setPreviewLogo(null);
+    setLogoUrl("");
+    localStorage.removeItem("sidebarLogo");
+    // Dispatch custom event to notify sidebar
+    window.dispatchEvent(new CustomEvent("sidebarLogoChanged", { detail: null }));
+    toast({
+      title: "Logo Removed",
+      description: "The sidebar logo has been reset to default.",
+    });
   };
 
   const handleSave = () => {
@@ -105,11 +169,14 @@ export const ChangeSidebarIconSettings = () => {
       )
     );
     setSelectedItem(null);
+    handleRemoveLogo();
     toast({
       title: "Reset Successful",
       description: "Sidebar icons restored to default.",
     });
   };
+
+  const displayLogo = previewLogo || customLogo;
 
   return (
     <div className="space-y-6">
@@ -128,12 +195,31 @@ export const ChangeSidebarIconSettings = () => {
         {/* Upload / URL */}
         <Card>
           <CardHeader>
-            <CardTitle>Upload Custom Icon</CardTitle>
+            <CardTitle>Upload Custom Logo</CardTitle>
             <CardDescription>
-              Upload your organization logo or icon
+              Upload your organization logo or icon for the sidebar
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Current/Preview Logo Display */}
+            {displayLogo && (
+              <div className="flex items-center justify-center p-4 bg-muted rounded-lg">
+                <div className="relative">
+                  <img
+                    src={displayLogo}
+                    alt="Logo preview"
+                    className="w-16 h-16 object-contain rounded-lg border border-border"
+                  />
+                  <button
+                    onClick={() => setPreviewLogo(null)}
+                    className="absolute -top-2 -right-2 p-1 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/80"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
               <div className="h-16 w-16 mx-auto mb-4 rounded-lg bg-muted flex items-center justify-center">
                 <Upload className="h-8 w-8 text-muted-foreground" />
@@ -141,7 +227,14 @@ export const ChangeSidebarIconSettings = () => {
               <p className="text-sm text-muted-foreground mb-4">
                 Drag and drop an image here, or click to browse
               </p>
-              <Button variant="outline">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+              <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
                 <Upload className="h-4 w-4 mr-2" />
                 Choose File
               </Button>
@@ -150,13 +243,35 @@ export const ChangeSidebarIconSettings = () => {
             <div className="space-y-2">
               <Label>Or enter image URL</Label>
               <div className="flex gap-2">
-                <Input placeholder="https://example.com/logo.png" />
-                <Button variant="outline">Load</Button>
+                <Input
+                  placeholder="https://example.com/logo.png"
+                  value={logoUrl}
+                  onChange={(e) => setLogoUrl(e.target.value)}
+                />
+                <Button variant="outline" onClick={handleLoadUrl}>
+                  Load
+                </Button>
               </div>
             </div>
 
+            {previewLogo && (
+              <div className="flex gap-2">
+                <Button onClick={handleApplyLogo} className="flex-1">
+                  <Check className="h-4 w-4 mr-2" />
+                  Apply Logo
+                </Button>
+              </div>
+            )}
+
+            {customLogo && (
+              <Button variant="outline" onClick={handleRemoveLogo} className="w-full">
+                <X className="h-4 w-4 mr-2" />
+                Remove Custom Logo
+              </Button>
+            )}
+
             <p className="text-xs text-muted-foreground">
-              Recommended: square image, minimum 64×64 (PNG, JPG, SVG)
+              Recommended: square image, minimum 64×64 (PNG, JPG, SVG). Max 2MB.
             </p>
           </CardContent>
         </Card>
@@ -211,7 +326,7 @@ export const ChangeSidebarIconSettings = () => {
           </CardHeader>
           <CardContent>
             {selectedItem ? (
-              <div className="grid grid-cols-6 gap-3">
+              <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-3">
                 {availableIcons.map((iconItem) => {
                   const IconComp = iconItem.icon;
                   const isSelected =
@@ -254,14 +369,25 @@ export const ChangeSidebarIconSettings = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="gradient-primary rounded-lg p-4 max-w-xs">
+            <div className="bg-sidebar rounded-lg p-4 max-w-xs border border-sidebar-border">
+              {/* Logo Preview */}
+              <div className="flex items-center gap-3 px-3 py-3 mb-4 border-b border-sidebar-border">
+                <img
+                  src={displayLogo || "/assets/Identity.png"}
+                  alt="Sidebar Logo"
+                  className="w-8 h-8 object-contain rounded"
+                />
+                <span className="text-sm font-bold text-sidebar-foreground">
+                  Identity<span className="text-primary">Framework</span>
+                </span>
+              </div>
               <div className="space-y-1">
                 {sidebarItems.map((item) => {
                   const IconComp = getIconComponent(iconSelections[item.id]);
                   return (
                     <div
                       key={item.id}
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-white/90 hover:bg-white/10"
+                      className="flex items-center gap-3 px-3 py-2 rounded-lg text-sidebar-foreground/80 hover:bg-sidebar-accent"
                     >
                       <IconComp className="h-5 w-5" />
                       <span className="text-sm">{item.label}</span>
@@ -276,7 +402,7 @@ export const ChangeSidebarIconSettings = () => {
 
       {/* Actions */}
       <div className="flex gap-3">
-        <Button className="gradient-primary text-primary-foreground" onClick={handleSave}>
+        <Button onClick={handleSave}>
           Save Changes
         </Button>
         <Button variant="outline" onClick={handleReset}>

@@ -51,11 +51,22 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
   const navigate = useNavigate();
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
-  const [dynamicIcon, setDynamicIcon] = useState<string | null>(null);
+  const [customLogo, setCustomLogo] = useState<string | null>(null);
 
   useEffect(() => {
-    const savedIcon = localStorage.getItem("sidebarIcon");
-    if (savedIcon) setDynamicIcon(savedIcon);
+    // Load saved logo on mount
+    const savedLogo = localStorage.getItem("sidebarLogo");
+    if (savedLogo) setCustomLogo(savedLogo);
+
+    // Listen for logo changes from settings
+    const handleLogoChange = (event: CustomEvent<string | null>) => {
+      setCustomLogo(event.detail);
+    };
+
+    window.addEventListener("sidebarLogoChanged", handleLogoChange as EventListener);
+    return () => {
+      window.removeEventListener("sidebarLogoChanged", handleLogoChange as EventListener);
+    };
   }, []);
 
   const toggleMenu = (key: string) => {
@@ -198,7 +209,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
         <div className="h-16 flex items-center justify-between px-6 border-b border-sidebar-border">
           <Link to="/dashboard" className="flex items-center gap-3">
             <img
-              src="/assets/Identity.png"
+              src={customLogo || "/assets/Identity.png"}
               alt="Identity Framework"
               className="w-8 h-8 object-contain rounded"
             />
