@@ -1,14 +1,9 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { ArrowLeft, Camera, Save, Upload } from "lucide-react";
@@ -20,19 +15,20 @@ const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
 export const CreateUserPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [isLoading, setIsLoading] = useState(false);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
 
+  /* ✅ role is now string[] */
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
     ssn: "",
     dob: "",
-    role: "user",
+    role: [] as string[],
   });
 
   /* ---------------- FETCH ROLES ---------------- */
@@ -46,15 +42,14 @@ export const CreateUserPage = () => {
       },
     })
       .then((res) => {
-        if (!res.ok) throw new Error("Failed to load roles");
+        if (!res.ok) throw new Error();
         return res.json();
       })
       .then((data) => {
-        const roleList = Array.isArray(data)
+        const list = Array.isArray(data)
           ? data
-          : data.roles || data.data || [];
-
-        setRoles(roleList.map((r: any) => r.name));
+          : data?.data || data?.roles || [];
+        setRoles(list.map((r: any) => r.name));
       })
       .catch(() => {
         toast({
@@ -65,7 +60,7 @@ export const CreateUserPage = () => {
       });
   }, []);
 
-  /* ---------------- PHOTO HANDLER ---------------- */
+  /* ---------------- PHOTO ---------------- */
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -75,7 +70,7 @@ export const CreateUserPage = () => {
     reader.readAsDataURL(file);
   };
 
-  /* ---------------- SUBMIT USER ---------------- */
+  /* ---------------- SUBMIT ---------------- */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -89,7 +84,7 @@ export const CreateUserPage = () => {
       email: formData.email,
       ssn: formData.ssn,
       dob: formData.dob ? new Date(formData.dob).toISOString() : null,
-      roles: [formData.role],
+      roles: formData.role, // ✅ already array
     };
 
     try {
@@ -102,7 +97,7 @@ export const CreateUserPage = () => {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Create failed");
+      if (!res.ok) throw new Error();
 
       toast({
         title: "User Created",
@@ -140,7 +135,7 @@ export const CreateUserPage = () => {
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="glass-card p-6 space-y-6">
-        {/* Photo Upload */}
+        {/* Photo */}
         <div className="flex flex-col items-center gap-4 pb-6 border-b">
           <div className="relative">
             <Avatar className="w-24 h-24">
@@ -167,12 +162,7 @@ export const CreateUserPage = () => {
             className="hidden"
           />
 
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => fileInputRef.current?.click()}
-          >
+          <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
             <Upload className="h-4 w-4 mr-2" /> Upload Photo
           </Button>
         </div>
@@ -185,45 +175,53 @@ export const CreateUserPage = () => {
             onChange={(v) => setFormData({ ...formData, lastName: v })} />
         </div>
 
-        <InputField
-          label="Email Address"
-          type="email"
-          value={formData.email}
-          onChange={(v) => setFormData({ ...formData, email: v })}
-        />
+        <InputField label="Email Address" type="email" value={formData.email}
+          onChange={(v) => setFormData({ ...formData, email: v })} />
 
         <div className="grid sm:grid-cols-2 gap-4">
           <InputField label="SSN" value={formData.ssn}
             onChange={(v) => setFormData({ ...formData, ssn: v })} />
-
           <div className="space-y-2">
             <Label>Date of Birth</Label>
-            <Input
-              type="date"
-              value={formData.dob}
-              onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
-            />
+            <Input type="date" value={formData.dob}
+              onChange={(e) => setFormData({ ...formData, dob: e.target.value })} />
           </div>
         </div>
 
-        {/* Role */}
+        {/* Role (MULTI SELECT — UI UNCHANGED) */}
         <div className="space-y-2">
           <Label>Role</Label>
-          <Select
-            value={formData.role}
-            onValueChange={(value) => setFormData({ ...formData, role: value })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select role" />
-            </SelectTrigger>
-            <SelectContent>
-              {roles.map((role) => (
-                <SelectItem key={role} value={role}>
-                  {role}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="w-full justify-between">
+                {formData.role.length ? formData.role.join(", ") : "Select role"}
+              </Button>
+            </PopoverTrigger>
+
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-2">
+              {roles.map((role) => {
+                const checked = formData.role.includes(role);
+                return (
+                  <div
+                    key={role}
+                    className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted cursor-pointer"
+                    onClick={() =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        role: checked
+                          ? prev.role.filter((r) => r !== role)
+                          : [...prev.role, role],
+                      }))
+                    }
+                  >
+                    <Checkbox checked={checked} />
+                    <span className="text-sm">{role}</span>
+                  </div>
+                );
+              })}
+            </PopoverContent>
+          </Popover>
         </div>
 
         {/* Actions */}
@@ -232,7 +230,8 @@ export const CreateUserPage = () => {
             Cancel
           </Button>
           <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Creating..." : <><Save className="h-4 w-4 mr-2" />Create User</>}
+            {isLoading ? "Creating..." : <><Save className="h
+            -4 w-4 mr-2" />Create User</>}
           </Button>
         </div>
       </form>
@@ -240,7 +239,7 @@ export const CreateUserPage = () => {
   );
 };
 
-/* ---------- Small helper (UI unchanged) ---------- */
+/* Helper */
 const InputField = ({ label, value, onChange, type = "text" }: any) => (
   <div className="space-y-2">
     <Label>{label}</Label>

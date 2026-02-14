@@ -346,14 +346,14 @@ export const ApplicationManagementPage = () => {
             {/* Sub-Tabs for Request */}
             <Tabs value={requestSubTab} onValueChange={setRequestSubTab} className="w-full">
               <TabsList className="grid w-full max-w-sm grid-cols-2">
-                <TabsTrigger value="browse" className="gap-2">
+                {/* <TabsTrigger value="browse" className="gap-2">
                   <AppWindow className="h-4 w-4" />
                   Browse Apps
-                </TabsTrigger>
-                <TabsTrigger value="requests" className="gap-2">
+                </TabsTrigger> */}
+                {/* <TabsTrigger value="requests" className="gap-2">
                   <FileText className="h-4 w-4" />
                   My Requests
-                </TabsTrigger>
+                </TabsTrigger> */}
               </TabsList>
 
               {/* Browse Applications */}

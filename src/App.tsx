@@ -18,7 +18,6 @@ import { CreateUserPage } from "./pages/dashboard/CreateUserPage";
 import { IDFSettingsPage } from "./pages/dashboard/IDFSettingsPage";
 import { ManageRolesPage } from "./pages/dashboard/ManageRolesPage";
 import { NewRolePage } from "./pages/dashboard/NewRolePage";
-import { RemoveAppPage } from "./pages/dashboard/RemoveAppPage";
 import { UsersListPage } from "./pages/dashboard/UsersListPage";
 import DocsPage from "./pages/DocsPage";
 import FeaturesPage from "./pages/FeaturesPage";
@@ -63,7 +62,6 @@ const App = () => (
             <Route index element={<UsersListPage />} />
             <Route path="create" element={<CreateUserPage />} />
             <Route path="appManage" element={<ApplicationManagementPage />} />
-            <Route path="remove" element={<RemoveAppPage />} />
           </Route>
 
           {/* Role Management Routes */}
@@ -85,7 +83,6 @@ const App = () => (
           <Route path="/reports" element={<DashboardLayout />}>
             <Route path="new" element={<DashboardHome />} />
             <Route path="run" element={<DashboardHome />} />
-            <Route path="detailed" element={<DetailedReportPage />} />
           </Route>
 
           <Route path="/checkout" element={<DashboardLayout />}>
