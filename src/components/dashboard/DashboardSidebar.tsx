@@ -213,8 +213,8 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
               alt="Identity Framework"
               className="w-8 h-8 object-contain rounded"
             />
-            <span className="text-lg font-bold text-sidebar-foreground">
-              Identity<span className="text-primary">Framework</span>
+            <span className="text-lg font-bold text-white">
+              Identity<span className="text-sidebar-primary">Framework</span>
             </span>
           </Link>
 
@@ -235,7 +235,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
                   <button
                     onClick={() => toggleMenu(item.label)}
                     className={cn(
-                      "w-full flex items-center justify-between px-4 py-3 rounded-lg text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-colors"
+                      "w-full flex items-center justify-between px-4 py-3 rounded-lg text-white/80 hover:bg-sidebar-accent hover:text-white transition-colors"
                     )}
                   >
                     <div className="flex items-center gap-3">
@@ -264,8 +264,8 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
                               className={cn(
                                 "w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm transition-colors",
                                 isActiveRoute(subItem.href)
-                                  ? "bg-primary/10 text-primary"
-                                  : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                                  ? "bg-sidebar-primary/20 text-sidebar-primary"
+                                  : "text-white/70 hover:bg-sidebar-accent hover:text-white"
                               )}
                             >
                               {subItem.icon && <subItem.icon className="h-4 w-4" />}
@@ -283,8 +283,8 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
                   className={cn(
                     "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors",
                     isActiveRoute(item.href)
-                      ? "bg-primary/10 text-primary"
-                      : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                      ? "bg-sidebar-primary/20 text-sidebar-primary"
+                      : "text-white/80 hover:bg-sidebar-accent hover:text-white"
                   )}
                 >
                   <item.icon className="h-5 w-5" />
@@ -299,7 +299,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
         <div className="p-4 border-t border-sidebar-border">
           <button
             onClick={() => setShowLogoutDialog(true)}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sidebar-foreground/80 hover:bg-destructive/10 hover:text-destructive transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-white/80 hover:bg-destructive/10 hover:text-destructive transition-colors"
           >
             <LogOut className="h-5 w-5" />
             <span className="font-medium text-sm">Logout</span>

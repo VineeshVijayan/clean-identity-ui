@@ -1,4 +1,4 @@
-import { Bell, Menu, Search, Sun, Moon, ShoppingCart } from "lucide-react";
+import { Bell, Menu, Search, ShoppingCart } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
 import { User, Settings, Key, LogOut } from "lucide-react";
-import { useTheme } from "@/hooks/useTheme";
 
 interface DashboardNavbarProps {
   user: {
@@ -24,10 +23,9 @@ interface DashboardNavbarProps {
 
 export const DashboardNavbar = ({ user, onMenuClick, onLogout }: DashboardNavbarProps) => {
   const navigate = useNavigate();
-  const { theme, toggleTheme } = useTheme();
 
   return (
-    <header className="h-16 border-b border-border bg-card/50 backdrop-blur-sm flex items-center justify-between px-4 sm:px-6">
+    <header className="h-16 border-b border-border bg-card flex items-center justify-between px-4 sm:px-6">
       <div className="flex items-center gap-4">
         <button
           className="lg:hidden text-muted-foreground hover:text-foreground transition-colors"
@@ -42,22 +40,12 @@ export const DashboardNavbar = ({ user, onMenuClick, onLogout }: DashboardNavbar
           <input
             type="text"
             placeholder="Search users, logs, roles..."
-            className="h-10 w-64 lg:w-80 pl-10 pr-4 rounded-lg bg-secondary border border-border text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+            className="h-10 w-64 lg:w-80 pl-10 pr-4 rounded-lg bg-muted border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
           />
         </div>
       </div>
 
       <div className="flex items-center gap-3">
-        {/* Dark Mode Toggle */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={toggleTheme}
-          className="text-muted-foreground hover:text-foreground"
-        >
-          {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-        </Button>
-
         {/* Cart Icon */}
         <Button
           variant="ghost"
@@ -66,7 +54,7 @@ export const DashboardNavbar = ({ user, onMenuClick, onLogout }: DashboardNavbar
           className="relative text-muted-foreground hover:text-foreground"
         >
           <ShoppingCart className="h-5 w-5" />
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-warning text-warning-foreground text-xs font-bold rounded-full flex items-center justify-center">
+          <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-primary-foreground text-xs font-bold rounded-full flex items-center justify-center">
             3
           </span>
         </Button>
