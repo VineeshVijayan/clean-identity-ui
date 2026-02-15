@@ -9,6 +9,7 @@ import {
   UserPlus,
   Users
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Bar,
@@ -56,8 +57,25 @@ const stats = [
   { label: "Auth Success Rate", value: "99.8%", change: "+0.2%", icon: Shield, color: "bg-emerald-500/10 text-emerald-500" },
 ];
 
+/** Read dynamic button styles from localStorage (set via IDF Settings) */
+const getDynamicButtonStyle = (): React.CSSProperties => {
+  const color = localStorage.getItem("buttonPrimaryColor");
+  const radius = localStorage.getItem("buttonBorderRadius");
+  const style: React.CSSProperties = {};
+  if (color) style.backgroundColor = color;
+  if (radius) style.borderRadius = `${radius}px`;
+  return style;
+};
+
 export const DashboardHome = () => {
   const navigate = useNavigate();
+  const [btnStyle, setBtnStyle] = useState<React.CSSProperties>(getDynamicButtonStyle());
+
+  useEffect(() => {
+    const handler = () => setBtnStyle(getDynamicButtonStyle());
+    window.addEventListener("buttonStyleChanged", handler);
+    return () => window.removeEventListener("buttonStyleChanged", handler);
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -69,10 +87,10 @@ export const DashboardHome = () => {
       >
         <button
           onClick={() => navigate("/users/create")}
-          className="glass-card p-6 flex items-center gap-4 hover:bg-primary/5 transition-colors group"
-          style={{ background: "linear-gradient(135deg, hsl(280 60% 40% / 0.3), hsl(280 60% 30% / 0.2))" }}
+          className="glass-card p-6 flex items-center gap-4 hover:shadow-lg transition-shadow"
+          style={{ ...btnStyle, color: "#fff", background: btnStyle.backgroundColor || "hsl(220, 26%, 20%)" }}
         >
-          <div className="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center">
+          <div className="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center">
             <UserPlus className="h-7 w-7 text-white" />
           </div>
           <span className="text-lg font-semibold text-white">Create New User</span>
@@ -80,10 +98,10 @@ export const DashboardHome = () => {
 
         <button
           onClick={() => navigate("/users/appManage")}
-          className="glass-card p-6 flex items-center gap-4 hover:bg-primary/5 transition-colors group"
-          style={{ background: "linear-gradient(135deg, hsl(20 90% 45% / 0.3), hsl(20 90% 35% / 0.2))" }}
+          className="glass-card p-6 flex items-center gap-4 hover:shadow-lg transition-shadow"
+          style={{ ...btnStyle, color: "#fff", background: btnStyle.backgroundColor || "hsl(36, 80%, 48%)" }}
         >
-          <div className="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center">
+          <div className="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center">
             <FileText className="h-7 w-7 text-white" />
           </div>
           <span className="text-lg font-semibold text-white">My Requests</span>
@@ -91,10 +109,10 @@ export const DashboardHome = () => {
 
         <button
           onClick={() => navigate("/approvals")}
-          className="glass-card p-6 flex items-center gap-4 hover:bg-primary/5 transition-colors group"
-          style={{ background: "linear-gradient(135deg, hsl(240 80% 50% / 0.3), hsl(240 80% 40% / 0.2))" }}
+          className="glass-card p-6 flex items-center gap-4 hover:shadow-lg transition-shadow"
+          style={{ ...btnStyle, color: "#fff", background: btnStyle.backgroundColor || "hsl(0, 72%, 51%)" }}
         >
-          <div className="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center">
+          <div className="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center">
             <ThumbsUp className="h-7 w-7 text-white" />
           </div>
           <span className="text-lg font-semibold text-white">My Approvals</span>
@@ -114,7 +132,7 @@ export const DashboardHome = () => {
               <div className={`w-10 h-10 rounded-lg ${stat.color} flex items-center justify-center`}>
                 <stat.icon className="h-5 w-5" />
               </div>
-              <span className="text-xs font-medium text-green-400 bg-green-400/10 px-2 py-1 rounded-full">
+              <span className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded-full">
                 {stat.change}
               </span>
             </div>
@@ -203,7 +221,7 @@ export const DashboardHome = () => {
                 <span className="text-muted-foreground">Total Applications Integrated</span>
                 <span className="font-semibold">8,374</span>
               </div>
-              <div className="h-2 bg-secondary rounded-full overflow-hidden">
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
                 <div className="h-full bg-green-500 rounded-full" style={{ width: "10%" }} />
               </div>
             </div>
@@ -213,7 +231,7 @@ export const DashboardHome = () => {
                 <span className="text-muted-foreground">Top 5 Apps by Number of Users</span>
                 <span className="font-semibold">9,714</span>
               </div>
-              <div className="h-2 bg-secondary rounded-full overflow-hidden">
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
                 <div className="h-full bg-cyan-500 rounded-full" style={{ width: "14%" }} />
               </div>
             </div>
@@ -223,7 +241,7 @@ export const DashboardHome = () => {
                 <span className="text-muted-foreground">Pending App Access Requests</span>
                 <span className="font-semibold">6,871</span>
               </div>
-              <div className="h-2 bg-secondary rounded-full overflow-hidden">
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
                 <div className="h-full bg-amber-500 rounded-full" style={{ width: "28%" }} />
               </div>
             </div>

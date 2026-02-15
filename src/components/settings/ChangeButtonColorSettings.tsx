@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
-import { Check, Palette } from "lucide-react";
-import { useState } from "react";
+import { Check, Palette, RotateCcw } from "lucide-react";
+import { useEffect, useState } from "react";
 
 /* ---------- Color Presets ---------- */
 const colorPresets = [
@@ -19,23 +20,41 @@ const colorPresets = [
 export const ChangeButtonColorSettings = () => {
   const { toast } = useToast();
 
-  const [selectedPreset, setSelectedPreset] = useState(1);
-  const [borderRadius, setBorderRadius] = useState<number[]>([8]);
+  const [selectedPreset, setSelectedPreset] = useState<number | null>(null);
+  const [customColor, setCustomColor] = useState(() => localStorage.getItem("buttonPrimaryColor") || "#333366");
+  const [borderRadius, setBorderRadius] = useState<number[]>(() => {
+    const saved = localStorage.getItem("buttonBorderRadius");
+    return saved ? [parseInt(saved)] : [8];
+  });
 
-  const activePreset = colorPresets.find(
-    (preset) => preset.id === selectedPreset
-  )!;
+  // Sync preset selection when custom color matches a preset
+  useEffect(() => {
+    const match = colorPresets.find(p => p.primary.toLowerCase() === customColor.toLowerCase());
+    setSelectedPreset(match ? match.id : null);
+  }, [customColor]);
+
+  const handlePresetSelect = (preset: typeof colorPresets[0]) => {
+    setSelectedPreset(preset.id);
+    setCustomColor(preset.primary);
+  };
 
   const handleApply = () => {
+    localStorage.setItem("buttonPrimaryColor", customColor);
+    localStorage.setItem("buttonBorderRadius", String(borderRadius[0]));
+    window.dispatchEvent(new Event("buttonStyleChanged"));
     toast({
       title: "Changes Applied",
-      description: "Button styles have been updated successfully.",
+      description: "Button styles have been updated across the application.",
     });
   };
 
   const handleReset = () => {
     setSelectedPreset(1);
+    setCustomColor("#333366");
     setBorderRadius([8]);
+    localStorage.removeItem("buttonPrimaryColor");
+    localStorage.removeItem("buttonBorderRadius");
+    window.dispatchEvent(new Event("buttonStyleChanged"));
     toast({
       title: "Reset Successful",
       description: "Button styles have been reset to default values.",
@@ -44,7 +63,7 @@ export const ChangeButtonColorSettings = () => {
 
   return (
     <div className="space-y-6">
-      {/* Page Title (replaces PageHeader) */}
+      {/* Page Title */}
       <div>
         <div className="flex items-center gap-3">
           <Palette className="h-6 w-6 text-primary" />
@@ -61,38 +80,35 @@ export const ChangeButtonColorSettings = () => {
         <Card>
           <CardHeader>
             <CardTitle>Color Presets</CardTitle>
-            <CardDescription>
-              Choose a predefined color scheme
-            </CardDescription>
+            <CardDescription>Choose a predefined color scheme</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4">
               {colorPresets.map((preset) => (
                 <button
                   key={preset.id}
-                  onClick={() => setSelectedPreset(preset.id)}
-                  className={`relative p-4 rounded-lg border-2 transition-all text-left hover:border-accent ${selectedPreset === preset.id
-                    ? "border-accent bg-accent/10"
-                    : "border-border"
-                    }`}
+                  onClick={() => handlePresetSelect(preset)}
+                  className={`relative p-4 rounded-lg border-2 transition-all text-left hover:border-primary ${
+                    selectedPreset === preset.id
+                      ? "border-primary bg-primary/5"
+                      : "border-border"
+                  }`}
                 >
                   {selectedPreset === preset.id && (
-                    <div className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-accent flex items-center justify-center">
-                      <Check className="h-3 w-3 text-accent-foreground" />
+                    <div className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-primary flex items-center justify-center">
+                      <Check className="h-3 w-3 text-primary-foreground" />
                     </div>
                   )}
-
                   <div className="flex gap-2 mb-3">
                     <div
-                      className="h-8 w-8 rounded-full border shadow"
+                      className="h-8 w-8 rounded-full border shadow-sm"
                       style={{ backgroundColor: preset.primary }}
                     />
                     <div
-                      className="h-8 w-8 rounded-full border shadow"
+                      className="h-8 w-8 rounded-full border shadow-sm"
                       style={{ backgroundColor: preset.accent }}
                     />
                   </div>
-
                   <p className="text-sm font-medium">{preset.name}</p>
                 </button>
               ))}
@@ -104,18 +120,33 @@ export const ChangeButtonColorSettings = () => {
         <Card>
           <CardHeader>
             <CardTitle>Button Styling</CardTitle>
-            <CardDescription>
-              Adjust button appearance settings
-            </CardDescription>
+            <CardDescription>Adjust button appearance settings</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Custom Color Picker */}
+            <div className="space-y-2">
+              <Label>Custom Primary Color</Label>
+              <div className="flex gap-3 items-center">
+                <input
+                  type="color"
+                  value={customColor}
+                  onChange={(e) => setCustomColor(e.target.value)}
+                  className="w-12 h-10 rounded cursor-pointer border border-border"
+                />
+                <Input
+                  value={customColor}
+                  onChange={(e) => setCustomColor(e.target.value)}
+                  placeholder="#333366"
+                  className="flex-1"
+                />
+              </div>
+            </div>
+
             {/* Border Radius */}
             <div className="space-y-2">
               <div className="flex justify-between">
                 <Label>Border Radius</Label>
-                <span className="text-sm text-muted-foreground">
-                  {borderRadius[0]}px
-                </span>
+                <span className="text-sm text-muted-foreground">{borderRadius[0]}px</span>
               </div>
               <Slider
                 value={borderRadius}
@@ -131,7 +162,7 @@ export const ChangeButtonColorSettings = () => {
               <div className="flex flex-wrap gap-3 p-4 bg-muted rounded-lg">
                 <Button
                   style={{
-                    backgroundColor: activePreset.primary,
+                    backgroundColor: customColor,
                     borderRadius: `${borderRadius[0]}px`,
                   }}
                   className="text-white"
@@ -165,16 +196,14 @@ export const ChangeButtonColorSettings = () => {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Live Preview</CardTitle>
-            <CardDescription>
-              See how your changes will look in the application
-            </CardDescription>
+            <CardDescription>See how your changes will look in the application</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="p-6 bg-background border rounded-lg space-y-4">
+            <div className="p-6 bg-muted/50 border rounded-lg space-y-4">
               <div className="flex flex-wrap gap-4">
                 <Button
                   style={{
-                    backgroundColor: activePreset.primary,
+                    backgroundColor: customColor,
                     borderRadius: `${borderRadius[0]}px`,
                   }}
                   className="text-white"
@@ -219,13 +248,12 @@ export const ChangeButtonColorSettings = () => {
 
       {/* Actions */}
       <div className="flex gap-3">
-        <Button
-          className="gradient-primary text-primary-foreground"
-          onClick={handleApply}
-        >
+        <Button onClick={handleApply}>
+          <Check className="h-4 w-4 mr-2" />
           Apply Changes
         </Button>
         <Button variant="outline" onClick={handleReset}>
+          <RotateCcw className="h-4 w-4 mr-2" />
           Reset to Default
         </Button>
       </div>
