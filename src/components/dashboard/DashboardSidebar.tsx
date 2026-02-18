@@ -127,10 +127,11 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
   const reporting: MenuItem = {
     label: "Reports",
     icon: ClipboardList,
-    // submenu: [
-    //   { label: "Create New Report", href: "/reports/new", icon: FileText },
-    //   { label: "Run Report", href: "/reports/run", icon: ClipboardList },
-    // ],
+    href: "/reports",
+    submenu: [
+      { label: "View Reports", href: "/reports", icon: ClipboardList },
+      { label: "Detailed Report", href: "/reports/detailed", icon: FileText },
+    ],
   };
 
   const checkout: MenuItem = {

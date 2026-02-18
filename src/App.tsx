@@ -15,9 +15,11 @@ import { ChangePasswordPage } from "./pages/dashboard/ChangePasswordPage";
 import { CheckoutPage } from "./pages/dashboard/CheckoutPage";
 import { ConnectorsPage } from "./pages/dashboard/ConnectorsPage";
 import { CreateUserPage } from "./pages/dashboard/CreateUserPage";
+import { DetailedReportPage } from "./pages/dashboard/DetailedReportPage";
 import { IDFSettingsPage } from "./pages/dashboard/IDFSettingsPage";
 import { ManageRolesPage } from "./pages/dashboard/ManageRolesPage";
 import { NewRolePage } from "./pages/dashboard/NewRolePage";
+import { ReportsPage } from "./pages/dashboard/ReportsPage";
 import { UsersListPage } from "./pages/dashboard/UsersListPage";
 import DocsPage from "./pages/DocsPage";
 import FeaturesPage from "./pages/FeaturesPage";
@@ -81,8 +83,10 @@ const App = () => (
 
           {/* Other Routes */}
           <Route path="/reports" element={<DashboardLayout />}>
-            <Route path="new" element={<DashboardHome />} />
-            <Route path="run" element={<DashboardHome />} />
+            <Route index element={<ReportsPage />} />
+            <Route path="new" element={<ReportsPage />} />
+            <Route path="run" element={<ReportsPage />} />
+            <Route path="detailed" element={<DetailedReportPage />} />
           </Route>
 
           <Route path="/checkout" element={<DashboardLayout />}>

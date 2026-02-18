@@ -57,22 +57,32 @@ const stats = [
   { label: "Auth Success Rate", value: "99.8%", change: "+0.2%", icon: Shield, color: "bg-emerald-500/10 text-emerald-500" },
 ];
 
-/** Read dynamic button styles from localStorage (set via IDF Settings) */
-const getDynamicButtonStyle = (): React.CSSProperties => {
-  const color = localStorage.getItem("buttonPrimaryColor");
-  const radius = localStorage.getItem("buttonBorderRadius");
-  const style: React.CSSProperties = {};
-  if (color) style.backgroundColor = color;
-  if (radius) style.borderRadius = `${radius}px`;
-  return style;
+/** Read per-button config from localStorage (set via IDF Settings) */
+interface BtnConfig { bgColor: string; borderColor: string; borderRadius: number[] }
+const DEFAULT_CONFIGS: Record<string, BtnConfig> = {
+  btn1: { bgColor: "hsl(220, 26%, 20%)", borderColor: "hsl(220, 26%, 20%)", borderRadius: [8] },
+  btn2: { bgColor: "hsl(36, 80%, 48%)", borderColor: "hsl(36, 80%, 48%)", borderRadius: [8] },
+  btn3: { bgColor: "hsl(0, 72%, 51%)", borderColor: "hsl(0, 72%, 51%)", borderRadius: [8] },
 };
+const loadBtnStyle = (key: string): React.CSSProperties => {
+  try {
+    const saved = localStorage.getItem(`buttonConfig_${key}`);
+    if (saved) {
+      const c: BtnConfig = JSON.parse(saved);
+      return { backgroundColor: c.bgColor, borderColor: c.borderColor, borderRadius: `${c.borderRadius[0]}px`, borderWidth: "2px", borderStyle: "solid" };
+    }
+  } catch { /* ignore */ }
+  const def = DEFAULT_CONFIGS[key];
+  return { backgroundColor: def.bgColor, borderColor: def.borderColor, borderRadius: `${def.borderRadius[0]}px` };
+};
+const getAllBtnStyles = () => ({ btn1: loadBtnStyle("btn1"), btn2: loadBtnStyle("btn2"), btn3: loadBtnStyle("btn3") });
 
 export const DashboardHome = () => {
   const navigate = useNavigate();
-  const [btnStyle, setBtnStyle] = useState<React.CSSProperties>(getDynamicButtonStyle());
+  const [btnStyles, setBtnStyles] = useState(getAllBtnStyles());
 
   useEffect(() => {
-    const handler = () => setBtnStyle(getDynamicButtonStyle());
+    const handler = () => setBtnStyles(getAllBtnStyles());
     window.addEventListener("buttonStyleChanged", handler);
     return () => window.removeEventListener("buttonStyleChanged", handler);
   }, []);
@@ -88,7 +98,7 @@ export const DashboardHome = () => {
         <button
           onClick={() => navigate("/users/create")}
           className="glass-card p-6 flex items-center gap-4 hover:shadow-lg transition-shadow"
-          style={{ ...btnStyle, color: "#fff", background: btnStyle.backgroundColor || "hsl(220, 26%, 20%)" }}
+          style={{ ...btnStyles.btn1, color: "#fff" }}
         >
           <div className="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center">
             <UserPlus className="h-7 w-7 text-white" />
@@ -99,7 +109,7 @@ export const DashboardHome = () => {
         <button
           onClick={() => navigate("/users/appManage")}
           className="glass-card p-6 flex items-center gap-4 hover:shadow-lg transition-shadow"
-          style={{ ...btnStyle, color: "#fff", background: btnStyle.backgroundColor || "hsl(36, 80%, 48%)" }}
+          style={{ ...btnStyles.btn2, color: "#fff" }}
         >
           <div className="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center">
             <FileText className="h-7 w-7 text-white" />
@@ -110,7 +120,7 @@ export const DashboardHome = () => {
         <button
           onClick={() => navigate("/approvals")}
           className="glass-card p-6 flex items-center gap-4 hover:shadow-lg transition-shadow"
-          style={{ ...btnStyle, color: "#fff", background: btnStyle.backgroundColor || "hsl(0, 72%, 51%)" }}
+          style={{ ...btnStyles.btn3, color: "#fff" }}
         >
           <div className="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center">
             <ThumbsUp className="h-7 w-7 text-white" />
