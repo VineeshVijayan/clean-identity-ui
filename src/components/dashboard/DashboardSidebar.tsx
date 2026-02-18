@@ -128,10 +128,10 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     label: "Reports",
     icon: ClipboardList,
     href: "/reports",
-    submenu: [
-      { label: "View Reports", href: "/reports", icon: ClipboardList },
-      { label: "Detailed Report", href: "/reports/detailed", icon: FileText },
-    ],
+    // submenu: [
+    //   { label: "View Reports", href: "/reports", icon: ClipboardList },
+    //   { label: "Detailed Report", href: "/reports/detailed", icon: FileText },
+    // ],
   };
 
   const checkout: MenuItem = {

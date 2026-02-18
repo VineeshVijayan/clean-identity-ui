@@ -3,17 +3,22 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { sessionApiFetch } from "@/services/api-config";
 import { motion } from "framer-motion";
+import { jwtDecode } from "jwt-decode";
 import { ArrowRight, Chrome, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+
+const API_BASE_URL = "https://idf-session-api.ndashdigital.com/api";
+// If using CRA replace with:
+// const API_BASE_URL = process.env.REACT_APP_SESSION_BASE_URL;
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -21,22 +26,65 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    var response = await sessionApiFetch<any>('/authenticate', {
-      method: 'POST',
-      body: JSON.stringify({ email: email, password }),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    toast({
-      title: "Welcome back!",
-      description: "You have successfully signed in.",
-    });
-    setIsLoading(false);
-    localStorage.setItem("auth-token", response.token)
-    navigate("/dashboard");
+    try {
+      const response = await fetch(`${API_BASE_URL}/authenticate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Invalid username or password!");
+      }
+
+      // ✅ Save token
+      localStorage.setItem("auth-token", data.token);
+
+      // ✅ Decode token
+      const decoded: any = jwtDecode(data.token);
+
+      // ✅ Save roles
+      if (decoded.roles) {
+        const roles = Array.isArray(decoded.roles)
+          ? decoded.roles
+          : [decoded.roles];
+        localStorage.setItem("roles", JSON.stringify(roles));
+      }
+
+      // ✅ Save user
+      const userInfo = {
+        name: decoded.userName || "",
+        connectorUserId: decoded.connectorUserId || "",
+        userId: decoded.userId || "",
+        employeeId: decoded.employeeId || "",
+        email: decoded.sub || email,
+      };
+
+      localStorage.setItem("user", JSON.stringify(userInfo));
+
+      // ✅ Notify layout
+      window.dispatchEvent(new Event("auth-change"));
+
+      toast({
+        title: "Welcome back!",
+        description: "You have successfully signed in.",
+      });
+
+      navigate("/dashboard");
+
+    } catch (err: any) {
+      toast({
+        title: "Login Failed",
+        description: err.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -44,7 +92,6 @@ const Login = () => {
       <Header />
 
       <main className="min-h-screen flex items-center justify-center pt-16 px-4">
-        {/* Background Effects */}
         <div className="fixed inset-0 hero-glow pointer-events-none" />
         <div className="fixed inset-0 pattern-grid opacity-20 pointer-events-none" />
 
@@ -54,9 +101,8 @@ const Login = () => {
           transition={{ duration: 0.5 }}
           className="relative w-full max-w-md"
         >
-          {/* Card */}
           <div className="glass-card p-8 sm:p-10 animated-border">
-            {/* Logo */}
+
             {/* Logo */}
             <div className="flex justify-center mb-8">
               <div className="relative">
@@ -69,8 +115,6 @@ const Login = () => {
               </div>
             </div>
 
-
-            {/* Header */}
             <div className="text-center mb-8">
               <h1 className="text-2xl font-bold mb-2">Welcome back</h1>
               <p className="text-muted-foreground">
@@ -78,23 +122,22 @@ const Login = () => {
               </p>
             </div>
 
-            {/* Social Login */}
             <Button variant="outline" className="w-full mb-6 h-12" type="button">
               <Chrome className="h-5 w-5 mr-2" />
               Continue with Google
             </Button>
 
-            {/* Divider */}
             <div className="relative mb-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">or continue with email</span>
+                <span className="bg-card px-2 text-muted-foreground">
+                  or continue with email
+                </span>
               </div>
             </div>
 
-            {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -136,9 +179,13 @@ const Login = () => {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -164,10 +211,12 @@ const Login = () => {
               </Button>
             </form>
 
-            {/* Footer */}
             <p className="text-center text-sm text-muted-foreground mt-6">
               Don't have an account?{" "}
-              <Link to="/register" className="text-primary hover:underline font-medium">
+              <Link
+                to="/register"
+                className="text-primary hover:underline font-medium"
+              >
                 Sign up
               </Link>
             </p>

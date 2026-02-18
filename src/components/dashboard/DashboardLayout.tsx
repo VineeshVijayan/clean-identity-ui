@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
-import { DashboardSidebar } from "./DashboardSidebar";
-import { DashboardNavbar } from "./DashboardNavbar";
 import { getUserRoles, isUserLoggedIn, logout } from "@/services/jwt-service";
+import { useEffect, useState } from "react";
+import { Outlet, useNavigate } from "react-router-dom";
+import { DashboardNavbar } from "./DashboardNavbar";
+import { DashboardSidebar } from "./DashboardSidebar";
 
 export const DashboardLayout = () => {
   const navigate = useNavigate();
@@ -47,7 +47,11 @@ export const DashboardLayout = () => {
   }, [navigate]);
 
   const handleLogout = () => {
+
+    localStorage.clear();
+    sessionStorage.clear();
     logout();
+    window.dispatchEvent(new Event("auth-change"));
     navigate("/");
   };
 
