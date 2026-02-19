@@ -12,6 +12,7 @@ import ContactPage from "./pages/ContactPage";
 import { ApplicationManagementPage } from "./pages/dashboard/ApplicationManagementPage";
 import { AuthSourcesPage } from "./pages/dashboard/AuthSourcesPage";
 import { ChangePasswordPage } from "./pages/dashboard/ChangePasswordPage";
+import { EditProfilePage } from "./pages/dashboard/EditProfilePage";
 import { CheckoutPage } from "./pages/dashboard/CheckoutPage";
 import { ConnectorsPage } from "./pages/dashboard/ConnectorsPage";
 import { CreateUserPage } from "./pages/dashboard/CreateUserPage";
@@ -95,6 +96,10 @@ const App = () => (
 
           <Route path="/profile" element={<DashboardLayout />}>
             <Route index element={<DashboardHome />} />
+          </Route>
+
+          <Route path="/edit-profile" element={<DashboardLayout />}>
+            <Route index element={<EditProfilePage />} />
           </Route>
 
           <Route path="/settings" element={<DashboardLayout />}>
