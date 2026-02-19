@@ -1,4 +1,4 @@
-import { Bell, Menu, Search, ShoppingCart } from "lucide-react";
+import { Bell, Menu, ShoppingCart } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,15 +34,7 @@ export const DashboardNavbar = ({ user, onMenuClick, onLogout }: DashboardNavbar
           <Menu className="h-6 w-6" />
         </button>
         
-        {/* Search */}
-        <div className="relative hidden sm:block">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search users, logs, roles..."
-            className="h-10 w-64 lg:w-80 pl-10 pr-4 rounded-lg bg-muted border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
-          />
-        </div>
+        {/* Search bar removed */}
       </div>
 
       <div className="flex items-center gap-3">
@@ -90,9 +82,9 @@ export const DashboardNavbar = ({ user, onMenuClick, onLogout }: DashboardNavbar
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate("/profile")}>
+            <DropdownMenuItem onClick={() => navigate("/edit-profile")}>
               <User className="mr-2 h-4 w-4" />
-              Profile
+              Edit Profile
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate("/settings")}>
               <Settings className="mr-2 h-4 w-4" />

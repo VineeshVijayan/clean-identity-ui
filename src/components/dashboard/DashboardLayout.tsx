@@ -14,19 +14,15 @@ export const DashboardLayout = () => {
   useEffect(() => {
     const checkAuth = () => {
       const loggedIn = isUserLoggedIn();
+      const token = localStorage.getItem("auth-token");
 
-      if (!loggedIn) {
-        // Check if we have demo token
-        const token = localStorage.getItem("auth-token");
-        if (!token) {
-          navigate("/login");
-          return;
-        }
+      if (!loggedIn && !token) {
+        navigate("/login", { replace: true });
+        return;
       }
 
       setIsLoggedIn(true);
 
-      // Get user from localStorage
       try {
         const storedUser = localStorage.getItem("user");
         if (storedUser) {
@@ -36,23 +32,39 @@ export const DashboardLayout = () => {
       } catch {
         setUser({ name: "User", email: "user@example.com" });
       }
-      console.log(getUserRoles())
+      console.log(getUserRoles());
       setRoles(getUserRoles());
     };
 
     checkAuth();
     window.addEventListener("auth-change", checkAuth);
 
-    return () => window.removeEventListener("auth-change", checkAuth);
+    // Prevent back-navigation to protected pages after logout/session-end
+    // Push a history entry so that pressing back takes user out of the app
+    window.history.pushState(null, "", window.location.href);
+    const handlePopState = () => {
+      const token = localStorage.getItem("auth-token");
+      if (!token) {
+        window.history.pushState(null, "", "/login");
+        navigate("/login", { replace: true });
+      } else {
+        window.history.pushState(null, "", window.location.href);
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("auth-change", checkAuth);
+      window.removeEventListener("popstate", handlePopState);
+    };
   }, [navigate]);
 
   const handleLogout = () => {
-
     localStorage.clear();
     sessionStorage.clear();
     logout();
     window.dispatchEvent(new Event("auth-change"));
-    navigate("/");
+    navigate("/", { replace: true });
   };
 
   return (
