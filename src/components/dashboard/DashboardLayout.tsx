@@ -39,23 +39,8 @@ export const DashboardLayout = () => {
     checkAuth();
     window.addEventListener("auth-change", checkAuth);
 
-    // Prevent back-navigation to protected pages after logout/session-end
-    // Push a history entry so that pressing back takes user out of the app
-    window.history.pushState(null, "", window.location.href);
-    const handlePopState = () => {
-      const token = localStorage.getItem("auth-token");
-      if (!token) {
-        window.history.pushState(null, "", "/login");
-        navigate("/login", { replace: true });
-      } else {
-        window.history.pushState(null, "", window.location.href);
-      }
-    };
-    window.addEventListener("popstate", handlePopState);
-
     return () => {
       window.removeEventListener("auth-change", checkAuth);
-      window.removeEventListener("popstate", handlePopState);
     };
   }, [navigate]);
 
