@@ -128,10 +128,6 @@ export const NewRolePage = () => {
             </p>
           </div>
         </div>
-        <Button onClick={handleSaveRole} className="gap-2">
-          <Save className="h-4 w-4" />
-          Save Role
-        </Button>
       </div>
 
       {/* Role Details */}
@@ -250,6 +246,14 @@ export const NewRolePage = () => {
           })}
         </CardContent>
       </Card>
+
+      {/* Save Role Button at bottom */}
+      <div className="flex justify-end">
+        <Button onClick={handleSaveRole} className="gap-2">
+          <Save className="h-4 w-4" />
+          Save Role
+        </Button>
+      </div>
     </motion.div>
   );
 };

@@ -354,13 +354,29 @@ export const CheckoutPage = () => {
             ))}
           </div>
         )}
+
+        {requestApps.length > 0 && (
+          <div className="mt-4 flex justify-end">
+            <Button
+              size="sm"
+              className="gap-2"
+              onClick={() => {
+                toast({ title: "All Requests Submitted", description: `${requestApps.length} application access requests have been submitted.` });
+                setRequestApps([]);
+              }}
+            >
+              <Send className="h-4 w-4" />
+              Submit All Request
+            </Button>
+          </div>
+        )}
       </motion.section>
 
       <Separator />
 
       {/* ── SEGMENT 2: DELETE APPLICATION ── */}
       <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+        <div className="flex items-center gap-3 mb-4">
           <div className="flex items-center gap-3">
             <div className="h-8 w-1 rounded-full bg-destructive" />
             <div>
@@ -373,17 +389,6 @@ export const CheckoutPage = () => {
               </p>
             </div>
           </div>
-          {deleteApps.length > 0 && (
-            <Button
-              variant="destructive"
-              size="sm"
-              className="gap-2"
-              onClick={() => setShowSubmitDeleteDialog(true)}
-            >
-              <Send className="h-4 w-4" />
-              Submit All Removals
-            </Button>
-          )}
         </div>
 
         {deleteApps.length === 0 ? (
@@ -415,6 +420,20 @@ export const CheckoutPage = () => {
                 }
               />
             ))}
+          </div>
+        )}
+
+        {deleteApps.length > 0 && (
+          <div className="mt-4 flex justify-end">
+            <Button
+              variant="destructive"
+              size="sm"
+              className="gap-2"
+              onClick={() => setShowSubmitDeleteDialog(true)}
+            >
+              <Send className="h-4 w-4" />
+              Submit All Removals
+            </Button>
           </div>
         )}
       </motion.section>
