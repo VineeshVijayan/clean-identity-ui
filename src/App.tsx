@@ -11,6 +11,7 @@ import CareersPage from "./pages/CareersPage";
 import ContactPage from "./pages/ContactPage";
 import { ApplicationManagementPage } from "./pages/dashboard/ApplicationManagementPage";
 import { AuthSourcesPage } from "./pages/dashboard/AuthSourcesPage";
+import { IDFAdministrationPage } from "./pages/dashboard/IDFAdministrationPage";
 import { ChangePasswordPage } from "./pages/dashboard/ChangePasswordPage";
 import { EditProfilePage } from "./pages/dashboard/EditProfilePage";
 import { CheckoutPage } from "./pages/dashboard/CheckoutPage";
@@ -76,9 +77,9 @@ const App = () => (
           {/* Admin Routes */}
           <Route path="/admin" element={<DashboardLayout />}>
             <Route path="users" element={<UsersListPage />} />
-            {/* <Route path="permissions" element={<DashboardHome />} /> */}
             <Route path="auth-sources" element={<AuthSourcesPage />} />
             <Route path="connectors" element={<ConnectorsPage />} />
+            <Route path="idf-administration" element={<IDFAdministrationPage />} />
             <Route path="settings" element={<IDFSettingsPage />} />
           </Route>
 
