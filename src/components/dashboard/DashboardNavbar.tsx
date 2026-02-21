@@ -1,4 +1,3 @@
-import { Bell, Menu, ShoppingCart } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,8 +8,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Bell, Key, LogOut, Menu, ShoppingCart, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { User, Settings, Key, LogOut } from "lucide-react";
 
 interface DashboardNavbarProps {
   user: {
@@ -33,7 +32,7 @@ export const DashboardNavbar = ({ user, onMenuClick, onLogout }: DashboardNavbar
         >
           <Menu className="h-6 w-6" />
         </button>
-        
+
         {/* Search bar removed */}
       </div>
 
@@ -62,9 +61,9 @@ export const DashboardNavbar = ({ user, onMenuClick, onLogout }: DashboardNavbar
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-10 w-10 rounded-full">
               <Avatar className="h-9 w-9">
-                <AvatarImage 
-                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email || 'user'}`} 
-                  alt={user?.name || "User"} 
+                <AvatarImage
+                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email || 'user'}`}
+                  alt={user?.name || "User"}
                 />
                 <AvatarFallback>
                   {user?.name?.charAt(0).toUpperCase() || "U"}
@@ -86,10 +85,7 @@ export const DashboardNavbar = ({ user, onMenuClick, onLogout }: DashboardNavbar
               <User className="mr-2 h-4 w-4" />
               Edit Profile
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate("/settings")}>
-              <Settings className="mr-2 h-4 w-4" />
-              Settings
-            </DropdownMenuItem>
+
             <DropdownMenuItem onClick={() => navigate("/change-password")}>
               <Key className="mr-2 h-4 w-4" />
               Change Password

@@ -116,8 +116,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     label: "IDF Administration",
     icon: Database,
     submenu: [
-      { label: "User Administration", href: "/admin/users", icon: Users },
-      // { label: "Permission", href: "/admin/permissions", icon: ShieldCheck },
+
       { label: "Manage Auth Sources", href: "/admin/auth-sources", icon: LinkIcon },
       { label: "Outbound Connectors", href: "/admin/connectors", icon: Database },
       { label: "IDF Settings", href: "/admin/settings", icon: Cog },
