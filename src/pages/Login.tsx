@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { jwtDecode } from "jwt-decode";
-import { ArrowRight, Chrome, Eye, EyeOff, Lock, Mail } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -120,22 +120,6 @@ const Login = () => {
               <p className="text-muted-foreground">
                 Sign in to your account to continue
               </p>
-            </div>
-
-            <Button variant="outline" className="w-full mb-6 h-12" type="button">
-              <Chrome className="h-5 w-5 mr-2" />
-              Continue with Google
-            </Button>
-
-            <div className="relative mb-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-border" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">
-                  or continue with email
-                </span>
-              </div>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">

@@ -324,7 +324,7 @@ export const CheckoutPage = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
             {requestApps.map((app) => (
               <AppCard
                 key={app.checkoutId}
@@ -402,7 +402,7 @@ export const CheckoutPage = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
             {deleteApps.map((app) => (
               <AppCard
                 key={app.checkoutId}
