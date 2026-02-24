@@ -1,14 +1,14 @@
-import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
 import { ArrowRight, Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export const CTASection = () => {
   return (
     <section className="py-24 relative overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-b from-background via-primary/5 to-background" />
-      
+
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
@@ -32,7 +32,7 @@ export const CTASection = () => {
           >
             Ready to Secure
             <br />
-            <span className="text-gradient">Your Application?</span>
+            <span className="text-gradient">Your Company?</span>
           </motion.h2>
 
           <motion.p
@@ -42,8 +42,9 @@ export const CTASection = () => {
             transition={{ delay: 0.2 }}
             className="text-lg text-muted-foreground max-w-2xl mx-auto mb-10"
           >
-            Join thousands of developers who trust IdentityHub for their authentication needs.
-            Get started in minutes with our generous free tier.
+            Looking for a smarter way to manage employee access? Or exploring an identity solution tailored to your
+            environment? Discover a platform designed to simplify access, strengthen security, and fit the way your
+            organization works.
           </motion.p>
 
           <motion.div
@@ -59,9 +60,9 @@ export const CTASection = () => {
                 <ArrowRight className="h-5 w-5" />
               </Link>
             </Button>
-            <Button variant="glass" size="xl" asChild>
+            {/* <Button variant="glass" size="xl" asChild>
               <Link to="/contact">Talk to Sales</Link>
-            </Button>
+            </Button> */}
           </motion.div>
 
           <motion.p
@@ -71,7 +72,7 @@ export const CTASection = () => {
             transition={{ delay: 0.4 }}
             className="text-sm text-muted-foreground mt-6"
           >
-            No credit card required • Free tier includes 10,000 MAU
+            {/* No credit card required • Free tier includes 10,000 MAU */}
           </motion.p>
         </motion.div>
       </div>

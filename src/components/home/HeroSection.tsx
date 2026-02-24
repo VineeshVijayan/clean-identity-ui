@@ -1,7 +1,7 @@
-import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Shield, Lock, Fingerprint, Key } from "lucide-react";
+import { motion } from "framer-motion";
+import { ArrowRight, Fingerprint, Key, Lock, Shield } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const floatingIcons = [
   { Icon: Shield, delay: 0, position: "top-20 left-[10%]" },
@@ -16,7 +16,7 @@ export const HeroSection = () => {
       {/* Background Effects */}
       <div className="absolute inset-0 hero-glow" />
       <div className="absolute inset-0 pattern-grid opacity-30" />
-      
+
       {/* Floating Icons */}
       {floatingIcons.map(({ Icon, delay, position }, index) => (
         <motion.div
@@ -82,13 +82,13 @@ export const HeroSection = () => {
           >
             <Button variant="hero" size="xl" asChild>
               <Link to="/register">
-                Start Building Free
+                Let us Guide You
                 <ArrowRight className="h-5 w-5" />
               </Link>
             </Button>
-            <Button variant="heroOutline" size="xl" asChild>
+            {/* <Button variant="heroOutline" size="xl" asChild>
               <Link to="/docs">View Documentation</Link>
-            </Button>
+            </Button> */}
           </motion.div>
 
           {/* Stats */}
@@ -98,7 +98,7 @@ export const HeroSection = () => {
             transition={{ duration: 0.5, delay: 0.4 }}
             className="grid grid-cols-3 gap-8 mt-16 pt-16 border-t border-border/50"
           >
-            {[
+            {/* {[
               { value: "10M+", label: "Users Protected" },
               { value: "99.99%", label: "Uptime SLA" },
               { value: "50ms", label: "Avg Response" },
@@ -107,7 +107,7 @@ export const HeroSection = () => {
                 <div className="text-2xl sm:text-3xl font-bold text-gradient">{stat.value}</div>
                 <div className="text-sm text-muted-foreground mt-1">{stat.label}</div>
               </div>
-            ))}
+            ))} */}
           </motion.div>
         </div>
       </div>

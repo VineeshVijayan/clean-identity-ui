@@ -1,13 +1,13 @@
 import { motion } from "framer-motion";
-import { 
-  Shield, 
-  Key, 
-  Fingerprint, 
-  Users, 
-  Lock, 
+import {
+  Shield,
+  Key,
+  Fingerprint,
+  Users,
+  Lock,
   Zap,
   Globe,
-  RefreshCw 
+  RefreshCw
 } from "lucide-react";
 
 const features = [
@@ -104,7 +104,7 @@ export const FeaturesSection = () => {
             transition={{ delay: 0.2 }}
             className="text-lg text-muted-foreground"
           >
-            A complete identity platform with all the tools to secure your users 
+            A complete identity platform with all the tools to secure your users
             and scale with confidence.
           </motion.p>
         </div>

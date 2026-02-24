@@ -5,19 +5,29 @@ const footerLinks = {
   product: [
     { label: "Features", href: "/features" },
 
-    { label: "Documentation", href: "/docs" },
+    // { label: "Documentation", href: "/docs" },
 
   ],
   company: [
-    { label: "About", href: "/about" },
-    { label: "Careers", href: "/careers" },
-    { label: "Contact", href: "/contact" },
+    { label: "About", href: "https://www.idsphere.net/" },
+    // { label: "Careers", href: "/careers" },
+    { label: "Contact", href: "https://www.idsphere.net/contact" },
   ],
+  // legal: [
+  //   { label: "Privacy", href: "/privacy" },
+  //   { label: "Terms", href: "/terms" },
+  //   { label: "Security", href: "/security" },
+  // ],
+
   legal: [
-    { label: "Privacy", href: "/privacy" },
-    { label: "Terms", href: "/terms" },
-    { label: "Security", href: "/security" },
+    { label: "Privacy", href: "https://www.idsphere.net/" },
+    { label: "Terms", href: "https://www.idsphere.net/" },
+    { label: "Security", href: "https://www.idsphere.net/" },
   ],
+
+
+
+
 };
 
 export const Footer = () => {
