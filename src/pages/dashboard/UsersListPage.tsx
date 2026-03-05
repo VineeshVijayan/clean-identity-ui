@@ -16,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion } from "framer-motion";
 import {
   ChevronLeft,
@@ -31,11 +32,10 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const API_BASE_URL = "https://identity-api.ndashdigital.com/api"; // or REACT_APP_API_BASE_URL
+const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
 
 type User = {
   id: string;
@@ -47,151 +47,41 @@ type User = {
   lastLogin: string;
 };
 
-export const UsersListPage = () => {
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "Active":
+      return "bg-green-500/10 text-green-500 border-green-500/20";
+    case "Inactive":
+      return "bg-red-500/10 text-red-500 border-red-500/20";
+    case "Pending":
+      return "bg-amber-500/10 text-amber-500 border-amber-500/20";
+    default:
+      return "bg-muted text-muted-foreground";
+  }
+};
+
+/* ─── Shared User Table ─── */
+const UserTable = ({
+  users,
+  searchQuery,
+  setSearchQuery,
+  totalCount,
+}: {
+  users: User[];
+  searchQuery: string;
+  setSearchQuery: (v: string) => void;
+  totalCount: number;
+}) => {
   const navigate = useNavigate();
-  const [users, setUsers] = useState<User[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/users`, {
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch users");
-        return res.json();
-      })
-      .then((response) => {
-        const mappedUsers = response.data.map((u: any) => ({
-          id: u.id || u.username,
-          firstName: u.firstName || "",
-          lastName: u.lastName || "",
-          email: u.email,
-          role: u.roles?.join(", ") || "N/A",
-          status: u.status || "Active",
-          lastLogin: u.lastLogin || "—",
-        }));
-        setUsers(mappedUsers);
-      })
-      .catch((err) => {
-        console.error("User fetch failed:", err);
-      });
-  }, []);
-
-  const filteredUsers = users.filter(
-    (user) =>
-      `${user.firstName} ${user.lastName}`
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Active":
-        return "bg-green-500/10 text-green-500 border-green-500/20";
-      case "Inactive":
-        return "bg-red-500/10 text-red-500 border-red-500/20";
-      case "Pending":
-        return "bg-amber-500/10 text-amber-500 border-amber-500/20";
-      default:
-        return "bg-muted text-muted-foreground";
-    }
-  };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-6"
-    >
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">All Users</h1>
-          <p className="text-muted-foreground">
-            Manage and view all users in the system
-          </p>
-        </div>
-        <Button onClick={() => navigate("/users/create")}>
-          <UserPlus className="h-4 w-4 mr-2" />
-          Create User
-        </Button>
-      </div>
-
-      {/* My Team / Delegate Sections */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="border border-primary/20">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <div className="p-1.5 rounded-md bg-primary/10">
-                <Users className="h-4 w-4 text-primary" />
-              </div>
-              My Team
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {filteredUsers.slice(0, 3).map((u) => (
-                <div key={u.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${u.email}`} />
-                    <AvatarFallback>{u.firstName.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="text-sm font-medium">{u.firstName} {u.lastName}</p>
-                    <p className="text-xs text-muted-foreground">{u.role}</p>
-                  </div>
-                </div>
-              ))}
-              {filteredUsers.length === 0 && (
-                <p className="text-sm text-muted-foreground">No team members found</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border border-accent/20">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <div className="p-1.5 rounded-md bg-accent/10">
-                <UserCheck className="h-4 w-4 text-accent-foreground" />
-              </div>
-              Delegate
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {filteredUsers.slice(3, 6).map((u) => (
-                <div key={u.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${u.email}`} />
-                    <AvatarFallback>{u.firstName.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="text-sm font-medium">{u.firstName} {u.lastName}</p>
-                    <p className="text-xs text-muted-foreground">{u.role}</p>
-                  </div>
-                </div>
-              ))}
-              {filteredUsers.length <= 3 && (
-                <p className="text-sm text-muted-foreground">No delegates assigned</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
+    <div className="space-y-4">
       {/* Filters */}
       <div className="glass-card p-4">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              id="user-search"
-              name="userSearch"
               placeholder="Search users..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -224,45 +114,25 @@ export const UsersListPage = () => {
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
-
           <TableBody>
-            {filteredUsers.map((user) => (
+            {users.map((user) => (
               <TableRow key={user.id}>
                 <TableCell>
                   <div className="flex items-center gap-3">
                     <Avatar className="h-9 w-9">
-                      <AvatarImage
-                        src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`}
-                      />
-                      <AvatarFallback>
-                        {user.firstName.charAt(0)}
-                      </AvatarFallback>
+                      <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`} />
+                      <AvatarFallback>{user.firstName.charAt(0)}</AvatarFallback>
                     </Avatar>
-                    <div>
-                      <p className="font-medium">
-                        {user.firstName} {user.lastName}
-                      </p>
-                    </div>
+                    <p className="font-medium">{user.firstName}</p>
                   </div>
                 </TableCell>
-
+                <TableCell>{user.lastName}</TableCell>
                 <TableCell>
                   <Badge variant="outline">{user.role}</Badge>
                 </TableCell>
-
-                <TableCell>
-                  <Badge
-                    variant="outline"
-                    className={getStatusColor(user.status)}
-                  >
-                    {user.status}
-                  </Badge>
-                </TableCell>
-
                 <TableCell className="hidden sm:table-cell text-muted-foreground">
-                  {user.lastLogin}
+                  {user.email}
                 </TableCell>
-
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -272,16 +142,13 @@ export const UsersListPage = () => {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem>
-                        <Eye className="h-4 w-4 mr-2" />
-                        View
+                        <Eye className="h-4 w-4 mr-2" /> View
                       </DropdownMenuItem>
                       <DropdownMenuItem>
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit
+                        <Edit className="h-4 w-4 mr-2" /> Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem className="text-destructive">
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
+                        <Trash2 className="h-4 w-4 mr-2" /> Delete
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -291,10 +158,9 @@ export const UsersListPage = () => {
           </TableBody>
         </Table>
 
-        {/* Pagination */}
         <div className="flex items-center justify-between p-4 border-t border-border">
           <p className="text-sm text-muted-foreground">
-            Showing {filteredUsers.length} of {users.length} users
+            Showing {users.length} of {totalCount} users
           </p>
           <div className="flex gap-2">
             <Button variant="outline" size="icon" disabled>
@@ -306,6 +172,117 @@ export const UsersListPage = () => {
           </div>
         </div>
       </div>
+    </div>
+  );
+};
+
+/* ─── Main Component ─── */
+export const UsersListPage = () => {
+  const navigate = useNavigate();
+  const [users, setUsers] = useState<User[]>([]);
+  const [activeTab, setActiveTab] = useState("myteam");
+  const [teamSearch, setTeamSearch] = useState("");
+  const [delegateSearch, setDelegateSearch] = useState("");
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/users`, {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch users");
+        return res.json();
+      })
+      .then((response) => {
+        const mappedUsers = response.data.map((u: any) => ({
+          id: u.id || u.username,
+          firstName: u.firstName || "",
+          lastName: u.lastName || "",
+          email: u.email,
+          role: u.roles?.join(", ") || "N/A",
+          status: u.status || "Active",
+          lastLogin: u.lastLogin || "—",
+        }));
+        setUsers(mappedUsers);
+      })
+      .catch((err) => {
+        console.error("User fetch failed:", err);
+      });
+  }, []);
+
+  // Split users: first half = My Team, second half = Delegate
+  const midpoint = Math.ceil(users.length / 2);
+  const teamUsers = users.slice(0, midpoint);
+  const delegateUsers = users.slice(midpoint);
+
+  const filteredTeam = teamUsers.filter(
+    (u) =>
+      `${u.firstName} ${u.lastName}`.toLowerCase().includes(teamSearch.toLowerCase()) ||
+      u.email.toLowerCase().includes(teamSearch.toLowerCase())
+  );
+
+  const filteredDelegates = delegateUsers.filter(
+    (u) =>
+      `${u.firstName} ${u.lastName}`.toLowerCase().includes(delegateSearch.toLowerCase()) ||
+      u.email.toLowerCase().includes(delegateSearch.toLowerCase())
+  );
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-6"
+    >
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-primary/10">
+            <Users className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">All Users</h1>
+            <p className="text-muted-foreground">Manage and view all users in the system</p>
+          </div>
+        </div>
+        <Button onClick={() => navigate("/users/create")}>
+          <UserPlus className="h-4 w-4 mr-2" />
+          Create User
+        </Button>
+      </div>
+
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full max-w-sm grid-cols-2">
+          <TabsTrigger value="myteam" className="gap-2">
+            <Users className="h-4 w-4" />
+            My Team
+          </TabsTrigger>
+          <TabsTrigger value="delegate" className="gap-2">
+            <UserCheck className="h-4 w-4" />
+            Delegate
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="myteam" className="mt-6">
+          <UserTable
+            users={filteredTeam}
+            searchQuery={teamSearch}
+            setSearchQuery={setTeamSearch}
+            totalCount={teamUsers.length}
+          />
+        </TabsContent>
+
+        <TabsContent value="delegate" className="mt-6">
+          <UserTable
+            users={filteredDelegates}
+            searchQuery={delegateSearch}
+            setSearchQuery={setDelegateSearch}
+            totalCount={delegateUsers.length}
+          />
+        </TabsContent>
+      </Tabs>
     </motion.div>
   );
 };
