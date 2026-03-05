@@ -27,8 +27,11 @@ import {
   MoreVertical,
   Search,
   Trash2,
+  UserCheck,
   UserPlus,
+  Users,
 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -118,6 +121,69 @@ export const UsersListPage = () => {
         </Button>
       </div>
 
+      {/* My Team / Delegate Sections */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card className="border border-primary/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <div className="p-1.5 rounded-md bg-primary/10">
+                <Users className="h-4 w-4 text-primary" />
+              </div>
+              My Team
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {filteredUsers.slice(0, 3).map((u) => (
+                <div key={u.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${u.email}`} />
+                    <AvatarFallback>{u.firstName.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="text-sm font-medium">{u.firstName} {u.lastName}</p>
+                    <p className="text-xs text-muted-foreground">{u.role}</p>
+                  </div>
+                </div>
+              ))}
+              {filteredUsers.length === 0 && (
+                <p className="text-sm text-muted-foreground">No team members found</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border border-accent/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <div className="p-1.5 rounded-md bg-accent/10">
+                <UserCheck className="h-4 w-4 text-accent-foreground" />
+              </div>
+              Delegate
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {filteredUsers.slice(3, 6).map((u) => (
+                <div key={u.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${u.email}`} />
+                    <AvatarFallback>{u.firstName.charAt(0)}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="text-sm font-medium">{u.firstName} {u.lastName}</p>
+                    <p className="text-xs text-muted-foreground">{u.role}</p>
+                  </div>
+                </div>
+              ))}
+              {filteredUsers.length <= 3 && (
+                <p className="text-sm text-muted-foreground">No delegates assigned</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Filters */}
       <div className="glass-card p-4">
         <div className="flex flex-col sm:flex-row gap-4">
@@ -175,9 +241,6 @@ export const UsersListPage = () => {
                     <div>
                       <p className="font-medium">
                         {user.firstName} {user.lastName}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {user.email}
                       </p>
                     </div>
                   </div>

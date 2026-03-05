@@ -443,32 +443,28 @@ export const ApplicationManagementPage = () => {
 
           {/* ────────── REQUEST ACCESS TAB ────────── */}
           <TabsContent value="request" className="mt-6 space-y-5">
-            {/* Container 1 — Employee Search */}
-            <motion.div variants={itemVariants}>
-              <Card>
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">1</span>
-                    Employee Selection
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <EmployeeSearchDropdown
-                    users={users}
-                    selectedUser={reqSelectedUser}
-                    onSelect={setReqSelectedUser}
-                  />
-                  <AnimatePresence>
-                    {reqSelectedUser && <UserDetailsCard user={reqSelectedUser} />}
-                  </AnimatePresence>
-                </CardContent>
-              </Card>
-            </motion.div>
-
-            {/* Container 2 — Application Selection */}
+            {/* Employee Selection — outside container */}
             <motion.div variants={itemVariants}>
               <div className="flex items-center gap-2 mb-3">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">2</span>
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-600 text-white text-xs font-bold">1</span>
+                <span className="font-semibold text-foreground">Employee Selection</span>
+              </div>
+              <div className="space-y-4">
+                <EmployeeSearchDropdown
+                  users={users}
+                  selectedUser={reqSelectedUser}
+                  onSelect={setReqSelectedUser}
+                />
+                <AnimatePresence>
+                  {reqSelectedUser && <UserDetailsCard user={reqSelectedUser} />}
+                </AnimatePresence>
+              </div>
+            </motion.div>
+
+            {/* Application Selection */}
+            <motion.div variants={itemVariants}>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-600 text-white text-xs font-bold">2</span>
                 <span className="font-semibold text-foreground">Application Selection</span>
               </div>
               <AppSelectionSection
@@ -482,6 +478,7 @@ export const ApplicationManagementPage = () => {
                 onSubmit={handleRequestSubmit}
                 submitLabel="Submit Request"
                 submitIcon={<Send className="h-4 w-4 mr-2" />}
+                submitClass="bg-green-600 text-white hover:bg-green-700"
               />
             </motion.div>
           </TabsContent>
@@ -497,26 +494,22 @@ export const ApplicationManagementPage = () => {
               </AlertDescription>
             </Alert>
 
-            {/* Container 1 — Employee Search */}
+            {/* Employee Selection — outside container */}
             <motion.div variants={itemVariants}>
-              <Card>
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-destructive text-destructive-foreground text-xs font-bold">1</span>
-                    Employee Selection
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <EmployeeSearchDropdown
-                    users={users}
-                    selectedUser={remSelectedUser}
-                    onSelect={setRemSelectedUser}
-                  />
-                  <AnimatePresence>
-                    {remSelectedUser && <UserDetailsCard user={remSelectedUser} />}
-                  </AnimatePresence>
-                </CardContent>
-              </Card>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-destructive text-destructive-foreground text-xs font-bold">1</span>
+                <span className="font-semibold text-foreground">Employee Selection</span>
+              </div>
+              <div className="space-y-4">
+                <EmployeeSearchDropdown
+                  users={users}
+                  selectedUser={remSelectedUser}
+                  onSelect={setRemSelectedUser}
+                />
+                <AnimatePresence>
+                  {remSelectedUser && <UserDetailsCard user={remSelectedUser} />}
+                </AnimatePresence>
+              </div>
             </motion.div>
 
             {/* Container 2 — Application being Removed */}

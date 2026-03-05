@@ -359,7 +359,7 @@ export const CheckoutPage = () => {
           <div className="mt-4 flex justify-end">
             <Button
               size="sm"
-              className="gap-2"
+              className="gap-2 bg-green-600 text-white hover:bg-green-700"
               onClick={() => {
                 toast({ title: "All Requests Submitted", description: `${requestApps.length} application access requests have been submitted.` });
                 setRequestApps([]);
