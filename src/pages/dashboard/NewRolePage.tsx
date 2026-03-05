@@ -249,7 +249,7 @@ export const NewRolePage = () => {
 
       {/* Save Role Button at bottom */}
       <div className="flex justify-end">
-        <Button onClick={handleSaveRole} className="gap-2">
+        <Button onClick={handleSaveRole} className="gap-2 bg-green-600 text-white hover:bg-green-700">
           <Save className="h-4 w-4" />
           Save Role
         </Button>
