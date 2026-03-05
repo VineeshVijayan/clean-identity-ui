@@ -497,7 +497,7 @@ export const ApplicationManagementPage = () => {
             {/* Employee Selection — outside container */}
             <motion.div variants={itemVariants}>
               <div className="flex items-center gap-2 mb-3">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-destructive text-destructive-foreground text-xs font-bold">1</span>
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-600 text-white text-xs font-bold">1</span>
                 <span className="font-semibold text-foreground">Employee Selection</span>
               </div>
               <div className="space-y-4">
@@ -515,7 +515,7 @@ export const ApplicationManagementPage = () => {
             {/* Container 2 — Application being Removed */}
             <motion.div variants={itemVariants}>
               <div className="flex items-center gap-2 mb-3">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-destructive text-destructive-foreground text-xs font-bold">2</span>
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-600 text-white text-xs font-bold">2</span>
                 <span className="font-semibold text-foreground">Application Selection</span>
               </div>
               <AppSelectionSection
@@ -529,7 +529,7 @@ export const ApplicationManagementPage = () => {
                 onSubmit={handleRemoveSubmit}
                 submitLabel="Submit Removal"
                 submitIcon={<Trash2 className="h-4 w-4 mr-2" />}
-                submitClass="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                submitClass="bg-green-600 text-white hover:bg-green-700"
               />
             </motion.div>
 
