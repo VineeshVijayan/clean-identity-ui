@@ -11,17 +11,18 @@ import CareersPage from "./pages/CareersPage";
 import ContactPage from "./pages/ContactPage";
 import { ApplicationManagementPage } from "./pages/dashboard/ApplicationManagementPage";
 import { AuthSourcesPage } from "./pages/dashboard/AuthSourcesPage";
-import { IDFAdministrationPage } from "./pages/dashboard/IDFAdministrationPage";
 import { ChangePasswordPage } from "./pages/dashboard/ChangePasswordPage";
-import { EditProfilePage } from "./pages/dashboard/EditProfilePage";
 import { CheckoutPage } from "./pages/dashboard/CheckoutPage";
 import { ConnectorsPage } from "./pages/dashboard/ConnectorsPage";
 import { CreateUserPage } from "./pages/dashboard/CreateUserPage";
 import { DetailedReportPage } from "./pages/dashboard/DetailedReportPage";
+import { EditProfilePage } from "./pages/dashboard/EditProfilePage";
+import { IDFAdministrationPage } from "./pages/dashboard/IDFAdministrationPage";
 import { IDFSettingsPage } from "./pages/dashboard/IDFSettingsPage";
 import { ManageRolesPage } from "./pages/dashboard/ManageRolesPage";
 import { NewRolePage } from "./pages/dashboard/NewRolePage";
 import { ReportsPage } from "./pages/dashboard/ReportsPage";
+import { UserAdministrationPage } from "./pages/dashboard/UserAdministrationPage";
 import { UsersListPage } from "./pages/dashboard/UsersListPage";
 import DocsPage from "./pages/DocsPage";
 import FeaturesPage from "./pages/FeaturesPage";
@@ -81,6 +82,7 @@ const App = () => (
             <Route path="connectors" element={<ConnectorsPage />} />
             <Route path="idf-administration" element={<IDFAdministrationPage />} />
             <Route path="settings" element={<IDFSettingsPage />} />
+            <Route path="user-administration" element={<UserAdministrationPage />} />
           </Route>
 
           {/* Other Routes */}

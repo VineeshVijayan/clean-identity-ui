@@ -24,17 +24,20 @@ export const DashboardNavbar = ({ user, onMenuClick, onLogout }: DashboardNavbar
   const navigate = useNavigate();
 
   return (
-    <header className="h-16 border-b border-border bg-card flex items-center justify-between px-4 sm:px-6 relative">
+    <header className="relative h-16 border-b border-border bg-card flex items-center justify-between px-4 sm:px-6">      <div className="flex items-center gap-4">
       <button
         className="lg:hidden text-muted-foreground hover:text-foreground transition-colors"
         onClick={onMenuClick}
       >
         <Menu className="h-6 w-6" />
       </button>
-
-      <span className="absolute left-1/2 -translate-x-1/2 text-sm font-medium text-foreground hidden sm:block">
-        Welcome, <span className="text-primary font-semibold">{user?.name || "User"}</span>
-      </span>
+      <div className="absolute left-1/2 transform -translate-x-1/2 hidden sm:block">
+        <span className="text-sm font-medium text-foreground">
+          Welcome, <span className="text-primary font-semibold">{user?.name || "User"}</span>
+        </span>
+      </div>
+      {/* Search bar removed */}
+    </div>
 
       <div className="flex items-center gap-3">
         {/* Cart Icon */}
