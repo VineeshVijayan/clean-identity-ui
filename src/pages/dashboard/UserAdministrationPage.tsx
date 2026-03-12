@@ -85,18 +85,6 @@ export const UserAdministrationPage = () => {
             user.email.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case "Active":
-                return "bg-green-500/10 text-green-500 border-green-500/20";
-            case "Inactive":
-                return "bg-red-500/10 text-red-500 border-red-500/20";
-            case "Pending":
-                return "bg-amber-500/10 text-amber-500 border-amber-500/20";
-            default:
-                return "bg-muted text-muted-foreground";
-        }
-    };
 
     return (
         <motion.div
