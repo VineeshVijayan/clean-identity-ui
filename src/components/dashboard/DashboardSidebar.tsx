@@ -84,12 +84,12 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
   };
 
   const userManagementItem: MenuItem = {
-    label: "User Management",
+    label: "Team Management",
     icon: Home,
     submenu: [
-      { label: "All Users", href: "/users", icon: Users },
-      { label: "Create New User", href: "/users/create", icon: UserPlus },
-      { label: "App Management Page ", href: "/users/appManage", icon: FileText },
+      { label: "My Team", href: "/users", icon: Users },
+      { label: "New Team Member", href: "/users/create", icon: UserPlus },
+      { label: "Manage Team Access", href: "/users/appManage", icon: FileText },
 
     ],
   };
@@ -104,21 +104,21 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
   };
 
   const roleBasedAccess: MenuItem = {
-    label: "Role-Based Access",
+    label: "Position Blueprints",
     icon: ShieldCheck,
     submenu: [
-      { label: "Create New Role", href: "/roles/new", icon: Key },
-      { label: "Manage Existing Role", href: "/roles/manage", icon: Settings },
+      { label: "New Blueprint", href: "/roles/new", icon: Key },
+      { label: "Manage Blueprints", href: "/roles/manage", icon: Settings },
     ],
   };
 
   const idfAdministration: MenuItem = {
-    label: "IDF Administration",
+    label: "Toolbox",
     icon: Database,
     submenu: [
       { label: "User Administration", href: "/admin/user-administration", icon: ShieldCheck },
-      { label: "Auth & Connectors", href: "/admin/idf-administration", icon: LinkIcon },
-      { label: "IDF Settings", href: "/admin/settings", icon: Cog },
+      { label: "Connectors", href: "/admin/idf-administration", icon: LinkIcon },
+      { label: "Settings", href: "/admin/settings", icon: Cog },
     ],
   };
 

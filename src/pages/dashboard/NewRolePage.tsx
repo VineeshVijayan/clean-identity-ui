@@ -122,9 +122,9 @@ export const NewRolePage = () => {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold">Create New Role</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold">Create New Blueprint</h1>
             <p className="text-muted-foreground mt-1">
-              Define a new role with specific permissions
+              Add applications to your new Blueprint
             </p>
           </div>
         </div>
@@ -135,14 +135,14 @@ export const NewRolePage = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
-            Role Information
+            Blueprint Details
           </CardTitle>
-          <CardDescription>Enter the basic details for the new role</CardDescription>
+          <CardDescription>Assign HR job role to new Blueprint</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="roleName">Role Name *</Label>
+              <Label htmlFor="roleName">Blueprint Name *</Label>
               <Input
                 id="roleName"
                 placeholder="e.g., Content Manager"
@@ -151,7 +151,7 @@ export const NewRolePage = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label>Selected Permissions</Label>
+              <Label>HR Job Role</Label>
               <div className="h-10 px-3 rounded-lg border bg-muted/50 flex items-center">
                 <Badge variant="secondary">{selectedPermissions.length} permissions</Badge>
               </div>
@@ -161,7 +161,7 @@ export const NewRolePage = () => {
             <Label htmlFor="roleDescription">Description</Label>
             <Textarea
               id="roleDescription"
-              placeholder="Describe the role's responsibilities and scope..."
+              placeholder="Describe the purpose of this Blueprint"
               value={roleDescription}
               onChange={(e) => setRoleDescription(e.target.value)}
               rows={3}
@@ -222,8 +222,8 @@ export const NewRolePage = () => {
                       <label
                         key={permission.id}
                         className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${selectedPermissions.includes(permission.id)
-                            ? "bg-primary/5 border-primary/30"
-                            : "hover:bg-muted/50"
+                          ? "bg-primary/5 border-primary/30"
+                          : "hover:bg-muted/50"
                           }`}
                       >
                         <Checkbox
@@ -251,7 +251,7 @@ export const NewRolePage = () => {
       <div className="flex justify-end">
         <Button onClick={handleSaveRole} className="gap-2 bg-green-600 text-white hover:bg-green-700">
           <Save className="h-4 w-4" />
-          Save Role
+          Build Blueprint
         </Button>
       </div>
     </motion.div>

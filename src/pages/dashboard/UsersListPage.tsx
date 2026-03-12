@@ -109,7 +109,7 @@ const UserTable = ({
             <TableRow>
               <TableHead>First Name</TableHead>
               <TableHead>Last Name</TableHead>
-              <TableHead>Role</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead className="hidden sm:table-cell">Email</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -243,12 +243,12 @@ export const UsersListPage = () => {
           </div>
           <div>
             <h1 className="text-2xl font-bold">All Users</h1>
-            <p className="text-muted-foreground">Manage and view all users in the system</p>
+            <p className="text-muted-foreground">View your direct reports</p>
           </div>
         </div>
         <Button onClick={() => navigate("/users/create")}>
           <UserPlus className="h-4 w-4 mr-2" />
-          Create User
+          New Team Member
         </Button>
       </div>
 

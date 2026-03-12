@@ -128,8 +128,8 @@ export const CreateUserPage = () => {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">Create New User</h1>
-          <p className="text-muted-foreground">Add a new user to the system</p>
+          <h1 className="text-2xl font-bold">Create New Team Member</h1>
+          <p className="text-muted-foreground">Add a new member to your team</p>
         </div>
       </div>
 
@@ -179,7 +179,7 @@ export const CreateUserPage = () => {
           onChange={(v) => setFormData({ ...formData, email: v })} />
 
         <div className="grid sm:grid-cols-2 gap-4">
-          <InputField label="SSN" value={formData.ssn}
+          <InputField label="Last 4 SSN" value={formData.ssn}
             onChange={(v) => setFormData({ ...formData, ssn: v })} />
           <div className="space-y-2">
             <Label>Date of Birth</Label>
@@ -190,7 +190,7 @@ export const CreateUserPage = () => {
 
         {/* Role (MULTI SELECT — UI UNCHANGED) */}
         <div className="space-y-2">
-          <Label>Role</Label>
+          <Label>Bluprint</Label>
 
           <Popover>
             <PopoverTrigger asChild>
@@ -231,7 +231,7 @@ export const CreateUserPage = () => {
           </Button>
           <Button type="submit" disabled={isLoading}>
             {isLoading ? "Creating..." : <><Save className="h
-            -4 w-4 mr-2" />Create User</>}
+            -4 w-4 mr-2" />Submit</>}
           </Button>
         </div>
       </form>

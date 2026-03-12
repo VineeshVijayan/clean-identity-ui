@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertTriangle,
   AppWindow,
@@ -112,7 +112,6 @@ const EmployeeSearchDropdown = ({
 
   return (
     <div ref={ref} className="relative">
-      <Label className="text-sm font-semibold text-foreground mb-2 block">Enter Employee Name</Label>
       <div className="relative flex items-center">
         <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
         <Input
@@ -256,7 +255,7 @@ export const ApplicationManagementPage = () => {
         }));
         setUsers(mapped);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   /* ── Request Access submit ── */
@@ -326,7 +325,7 @@ export const ApplicationManagementPage = () => {
 
   /* ─── Shared Application Selection Section ─── */
   const AppSelectionSection = ({
-    headerLabel,
+    // headerLabel,
     appValue,
     setApp,
     projectValue,
@@ -338,7 +337,7 @@ export const ApplicationManagementPage = () => {
     submitIcon,
     submitClass,
   }: {
-    headerLabel: string;
+    // headerLabel: string;
     appValue: string;
     setApp: (v: string) => void;
     projectValue: string;
@@ -353,10 +352,10 @@ export const ApplicationManagementPage = () => {
     <Card>
       <CardHeader className="pb-4">
         <CardTitle className="text-base flex items-center gap-2">
-          <div className="p-1.5 rounded-md bg-primary/10">
+          {/* <div className="p-1.5 rounded-md bg-primary/10">
             <AppWindow className="h-4 w-4 text-primary" />
-          </div>
-          {headerLabel}
+          </div> */}
+          {/* {headerLabel} */}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -422,8 +421,8 @@ export const ApplicationManagementPage = () => {
           <AppWindow className="h-6 w-6 text-primary" />
         </div>
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Application Management</h1>
-          <p className="text-muted-foreground">Request or remove application access for employees</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Manage Team Access</h1>
+          <p className="text-muted-foreground">Request or Remove application access for team members</p>
         </div>
       </motion.div>
 
@@ -447,7 +446,7 @@ export const ApplicationManagementPage = () => {
             <motion.div variants={itemVariants}>
               <div className="flex items-center gap-2 mb-3">
                 <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-600 text-white text-xs font-bold">1</span>
-                <span className="font-semibold text-foreground">Employee Selection</span>
+                <span className="font-semibold text-foreground">Enter Name of Team Member</span>
               </div>
               <div className="space-y-4">
                 <EmployeeSearchDropdown
@@ -465,10 +464,10 @@ export const ApplicationManagementPage = () => {
             <motion.div variants={itemVariants}>
               <div className="flex items-center gap-2 mb-3">
                 <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-600 text-white text-xs font-bold">2</span>
-                <span className="font-semibold text-foreground">Application Selection</span>
+                <span className="font-semibold text-foreground">Requested Application(s)</span>
               </div>
               <AppSelectionSection
-                headerLabel="Application(s) being requested"
+                // headerLabel="Application(s) being requested"
                 appValue={reqApp}
                 setApp={setReqApp}
                 projectValue={reqProject}
@@ -498,7 +497,7 @@ export const ApplicationManagementPage = () => {
             <motion.div variants={itemVariants}>
               <div className="flex items-center gap-2 mb-3">
                 <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-600 text-white text-xs font-bold">1</span>
-                <span className="font-semibold text-foreground">Employee Selection</span>
+                <span className="font-semibold text-foreground">Enter Name of Team Member</span>
               </div>
               <div className="space-y-4">
                 <EmployeeSearchDropdown
@@ -516,10 +515,10 @@ export const ApplicationManagementPage = () => {
             <motion.div variants={itemVariants}>
               <div className="flex items-center gap-2 mb-3">
                 <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-600 text-white text-xs font-bold">2</span>
-                <span className="font-semibold text-foreground">Application Selection</span>
+                <span className="font-semibold text-foreground">Removed Application(s)</span>
               </div>
               <AppSelectionSection
-                headerLabel="Application(s) being Removed"
+                // headerLabel="Application(s) being Removed"
                 appValue={remApp}
                 setApp={setRemApp}
                 projectValue={remProject}
@@ -555,11 +554,10 @@ export const ApplicationManagementPage = () => {
                         exit={{ opacity: 0 }}
                       >
                         <Card
-                          className={`relative transition-all duration-200 ${
-                            app.isEssential
-                              ? "opacity-70 cursor-not-allowed"
-                              : "hover:shadow-md cursor-pointer"
-                          }`}
+                          className={`relative transition-all duration-200 ${app.isEssential
+                            ? "opacity-70 cursor-not-allowed"
+                            : "hover:shadow-md cursor-pointer"
+                            }`}
                         >
                           <CardContent className="pt-5">
                             <div className="flex items-start justify-between mb-3">
@@ -624,7 +622,7 @@ export const ApplicationManagementPage = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmRequest}>Submit Request</AlertDialogAction>
+            <AlertDialogAction onClick={confirmRequest}>Submit</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

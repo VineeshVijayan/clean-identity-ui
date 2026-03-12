@@ -22,7 +22,7 @@ export const IDFAdministrationPage = () => {
         </div>
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-            IDF Administration
+            Connector Administration
           </h1>
           <p className="text-muted-foreground">
             Manage authentication sources and outbound connectors
@@ -35,11 +35,11 @@ export const IDFAdministrationPage = () => {
         <TabsList className="w-full sm:w-auto">
           <TabsTrigger value="auth-sources" className="gap-2">
             <LinkIcon className="h-4 w-4" />
-            Manage Auth Sources
+            Auth Sources
           </TabsTrigger>
           <TabsTrigger value="connectors" className="gap-2">
             <Database className="h-4 w-4" />
-            Outbound Connectors
+            Outbound
           </TabsTrigger>
         </TabsList>
 
