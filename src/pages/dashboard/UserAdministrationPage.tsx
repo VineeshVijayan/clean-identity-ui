@@ -171,15 +171,9 @@ export const UserAdministrationPage = () => {
                                 </TableCell>
 
                                 <TableCell>
-                                    <div className="flex items-center gap-2">
-                                        <Switch
-                                            checked={user.status === "Active"}
-                                            aria-label={`Toggle status for ${user.firstName}`}
-                                        />
-                                        <span className={`text-sm font-medium ${user.status === "Active" ? "text-green-500" : "text-red-500"}`}>
-                                            {user.status === "Active" ? "Enabled" : "Disabled"}
-                                        </span>
-                                    </div>
+                                    <span className="text-sm font-medium text-green-500">
+                                        Active
+                                    </span>
                                 </TableCell>
 
                                 <TableCell className="hidden sm:table-cell text-muted-foreground">
@@ -187,23 +181,29 @@ export const UserAdministrationPage = () => {
                                 </TableCell>
 
                                 <TableCell className="text-right">
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon">
-                                                <MoreVertical className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuItem>
-                                                <Edit className="h-4 w-4 mr-2" />
-                                                Edit
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem>
-                                                <KeyRound className="h-4 w-4 mr-2" />
-                                                Reset Password
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
+                                    <div className="flex items-center justify-end gap-2">
+                                        <Switch
+                                            checked={user.status === "Active"}
+                                            aria-label={`Toggle status for ${user.firstName}`}
+                                        />
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon">
+                                                    <MoreVertical className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuItem>
+                                                    <Edit className="h-4 w-4 mr-2" />
+                                                    Edit
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem>
+                                                    <KeyRound className="h-4 w-4 mr-2" />
+                                                    Reset Password
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </div>
                                 </TableCell>
                             </TableRow>
                         ))}
