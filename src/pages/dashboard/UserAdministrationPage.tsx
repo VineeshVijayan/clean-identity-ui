@@ -17,16 +17,16 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { motion } from "framer-motion";
+import { Switch } from "@/components/ui/switch";
 import {
     ChevronLeft,
     ChevronRight,
     Download,
     Edit,
-    Eye,
     Filter,
+    KeyRound,
     MoreVertical,
     Search,
-    Trash2,
     UserPlus,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -85,18 +85,6 @@ export const UserAdministrationPage = () => {
             user.email.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case "Active":
-                return "bg-green-500/10 text-green-500 border-green-500/20";
-            case "Inactive":
-                return "bg-red-500/10 text-red-500 border-red-500/20";
-            case "Pending":
-                return "bg-amber-500/10 text-amber-500 border-amber-500/20";
-            default:
-                return "bg-muted text-muted-foreground";
-        }
-    };
 
     return (
         <motion.div
@@ -150,10 +138,10 @@ export const UserAdministrationPage = () => {
             <div className="glass-card overflow-hidden">
                 <Table>
                     <TableHeader>
-                        <TableRow>
-                            <TableHead>First Name</TableHead>
-                            <TableHead>Last Name</TableHead>
+                    <TableRow>
+                            <TableHead>Name</TableHead>
                             <TableHead>Role</TableHead>
+                            <TableHead>Status</TableHead>
                             <TableHead className="hidden sm:table-cell">Email</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
@@ -172,14 +160,9 @@ export const UserAdministrationPage = () => {
                                                 {user.firstName.charAt(0)}
                                             </AvatarFallback>
                                         </Avatar>
-                                        <div>
-                                            <p className="font-medium">
-                                                {user.firstName} {user.lastName}
-                                            </p>
-                                            <p className="text-sm text-muted-foreground">
-                                                {user.email}
-                                            </p>
-                                        </div>
+                                        <p className="font-medium">
+                                            {user.firstName} {user.lastName}
+                                        </p>
                                     </div>
                                 </TableCell>
 
@@ -188,16 +171,19 @@ export const UserAdministrationPage = () => {
                                 </TableCell>
 
                                 <TableCell>
-                                    <Badge
-                                        variant="outline"
-                                        className={getStatusColor(user.status)}
-                                    >
-                                        {user.status}
-                                    </Badge>
+                                    <div className="flex items-center gap-2">
+                                        <Switch
+                                            checked={user.status === "Active"}
+                                            aria-label={`Toggle status for ${user.firstName}`}
+                                        />
+                                        <span className={`text-sm font-medium ${user.status === "Active" ? "text-green-500" : "text-red-500"}`}>
+                                            {user.status === "Active" ? "Enabled" : "Disabled"}
+                                        </span>
+                                    </div>
                                 </TableCell>
 
                                 <TableCell className="hidden sm:table-cell text-muted-foreground">
-                                    {user.lastLogin}
+                                    {user.email}
                                 </TableCell>
 
                                 <TableCell className="text-right">
@@ -209,16 +195,12 @@ export const UserAdministrationPage = () => {
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuItem>
-                                                <Eye className="h-4 w-4 mr-2" />
-                                                View
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem>
                                                 <Edit className="h-4 w-4 mr-2" />
                                                 Edit
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem className="text-destructive">
-                                                <Trash2 className="h-4 w-4 mr-2" />
-                                                Delete
+                                            <DropdownMenuItem>
+                                                <KeyRound className="h-4 w-4 mr-2" />
+                                                Reset Password
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
