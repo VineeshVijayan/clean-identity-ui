@@ -150,10 +150,10 @@ export const UserAdministrationPage = () => {
             <div className="glass-card overflow-hidden">
                 <Table>
                     <TableHeader>
-                        <TableRow>
-                            <TableHead>First Name</TableHead>
-                            <TableHead>Last Name</TableHead>
+                    <TableRow>
+                            <TableHead>Name</TableHead>
                             <TableHead>Role</TableHead>
+                            <TableHead>Status</TableHead>
                             <TableHead className="hidden sm:table-cell">Email</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
