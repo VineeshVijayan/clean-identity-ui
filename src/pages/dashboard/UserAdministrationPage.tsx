@@ -17,16 +17,16 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { motion } from "framer-motion";
+import { Switch } from "@/components/ui/switch";
 import {
     ChevronLeft,
     ChevronRight,
     Download,
     Edit,
-    Eye,
     Filter,
+    KeyRound,
     MoreVertical,
     Search,
-    Trash2,
     UserPlus,
 } from "lucide-react";
 import { useEffect, useState } from "react";
