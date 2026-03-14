@@ -119,9 +119,10 @@ const UserTable = ({
               <TableRow key={user.id}>
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-9 w-9">
-                      <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`} />
-                      <AvatarFallback>{user.firstName.charAt(0)}</AvatarFallback>
+                    <Avatar className="h-9 w-9 bg-primary/20">
+                      <AvatarFallback className="bg-primary/20 text-primary font-semibold">
+                        {user.firstName.charAt(0)}{user.lastName ? user.lastName.charAt(0) : ''}
+                      </AvatarFallback>
                     </Avatar>
                     <p className="font-medium">{user.firstName}</p>
                   </div>
