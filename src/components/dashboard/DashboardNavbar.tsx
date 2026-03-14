@@ -63,13 +63,11 @@ export const DashboardNavbar = ({ user, onMenuClick, onLogout }: DashboardNavbar
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-              <Avatar className="h-9 w-9">
-                <AvatarImage
-                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email || 'user'}`}
-                  alt={user?.name || "User"}
-                />
-                <AvatarFallback>
-                  {user?.name?.charAt(0).toUpperCase() || "U"}
+              <Avatar className="h-9 w-9 bg-primary/20">
+                <AvatarFallback className="bg-primary/20 text-primary font-semibold">
+                  {user?.name
+                    ? user.name.split(" ").map(n => n.charAt(0).toUpperCase()).join("")
+                    : "U"}
                 </AvatarFallback>
               </Avatar>
             </Button>
