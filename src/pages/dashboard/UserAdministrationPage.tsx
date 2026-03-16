@@ -190,7 +190,7 @@ export const UserAdministrationPage = () => {
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                                <DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => navigate("/edit-profile", { state: { user } })}>
                                                     <Edit className="h-4 w-4 mr-2" />
                                                     Edit
                                                 </DropdownMenuItem>

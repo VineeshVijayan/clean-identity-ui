@@ -1,84 +1,73 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { ArrowLeft, Key, Save, Shield } from "lucide-react";
+import { ArrowLeft, CheckCircle2, FolderOpen, Save, Shield, ShieldAlert, X } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-// Permission categories and their permissions
-const permissionCategories = [
-  // {
-  //   category: "User Management",
-  //   icon: Users,
-  //   permissions: [
-  //     { id: "user_view", name: "View Users", description: "Can view user list and details" },
-  //     { id: "user_create", name: "Create Users", description: "Can Create New Team Member" },
-  //     { id: "user_edit", name: "Edit Users", description: "Can edit user information" },
-  //     { id: "user_delete", name: "Delete Users", description: "Can delete users" },
-  //     { id: "user_export", name: "Export Users", description: "Can export user data" },
-  //   ],
-  // },
-  // {
-  //   category: "Role Management",
-  //   icon: Shield,
-  //   permissions: [
-  //     { id: "role_view", name: "View Roles", description: "Can view role list and details" },
-  //     { id: "role_create", name: "Create Roles", description: "Can create new roles" },
-  //     { id: "role_edit", name: "Edit Roles", description: "Can edit role permissions" },
-  //     { id: "role_delete", name: "Delete Roles", description: "Can delete roles" },
-  //     { id: "role_assign", name: "Assign Roles", description: "Can assign roles to users" },
-  //   ],
-  // },
-  // {
-  //   category: "Application Access",
-  //   icon: Key,
-  //   permissions: [
-  //     { id: "app_view", name: "View Applications", description: "Can view applications" },
-  //     { id: "app_request", name: "Request Access", description: "Can request application access" },
-  //     { id: "app_approve", name: "Approve Requests", description: "Can approve access requests" },
-  //     { id: "app_revoke", name: "Revoke Access", description: "Can revoke application access" },
-  //     { id: "app_manage", name: "Manage Applications", description: "Full application management" },
-  //   ],
-  // },
+// Mock applications data
+const availableApplications = [
+  { id: "salesforce", name: "Salesforce CRM", category: "CRM", icon: "💼" },
+  { id: "jira", name: "Jira", category: "Project Management", icon: "📋" },
+  { id: "slack", name: "Slack Enterprise", category: "Communication", icon: "💬" },
+  { id: "tableau", name: "Tableau", category: "Analytics", icon: "📊" },
+  { id: "github", name: "GitHub Enterprise", category: "Development", icon: "🐙" },
+  { id: "confluence", name: "Confluence", category: "Documentation", icon: "📝" },
+  { id: "okta", name: "Okta", category: "Identity", icon: "🔐" },
+  { id: "zoom", name: "Zoom", category: "Communication", icon: "📹" },
 ];
+
+type BlueprintApp = {
+  id: string;
+  name: string;
+  category: string;
+  icon: string;
+  accessLevel: string;
+  grantedDate: string;
+  essential: boolean;
+};
 
 export const NewRolePage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [roleName, setRoleName] = useState("");
   const [roleDescription, setRoleDescription] = useState("");
-  const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+  const [selectedAppId, setSelectedAppId] = useState("");
+  const [blueprintApps, setBlueprintApps] = useState<BlueprintApp[]>([
+    { id: "salesforce", name: "Salesforce CRM", category: "CRM", icon: "💼", accessLevel: "Full Access", grantedDate: "2023-06-15", essential: false },
+    { id: "jira", name: "Jira", category: "Project Management", icon: "📋", accessLevel: "Standard", grantedDate: "2023-08-20", essential: true },
+    { id: "slack", name: "Slack Enterprise", category: "Communication", icon: "💬", accessLevel: "Full Access", grantedDate: "2023-01-10", essential: true },
+    { id: "tableau", name: "Tableau", category: "Analytics", icon: "📊", accessLevel: "Read Only", grantedDate: "2023-11-05", essential: false },
+    { id: "github", name: "GitHub Enterprise", category: "Development", icon: "🐙", accessLevel: "Contributor", grantedDate: "2023-03-22", essential: true },
+    { id: "confluence", name: "Confluence", category: "Documentation", icon: "📝", accessLevel: "Standard", grantedDate: "2023-04-18", essential: false },
+  ]);
 
-  const handlePermissionToggle = (permissionId: string) => {
-    setSelectedPermissions((prev) =>
-      prev.includes(permissionId)
-        ? prev.filter((id) => id !== permissionId)
-        : [...prev, permissionId]
-    );
+  const handleAddApp = () => {
+    if (!selectedAppId) return;
+    const app = availableApplications.find((a) => a.id === selectedAppId);
+    if (!app || blueprintApps.find((a) => a.id === app.id)) return;
+    setBlueprintApps((prev) => [
+      ...prev,
+      {
+        ...app,
+        accessLevel: "Standard",
+        grantedDate: new Date().toISOString().split("T")[0],
+        essential: false,
+      },
+    ]);
+    setSelectedAppId("");
   };
 
-  const handleCategoryToggle = (categoryPermissions: { id: string }[]) => {
-    const allSelected = categoryPermissions.every((p) =>
-      selectedPermissions.includes(p.id)
-    );
-
-    if (allSelected) {
-      setSelectedPermissions((prev) =>
-        prev.filter((id) => !categoryPermissions.map((p) => p.id).includes(id))
-      );
-    } else {
-      setSelectedPermissions((prev) => [
-        ...prev,
-        ...categoryPermissions.map((p) => p.id).filter((id) => !prev.includes(id)),
-      ]);
-    }
+  const handleRemoveApp = (id: string) => {
+    const app = blueprintApps.find((a) => a.id === id);
+    if (app?.essential) return;
+    setBlueprintApps((prev) => prev.filter((a) => a.id !== id));
   };
 
   const handleSaveRole = () => {
@@ -91,10 +80,10 @@ export const NewRolePage = () => {
       return;
     }
 
-    if (selectedPermissions.length === 0) {
+    if (blueprintApps.length === 0) {
       toast({
         title: "Error",
-        description: "At least one permission must be selected",
+        description: "At least one application must be added",
         variant: "destructive",
       });
       return;
@@ -102,7 +91,7 @@ export const NewRolePage = () => {
 
     toast({
       title: "Role Created",
-      description: `Role "${roleName}" has been created with ${selectedPermissions.length} permissions.`,
+      description: `Role "${roleName}" has been created with ${blueprintApps.length} applications.`,
     });
 
     navigate("/roles/manage");
@@ -153,7 +142,7 @@ export const NewRolePage = () => {
             <div className="space-y-2">
               <Label>HR Job Role</Label>
               <div className="h-10 px-3 rounded-lg border bg-muted/50 flex items-center">
-                <Badge variant="secondary">{selectedPermissions.length} permissions</Badge>
+                <Badge variant="secondary">{blueprintApps.length} applications</Badge>
               </div>
             </div>
           </div>
@@ -170,80 +159,113 @@ export const NewRolePage = () => {
         </CardContent>
       </Card>
 
-      {/* Permissions */}
+      {/* Add Applications */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Key className="h-5 w-5 text-primary" />
-            Permissions
+            <FolderOpen className="h-5 w-5 text-primary" />
+            Add Applications
           </CardTitle>
-          <CardDescription>Select the permissions for this role</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {permissionCategories.map((category, index) => {
-            const CategoryIcon = category.icon;
-            const allSelected = category.permissions.every((p) =>
-              selectedPermissions.includes(p.id)
-            );
-            const someSelected = category.permissions.some((p) =>
-              selectedPermissions.includes(p.id)
-            );
-
-            return (
-              <div key={category.category}>
-                {index > 0 && <Separator className="mb-6" />}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-primary/10">
-                        <CategoryIcon className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold">{category.category}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          {category.permissions.filter((p) =>
-                            selectedPermissions.includes(p.id)
-                          ).length}{" "}
-                          of {category.permissions.length} selected
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      variant={allSelected ? "secondary" : "outline"}
-                      size="sm"
-                      onClick={() => handleCategoryToggle(category.permissions)}
-                    >
-                      {allSelected ? "Deselect All" : "Select All"}
-                    </Button>
-                  </div>
-
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 pl-11">
-                    {category.permissions.map((permission) => (
-                      <label
-                        key={permission.id}
-                        className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${selectedPermissions.includes(permission.id)
-                          ? "bg-primary/5 border-primary/30"
-                          : "hover:bg-muted/50"
-                          }`}
-                      >
-                        <Checkbox
-                          checked={selectedPermissions.includes(permission.id)}
-                          onCheckedChange={() => handlePermissionToggle(permission.id)}
-                          className="mt-0.5"
-                        />
-                        <div>
-                          <p className="font-medium text-sm">{permission.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {permission.description}
-                          </p>
-                        </div>
-                      </label>
+        <CardContent>
+          <div className="space-y-2">
+            <Label>Select Application</Label>
+            <div className="flex gap-2">
+              <Select value={selectedAppId} onValueChange={setSelectedAppId}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Choose an application..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableApplications
+                    .filter((app) => !blueprintApps.find((a) => a.id === app.id))
+                    .map((app) => (
+                      <SelectItem key={app.id} value={app.id}>
+                        <span className="flex items-center gap-2">
+                          <span>{app.icon}</span>
+                          <span>{app.name}</span>
+                          <span className="text-muted-foreground text-xs">— {app.category}</span>
+                        </span>
+                      </SelectItem>
                     ))}
+                </SelectContent>
+              </Select>
+              <Button onClick={handleAddApp} disabled={!selectedAppId}>
+                Add
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Blueprint Application List */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FolderOpen className="h-5 w-5 text-primary" />
+            Blueprint Application List
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {blueprintApps.map((app) => (
+              <div
+                key={app.id}
+                className="relative rounded-xl border border-border bg-card p-5 space-y-3 transition-shadow hover:shadow-md"
+              >
+                {/* Remove button */}
+                <div className="absolute top-3 right-3">
+                  {app.essential ? (
+                    <ShieldAlert className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <button
+                      onClick={() => handleRemoveApp(app.id)}
+                      className="text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+
+                {/* App info */}
+                <div className="flex items-center gap-3">
+                  <div className="text-2xl">{app.icon}</div>
+                  <div>
+                    <p className="font-semibold text-sm">{app.name}</p>
+                    <p className="text-xs text-muted-foreground">{app.category}</p>
                   </div>
                 </div>
+
+                {/* Details */}
+                <div className="space-y-1.5 text-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Access Level:</span>
+                    <Badge variant="outline" className="text-xs font-medium">
+                      {app.accessLevel}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground">Granted:</span>
+                    <span className="text-xs">{app.grantedDate}</span>
+                  </div>
+                </div>
+
+                {/* Status */}
+                <div className="pt-1">
+                  {app.essential ? (
+                    <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground border border-border rounded-full py-1.5 px-3">
+                      <ShieldAlert className="h-3.5 w-3.5" />
+                      Essential — Cannot Remove
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-1.5 text-xs text-green-600 border border-green-200 bg-green-50 rounded-full py-1.5 px-3">
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      Active Access
+                    </div>
+                  )}
+                </div>
               </div>
-            );
-          })}
+            ))}
+          </div>
         </CardContent>
       </Card>
 

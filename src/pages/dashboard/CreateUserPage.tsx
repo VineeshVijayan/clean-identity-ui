@@ -5,6 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CountryCodeSelect } from "@/components/ui/country-code-select";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { ArrowLeft, Camera, Save, Upload, User } from "lucide-react";
@@ -22,6 +23,7 @@ export const CreateUserPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
+  const [countryCode, setCountryCode] = useState("US:+1");
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -316,14 +318,19 @@ export const CreateUserPage = () => {
 
               </div>
 
-              <InputField
-                label="Phone Number"
-                type="tel"
-                value={formData.phone}
-                onChange={(v: string) =>
-                  setFormData({ ...formData, phone: v })
-                }
-              />
+              <div className="space-y-1.5">
+                <Label>Phone Number</Label>
+                <div className="flex gap-2">
+                  <CountryCodeSelect value={countryCode} onChange={setCountryCode} />
+                  <Input
+                    value={formData.phone}
+                    type="tel"
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="(555) 000-0000"
+                    className="flex-1"
+                  />
+                </div>
+              </div>
 
               {/* Roles */}
 

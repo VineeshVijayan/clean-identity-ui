@@ -5,14 +5,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
+import { CountryCodeSelect } from "@/components/ui/country-code-select";
 import { ArrowLeft, Camera, Save, Trash2, Upload, User } from "lucide-react";
-import { useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export const EditProfilePage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Check if user data was passed via navigation state (from Edit action)
+  const editUser = location.state?.user;
 
   // Try to pre-fill from localStorage
   const storedUser = (() => {
@@ -25,14 +30,15 @@ export const EditProfilePage = () => {
 
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [countryCode, setCountryCode] = useState("US:+1");
 
   const [form, setForm] = useState({
-    employeeId: storedUser.employeeId || "",
-    firstName: storedUser.firstName || storedUser.name?.split(" ")[0] || "",
-    lastName: storedUser.lastName || storedUser.name?.split(" ")[1] || "",
-    phone: "",
-    dob: "",
-    ssn: "",
+    employeeId: editUser?.employeeId || storedUser.employeeId || "",
+    firstName: editUser?.firstName || storedUser.firstName || storedUser.name?.split(" ")[0] || "",
+    lastName: editUser?.lastName || storedUser.lastName || storedUser.name?.split(" ")[1] || "",
+    phone: editUser?.phone || "",
+    dob: editUser?.dob || "",
+    ssn: editUser?.ssn || "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -119,8 +125,12 @@ export const EditProfilePage = () => {
             <User className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Edit Profile</h1>
-            <p className="text-muted-foreground text-sm">Update your personal information</p>
+            <h1 className="text-2xl font-bold text-foreground">
+              {editUser ? `Edit User — ${editUser.firstName} ${editUser.lastName}` : "Edit Profile"}
+            </h1>
+            <p className="text-muted-foreground text-sm">
+              {editUser ? "Update this user's information" : "Update your personal information"}
+            </p>
           </div>
         </div>
       </motion.div>
@@ -245,14 +255,17 @@ export const EditProfilePage = () => {
                 <Label htmlFor="phone">
                   Phone Number <span className="text-destructive">*</span>
                 </Label>
-                <Input
-                  id="phone"
-                  value={form.phone}
-                  onChange={(e) => set("phone", e.target.value)}
-                  placeholder="+1 (555) 000-0000"
-                  type="tel"
-                  className={errors.phone ? "border-destructive focus:ring-destructive/30" : ""}
-                />
+                <div className="flex gap-2">
+                  <CountryCodeSelect value={countryCode} onChange={setCountryCode} />
+                  <Input
+                    id="phone"
+                    value={form.phone}
+                    onChange={(e) => set("phone", e.target.value)}
+                    placeholder="(555) 000-0000"
+                    type="tel"
+                    className={`flex-1 ${errors.phone ? "border-destructive focus:ring-destructive/30" : ""}`}
+                  />
+                </div>
                 {errors.phone && <p className="text-xs text-destructive">{errors.phone}</p>}
               </div>
 
