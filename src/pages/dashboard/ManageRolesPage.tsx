@@ -11,40 +11,21 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import {
-  Copy,
-  Edit,
-  Eye,
-  MoreHorizontal,
+  CheckCircle2,
+  FolderOpen,
   Plus,
-  Search,
-  Shield,
-  Trash2,
-  Users,
+  ShieldAlert,
+  User,
+  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -62,12 +43,41 @@ type Role = {
   lastModified: string;
 };
 
+// Mock applications for the blueprint
+const mockBlueprintApps = [
+  { id: "salesforce", name: "Salesforce CRM", category: "CRM", icon: "💼", accessLevel: "Full Access", grantedDate: "2023-06-15", essential: false },
+  { id: "jira", name: "Jira", category: "Project Management", icon: "📋", accessLevel: "Standard", grantedDate: "2023-08-20", essential: true },
+  { id: "slack", name: "Slack Enterprise", category: "Communication", icon: "💬", accessLevel: "Full Access", grantedDate: "2025-01-10", essential: true },
+  { id: "tableau", name: "Tableau", category: "Analytics", icon: "📊", accessLevel: "Read Only", grantedDate: "2025-11-05", essential: false },
+  { id: "github", name: "GitHub Enterprise", category: "Development", icon: "🐙", accessLevel: "Contributor", grantedDate: "2023-03-22", essential: true },
+  { id: "confluence", name: "Confluence", category: "Documentation", icon: "📝", accessLevel: "Standard", grantedDate: "2023-04-18", essential: false },
+];
+
+const availableAppsToAdd = [
+  { id: "okta", name: "Okta", category: "Identity", icon: "🔐" },
+  { id: "zoom", name: "Zoom", category: "Communication", icon: "📹" },
+  { id: "teams", name: "Microsoft Teams", category: "Communication", icon: "💜" },
+  { id: "aws", name: "AWS Console", category: "Cloud", icon: "☁️" },
+];
+
+type BlueprintApp = {
+  id: string;
+  name: string;
+  category: string;
+  icon: string;
+  accessLevel: string;
+  grantedDate: string;
+  essential: boolean;
+};
+
 export const ManageRolesPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const [roles, setRoles] = useState<Role[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedBlueprintId, setSelectedBlueprintId] = useState("");
+  const [selectedAppToAdd, setSelectedAppToAdd] = useState("");
+  const [blueprintApps, setBlueprintApps] = useState<BlueprintApp[]>(mockBlueprintApps);
   const [deleteRoleId, setDeleteRoleId] = useState<number | null>(null);
 
   /* ================= FETCH ROLES ================= */
@@ -115,13 +125,6 @@ export const ManageRolesPage = () => {
     fetchRoles();
   }, [toast]);
 
-  /* ================= FILTER ================= */
-  const filteredRoles = roles.filter(
-    (role) =>
-      role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      role.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   /* ================= DELETE ================= */
   const handleDeleteRole = async () => {
     if (!deleteRoleId) return;
@@ -155,33 +158,33 @@ export const ManageRolesPage = () => {
     }
   };
 
-  /* ================= DUPLICATE (UI ONLY) ================= */
-  const handleDuplicateRole = (role: Role) => {
-    toast({
-      title: "Role Duplicated",
-      description: `A copy of "${role.name}" has been created.`,
-    });
+  const handleAddApp = () => {
+    if (!selectedAppToAdd) return;
+    const app = availableAppsToAdd.find((a) => a.id === selectedAppToAdd);
+    if (!app || blueprintApps.find((a) => a.id === app.id)) return;
+    setBlueprintApps((prev) => [
+      ...prev,
+      {
+        ...app,
+        accessLevel: "Standard",
+        grantedDate: new Date().toISOString().split("T")[0],
+        essential: false,
+      },
+    ]);
+    setSelectedAppToAdd("");
   };
 
-  const getRoleTypeBadge = (type: string) => {
-    if (type === "system") {
-      return (
-        <Badge
-          variant="outline"
-          className="bg-primary/10 text-primary border-primary/30"
-        >
-          System
-        </Badge>
-      );
-    }
-    return (
-      <Badge
-        variant="outline"
-        className="bg-success/10 text-success border-success/30"
-      >
-        Custom
-      </Badge>
-    );
+  const handleRemoveApp = (id: string) => {
+    const app = blueprintApps.find((a) => a.id === id);
+    if (app?.essential) return;
+    setBlueprintApps((prev) => prev.filter((a) => a.id !== id));
+  };
+
+  const handleUpdateBlueprint = () => {
+    toast({
+      title: "Blueprint Updated",
+      description: `Blueprint has been updated with ${blueprintApps.length} applications.`,
+    });
   };
 
   return (
@@ -199,181 +202,175 @@ export const ManageRolesPage = () => {
             View and edit existing Blueprints
           </p>
         </div>
-        <Button onClick={() => navigate("/roles/new")} className="gap-2">
+        <Button
+          onClick={() => navigate("/roles/new")}
+          className="gap-2 bg-amber-600 text-white hover:bg-amber-700"
+        >
           <Plus className="h-4 w-4" />
-          Create Role
+          New Blueprint
         </Button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-primary/10">
-                <Shield className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Roles</p>
-                <p className="text-2xl font-bold">{roles.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-warning/10">
-                <Shield className="h-6 w-6 text-warning" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">System Roles</p>
-                <p className="text-2xl font-bold">
-                  {roles.filter((r) => r.type === "system").length}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-lg bg-success/10">
-                <Users className="h-6 w-6 text-success" />
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">
-                  Users with Roles
-                </p>
-                <p className="text-2xl font-bold">
-                  {roles.reduce((sum, r) => sum + r.userCount, 0)}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Step 1: Select Blueprint */}
+      <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+        <div className="flex items-center gap-3">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-600 text-white text-sm font-bold">
+            1
+          </span>
+          <h2 className="text-lg font-semibold">Select Blueprint</h2>
+        </div>
+        <div className="relative">
+          <Select value={selectedBlueprintId} onValueChange={setSelectedBlueprintId}>
+            <SelectTrigger className="w-full h-12 pl-10">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <SelectValue placeholder="Choose an application..." />
+            </SelectTrigger>
+            <SelectContent>
+              {roles.length > 0 ? (
+                roles.map((role) => (
+                  <SelectItem key={role.id} value={String(role.id)}>
+                    {role.name}
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="default-blueprint" >
+                  Default Blueprint
+                </SelectItem>
+              )}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      {/* Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>All Roles</CardTitle>
-          <CardDescription>
-            Manage permissions and access control for your organization
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="role-search"
-                name="roleSearch"
-                placeholder="Search roles..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-                autoComplete="off"
-              />
+      {/* Blueprint Application List - Step 2 */}
+      <div className="space-y-2">
+        <h2 className="text-lg font-semibold">Blueprint Application List</h2>
+        <div className="rounded-xl border border-border bg-card p-6 space-y-4">
+          <div className="flex items-center gap-3">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-600 text-white text-sm font-bold">
+              2
+            </span>
+            <h3 className="text-lg font-semibold">Add Application(s)</h3>
+          </div>
+          <div className="relative">
+            <Select value={selectedAppToAdd} onValueChange={(val) => {
+              setSelectedAppToAdd(val);
+              // Auto-add on select
+              const app = availableAppsToAdd.find((a) => a.id === val);
+              if (app && !blueprintApps.find((a) => a.id === app.id)) {
+                setBlueprintApps((prev) => [
+                  ...prev,
+                  {
+                    ...app,
+                    accessLevel: "Standard",
+                    grantedDate: new Date().toISOString().split("T")[0],
+                    essential: false,
+                  },
+                ]);
+                setSelectedAppToAdd("");
+              }
+            }}>
+              <SelectTrigger className="w-full h-12 pl-10">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <SelectValue placeholder="Choose an application(s) to add to Blueprint..." />
+              </SelectTrigger>
+              <SelectContent>
+                {availableAppsToAdd
+                  .filter((app) => !blueprintApps.find((a) => a.id === app.id))
+                  .map((app) => (
+                    <SelectItem key={app.id} value={app.id}>
+                      <span className="flex items-center gap-2">
+                        <span>{app.icon}</span>
+                        <span>{app.name}</span>
+                        <span className="text-muted-foreground text-xs">— {app.category}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
+      {/* My Current Applications */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <FolderOpen className="h-5 w-5 text-muted-foreground" />
+          <h2 className="text-lg font-semibold">My Current Applications</h2>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {blueprintApps.map((app) => (
+            <div
+              key={app.id}
+              className="relative rounded-xl border border-border bg-card p-5 space-y-3 transition-shadow hover:shadow-md"
+            >
+              {/* Remove / Essential icon */}
+              <div className="absolute top-3 right-3">
+                {app.essential ? (
+                  <ShieldAlert className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <button
+                    onClick={() => handleRemoveApp(app.id)}
+                    className="text-muted-foreground hover:text-destructive transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* App info */}
+              <div className="flex items-center gap-3">
+                <div className="text-2xl">{app.icon}</div>
+                <div>
+                  <p className="font-semibold text-sm">{app.name}</p>
+                  <p className="text-xs text-muted-foreground">{app.category}</p>
+                </div>
+              </div>
+
+              {/* Details */}
+              <div className="space-y-1.5 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Access Level:</span>
+                  <Badge variant="outline" className="text-xs font-medium">
+                    {app.accessLevel}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Granted:</span>
+                  <span className="text-xs">{app.grantedDate}</span>
+                </div>
+              </div>
+
+              {/* Status */}
+              <div className="pt-1">
+                {app.essential ? (
+                  <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground border border-border rounded-full py-1.5 px-3">
+                    <ShieldAlert className="h-3.5 w-3.5" />
+                    Essential — Cannot Remove
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-1.5 text-xs text-green-600 border border-green-200 bg-green-50 rounded-full py-1.5 px-3">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    Active Access
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          ))}
+        </div>
+      </div>
 
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Role Name</TableHead>
-                  <TableHead className="hidden md:table-cell">
-                    Description
-                  </TableHead>
-                  <TableHead className="hidden sm:table-cell">
-                    Type
-                  </TableHead>
-                  <TableHead className="hidden lg:table-cell">
-                    Users
-                  </TableHead>
-                  <TableHead className="hidden lg:table-cell">
-                    Permissions
-                  </TableHead>
-                  <TableHead className="hidden xl:table-cell">
-                    Last Modified
-                  </TableHead>
-                  <TableHead className="w-12"></TableHead>
-                </TableRow>
-              </TableHeader>
-
-              <TableBody>
-                {filteredRoles.map((role) => (
-                  <TableRow key={role.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Shield className="h-4 w-4 text-primary" />
-                        <span className="font-medium">{role.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {role.description}
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      {getRoleTypeBadge(role.type)}
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      <Badge variant="secondary">
-                        {role.userCount} users
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      <Badge variant="outline">
-                        {role.permissionCount}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden xl:table-cell text-muted-foreground">
-                      {role.lastModified}
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem className="gap-2">
-                            <Eye className="h-4 w-4" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="gap-2">
-                            <Edit className="h-4 w-4" />
-                            Edit Role
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="gap-2"
-                            onClick={() => handleDuplicateRole(role)}
-                          >
-                            <Copy className="h-4 w-4" />
-                            Duplicate
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="gap-2 text-destructive"
-                            onClick={() => setDeleteRoleId(role.id)}
-                            disabled={role.type === "system"}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            Delete Role
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Update Blueprint Button */}
+      <div className="flex justify-end">
+        <Button
+          onClick={handleUpdateBlueprint}
+          className="gap-2 bg-amber-600 text-white hover:bg-amber-700"
+        >
+          <Plus className="h-4 w-4" />
+          Update Blueprint
+        </Button>
+      </div>
 
       {/* Delete Dialog */}
       <AlertDialog
