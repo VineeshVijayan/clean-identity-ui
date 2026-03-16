@@ -23,6 +23,7 @@ export const CreateUserPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
+  const [countryCode, setCountryCode] = useState("US:+1");
 
   const [formData, setFormData] = useState({
     firstName: "",
