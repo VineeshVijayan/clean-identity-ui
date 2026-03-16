@@ -145,7 +145,7 @@ const UserTable = ({
                       <DropdownMenuItem>
                         <Eye className="h-4 w-4 mr-2" /> View
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/edit-profile", { state: { user } })}>
                         <Edit className="h-4 w-4 mr-2" /> Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem className="text-destructive">
