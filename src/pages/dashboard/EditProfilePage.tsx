@@ -255,14 +255,17 @@ export const EditProfilePage = () => {
                 <Label htmlFor="phone">
                   Phone Number <span className="text-destructive">*</span>
                 </Label>
-                <Input
-                  id="phone"
-                  value={form.phone}
-                  onChange={(e) => set("phone", e.target.value)}
-                  placeholder="+1 (555) 000-0000"
-                  type="tel"
-                  className={errors.phone ? "border-destructive focus:ring-destructive/30" : ""}
-                />
+                <div className="flex gap-2">
+                  <CountryCodeSelect value={countryCode} onChange={setCountryCode} />
+                  <Input
+                    id="phone"
+                    value={form.phone}
+                    onChange={(e) => set("phone", e.target.value)}
+                    placeholder="(555) 000-0000"
+                    type="tel"
+                    className={`flex-1 ${errors.phone ? "border-destructive focus:ring-destructive/30" : ""}`}
+                  />
+                </div>
                 {errors.phone && <p className="text-xs text-destructive">{errors.phone}</p>}
               </div>
 
