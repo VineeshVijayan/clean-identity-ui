@@ -12,8 +12,12 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 export const EditProfilePage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Check if user data was passed via navigation state (from Edit action)
+  const editUser = location.state?.user;
 
   // Try to pre-fill from localStorage
   const storedUser = (() => {
@@ -26,14 +30,15 @@ export const EditProfilePage = () => {
 
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [countryCode, setCountryCode] = useState("US:+1");
 
   const [form, setForm] = useState({
-    employeeId: storedUser.employeeId || "",
-    firstName: storedUser.firstName || storedUser.name?.split(" ")[0] || "",
-    lastName: storedUser.lastName || storedUser.name?.split(" ")[1] || "",
-    phone: "",
-    dob: "",
-    ssn: "",
+    employeeId: editUser?.employeeId || storedUser.employeeId || "",
+    firstName: editUser?.firstName || storedUser.firstName || storedUser.name?.split(" ")[0] || "",
+    lastName: editUser?.lastName || storedUser.lastName || storedUser.name?.split(" ")[1] || "",
+    phone: editUser?.phone || "",
+    dob: editUser?.dob || "",
+    ssn: editUser?.ssn || "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
