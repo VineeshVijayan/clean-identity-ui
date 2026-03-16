@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
+import { CountryCodeSelect } from "@/components/ui/country-code-select";
 import { ArrowLeft, Camera, Save, Trash2, Upload, User } from "lucide-react";
-import { useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export const EditProfilePage = () => {
   const navigate = useNavigate();
