@@ -318,14 +318,19 @@ export const CreateUserPage = () => {
 
               </div>
 
-              <InputField
-                label="Phone Number"
-                type="tel"
-                value={formData.phone}
-                onChange={(v: string) =>
-                  setFormData({ ...formData, phone: v })
-                }
-              />
+              <div className="space-y-1.5">
+                <Label>Phone Number</Label>
+                <div className="flex gap-2">
+                  <CountryCodeSelect value={countryCode} onChange={setCountryCode} />
+                  <Input
+                    value={formData.phone}
+                    type="tel"
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="(555) 000-0000"
+                    className="flex-1"
+                  />
+                </div>
+              </div>
 
               {/* Roles */}
 
