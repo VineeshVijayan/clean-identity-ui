@@ -8,45 +8,45 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { ArrowLeft, Key, Save, Shield, Users } from "lucide-react";
+import { ArrowLeft, Key, Save, Shield } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 // Permission categories and their permissions
 const permissionCategories = [
-  {
-    category: "User Management",
-    icon: Users,
-    permissions: [
-      { id: "user_view", name: "View Users", description: "Can view user list and details" },
-      { id: "user_create", name: "Create Users", description: "Can create new users" },
-      { id: "user_edit", name: "Edit Users", description: "Can edit user information" },
-      { id: "user_delete", name: "Delete Users", description: "Can delete users" },
-      { id: "user_export", name: "Export Users", description: "Can export user data" },
-    ],
-  },
-  {
-    category: "Role Management",
-    icon: Shield,
-    permissions: [
-      { id: "role_view", name: "View Roles", description: "Can view role list and details" },
-      { id: "role_create", name: "Create Roles", description: "Can create new roles" },
-      { id: "role_edit", name: "Edit Roles", description: "Can edit role permissions" },
-      { id: "role_delete", name: "Delete Roles", description: "Can delete roles" },
-      { id: "role_assign", name: "Assign Roles", description: "Can assign roles to users" },
-    ],
-  },
-  {
-    category: "Application Access",
-    icon: Key,
-    permissions: [
-      { id: "app_view", name: "View Applications", description: "Can view applications" },
-      { id: "app_request", name: "Request Access", description: "Can request application access" },
-      { id: "app_approve", name: "Approve Requests", description: "Can approve access requests" },
-      { id: "app_revoke", name: "Revoke Access", description: "Can revoke application access" },
-      { id: "app_manage", name: "Manage Applications", description: "Full application management" },
-    ],
-  },
+  // {
+  //   category: "User Management",
+  //   icon: Users,
+  //   permissions: [
+  //     { id: "user_view", name: "View Users", description: "Can view user list and details" },
+  //     { id: "user_create", name: "Create Users", description: "Can Create New Team Member" },
+  //     { id: "user_edit", name: "Edit Users", description: "Can edit user information" },
+  //     { id: "user_delete", name: "Delete Users", description: "Can delete users" },
+  //     { id: "user_export", name: "Export Users", description: "Can export user data" },
+  //   ],
+  // },
+  // {
+  //   category: "Role Management",
+  //   icon: Shield,
+  //   permissions: [
+  //     { id: "role_view", name: "View Roles", description: "Can view role list and details" },
+  //     { id: "role_create", name: "Create Roles", description: "Can create new roles" },
+  //     { id: "role_edit", name: "Edit Roles", description: "Can edit role permissions" },
+  //     { id: "role_delete", name: "Delete Roles", description: "Can delete roles" },
+  //     { id: "role_assign", name: "Assign Roles", description: "Can assign roles to users" },
+  //   ],
+  // },
+  // {
+  //   category: "Application Access",
+  //   icon: Key,
+  //   permissions: [
+  //     { id: "app_view", name: "View Applications", description: "Can view applications" },
+  //     { id: "app_request", name: "Request Access", description: "Can request application access" },
+  //     { id: "app_approve", name: "Approve Requests", description: "Can approve access requests" },
+  //     { id: "app_revoke", name: "Revoke Access", description: "Can revoke application access" },
+  //     { id: "app_manage", name: "Manage Applications", description: "Full application management" },
+  //   ],
+  // },
 ];
 
 export const NewRolePage = () => {

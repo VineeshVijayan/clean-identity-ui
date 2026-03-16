@@ -103,7 +103,7 @@ export const DashboardHome = () => {
           <div className="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center">
             <UserPlus className="h-7 w-7 text-white" />
           </div>
-          <span className="text-lg font-semibold text-white">Create New User</span>
+          <span className="text-lg font-semibold text-white">Create New Team Member</span>
         </button>
 
         <button

@@ -496,7 +496,7 @@ export const ApplicationManagementPage = () => {
             {/* Employee Selection — outside container */}
             <motion.div variants={itemVariants}>
               <div className="flex items-center gap-2 mb-3">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-600 text-white text-xs font-bold">1</span>
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-600 text-white text-xs font-bold">1</span>
                 <span className="font-semibold text-foreground">Enter Name of Team Member</span>
               </div>
               <div className="space-y-4">
@@ -514,7 +514,7 @@ export const ApplicationManagementPage = () => {
             {/* Container 2 — Application being Removed */}
             <motion.div variants={itemVariants}>
               <div className="flex items-center gap-2 mb-3">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-600 text-white text-xs font-bold">2</span>
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-600 text-white text-xs font-bold">2</span>
                 <span className="font-semibold text-foreground">Removed Application(s)</span>
               </div>
               <AppSelectionSection
