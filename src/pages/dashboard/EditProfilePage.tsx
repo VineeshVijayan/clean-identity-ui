@@ -125,8 +125,12 @@ export const EditProfilePage = () => {
             <User className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Edit Profile</h1>
-            <p className="text-muted-foreground text-sm">Update your personal information</p>
+            <h1 className="text-2xl font-bold text-foreground">
+              {editUser ? `Edit User — ${editUser.firstName} ${editUser.lastName}` : "Edit Profile"}
+            </h1>
+            <p className="text-muted-foreground text-sm">
+              {editUser ? "Update this user's information" : "Update your personal information"}
+            </p>
           </div>
         </div>
       </motion.div>
