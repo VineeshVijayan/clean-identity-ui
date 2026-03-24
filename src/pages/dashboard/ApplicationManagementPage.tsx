@@ -259,8 +259,8 @@ export const ApplicationManagementPage = () => {
       .then((res) => {
         const mapped: UserEntry[] = (res || []).map((u: any) => ({
           id: u.id || u.username,
-          firstName: u.name || "",
-          lastName: u.name || "",
+          firstName: u.name?.split(" ")[0] || "",
+          lastName: u.name?.split(" ").slice(1).join(" ") || "",
           email: u.email,
           ssn: u.ssn || "",
           role: u.roles?.join(", ") || "N/A",
