@@ -37,7 +37,16 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+const authHeaders = () => {
+  const token = localStorage.getItem("auth-token");
+  return { Authorization: token ? `Bearer ${token}` : "",
+  Accept: "application/json",
+  "Content-Type": "application/json"};
+};
+
 const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
+
+const CONNECTOR_API_BASE_URL = "https://idf-connector.ndashdigital.com/api";
 
 /* ─── Types ─── */
 type UserEntry = {
@@ -48,6 +57,8 @@ type UserEntry = {
   ssn?: string;
   role?: string;
   status?: string;
+  departmentId: string;
+  departmentName: string;
 };
 
 const availableApplications = [
@@ -93,11 +104,13 @@ const EmployeeSearchDropdown = ({
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const filtered = users.filter(
-    (u) =>
-      u.email.toLowerCase().includes(query.toLowerCase()) ||
-      `${u.firstName} ${u.lastName}`.toLowerCase().includes(query.toLowerCase())
-  );
+  const filtered = query
+  ? users.filter(
+      (u) =>
+        u.email.toLowerCase().includes(query.toLowerCase()) ||
+        `${u.firstName} ${u.lastName}`.toLowerCase().includes(query.toLowerCase())
+    )
+  : users;
 
   const handleSelect = (u: UserEntry) => {
     onSelect(u);
@@ -141,7 +154,7 @@ const EmployeeSearchDropdown = ({
       </div>
 
       <AnimatePresence>
-        {open && filtered.length > 0 && (
+      {open && filtered.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
@@ -235,7 +248,7 @@ export const ApplicationManagementPage = () => {
   /* Fetch users */
   useEffect(() => {
     const token = localStorage.getItem("auth-token");
-    fetch(`${API_BASE_URL}/users`, {
+    fetch(`${CONNECTOR_API_BASE_URL}/odoo/hr/employees`, {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
@@ -244,14 +257,16 @@ export const ApplicationManagementPage = () => {
     })
       .then((r) => r.json())
       .then((res) => {
-        const mapped: UserEntry[] = (res.data || []).map((u: any) => ({
+        const mapped: UserEntry[] = (res || []).map((u: any) => ({
           id: u.id || u.username,
-          firstName: u.firstName || "",
-          lastName: u.lastName || "",
+          firstName: u.name || "",
+          lastName: u.name || "",
           email: u.email,
           ssn: u.ssn || "",
           role: u.roles?.join(", ") || "N/A",
           status: u.status || "Active",
+          departmentId: u.departmentId || "",
+          departmentName: u.departmentName || "",
         }));
         setUsers(mapped);
       })

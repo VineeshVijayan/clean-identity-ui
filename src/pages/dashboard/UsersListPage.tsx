@@ -35,7 +35,16 @@ import {
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+const authHeaders = () => {
+  const token = localStorage.getItem("auth-token");
+  return { Authorization: token ? `Bearer ${token}` : "",
+  Accept: "application/json",
+  "Content-Type": "application/json"};
+};
+
 const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
+
+const CONNECTOR_API_BASE_URL = "https://idf-connector.ndashdigital.com/api";
 
 type User = {
   id: string;
@@ -45,6 +54,8 @@ type User = {
   role: string;
   status: string;
   lastLogin: string;
+  departmentId: string;
+  departmentName: string;
 };
 
 const getStatusColor = (status: string) => {
@@ -129,7 +140,7 @@ const UserTable = ({
                 </TableCell>
                 <TableCell>{user.lastName}</TableCell>
                 <TableCell>
-                  <Badge variant="outline">{user.role}</Badge>
+                  <Badge variant="outline">{user.status}</Badge>
                 </TableCell>
                 <TableCell className="hidden sm:table-cell text-muted-foreground">
                   {user.email}
@@ -186,25 +197,24 @@ export const UsersListPage = () => {
   const [delegateSearch, setDelegateSearch] = useState("");
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/users`, {
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
+    fetch(`${CONNECTOR_API_BASE_URL}/odoo/hr/employees`, {
+      headers: authHeaders(),
     })
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch users");
         return res.json();
       })
       .then((response) => {
-        const mappedUsers = response.data.map((u: any) => ({
+        const mappedUsers = response.map((u: any) => ({
           id: u.id || u.username,
-          firstName: u.firstName || "",
-          lastName: u.lastName || "",
+          firstName: u.name || "",
+          lastName: u.name || "",
           email: u.email,
           role: u.roles?.join(", ") || "N/A",
-          status: u.status || "Active",
+          status: "Active",
           lastLogin: u.lastLogin || "—",
+          departmentId: u.departmentId || "",
+          departmentName: u.departmentName
         }));
         setUsers(mappedUsers);
       })
@@ -215,8 +225,8 @@ export const UsersListPage = () => {
 
   // Split users: first half = My Team, second half = Delegate
   const midpoint = Math.ceil(users.length / 2);
-  const teamUsers = users.slice(0, midpoint);
-  const delegateUsers = users.slice(midpoint);
+  const teamUsers = users;
+  const delegateUsers = [];
 
   const filteredTeam = teamUsers.filter(
     (u) =>
