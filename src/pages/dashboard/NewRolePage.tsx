@@ -126,7 +126,7 @@ export const NewRolePage = () => {
             <Shield className="h-5 w-5 text-primary" />
             Blueprint Details
           </CardTitle>
-          <CardDescription>Assign HR job role to new Blueprint</CardDescription>
+          <CardDescription>Assign job role to new Blueprint</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
@@ -140,10 +140,18 @@ export const NewRolePage = () => {
               />
             </div>
             <div className="space-y-2">
-              <Label>HR Job Role</Label>
-              <div className="h-10 px-3 rounded-lg border bg-muted/50 flex items-center">
-                <Badge variant="secondary">{blueprintApps.length} applications</Badge>
-              </div>
+              <Label>Job Titles</Label>
+              <Select>
+                <SelectTrigger className="h-10 px-3 rounded-lg border bg-muted/50">
+                  <SelectValue placeholder="Select job role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="hr_manager">HR Manager</SelectItem>
+                  <SelectItem value="recruiter">Recruiter</SelectItem>
+                  <SelectItem value="hr_executive">HR Executive</SelectItem>
+                  <SelectItem value="talent_acquisition">Talent Acquisition</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div className="space-y-2">

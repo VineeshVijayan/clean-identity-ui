@@ -1,13 +1,25 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { Key, Eye, EyeOff, Check, X, Shield, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { motion } from "framer-motion";
+import { ArrowLeft, Check, Eye, EyeOff, Key, Shield, X } from "lucide-react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
 
+const getUserFromToken = () => {
+  const token = localStorage.getItem("auth-token");
+  if (!token) return null;
+
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return payload;
+  } catch {
+    return null;
+  }
+};
 const passwordRequirements = [
   { id: "length", label: "At least 8 characters", check: (p: string) => p.length >= 8 },
   { id: "uppercase", label: "One uppercase letter", check: (p: string) => /[A-Z]/.test(p) },
@@ -19,11 +31,13 @@ const passwordRequirements = [
 export const ChangePasswordPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const tokenUser = getUserFromToken();
+  const userId = tokenUser?.userId;
   const [isLoading, setIsLoading] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     currentPassword: "",
     newPassword: "",
@@ -43,19 +57,56 @@ export const ChangePasswordPage = () => {
   const canSubmit = formData.currentPassword && allRequirementsMet && passwordsMatch;
 
   const handleSubmit = async (e: React.FormEvent) => {
+
     e.preventDefault();
     if (!canSubmit) return;
 
     setIsLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    
-    toast({
-      title: "Password Changed",
-      description: "Your password has been successfully updated.",
-    });
-    
-    setIsLoading(false);
-    setFormData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+
+    const token = localStorage.getItem("auth-token");
+
+    const payload = {
+      oldPassword: formData.currentPassword,
+      newPassword: formData.newPassword,
+    };
+
+    try {
+
+      const res = await fetch(`${API_BASE_URL}/users/${userId}/reset-password`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error();
+
+      toast({
+        title: "Password Changed",
+        description: "Your password has been successfully updated.",
+      });
+
+      setFormData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+
+      navigate("/profile");
+
+    } catch {
+
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to change password. Please check your current password.",
+      });
+
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const strength = getPasswordStrength();
@@ -139,7 +190,7 @@ export const ChangePasswordPage = () => {
                   {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-              
+
               {/* Password Strength Meter */}
               {formData.newPassword && (
                 <div className="space-y-2">
@@ -150,10 +201,9 @@ export const ChangePasswordPage = () => {
                         style={{ width: strength.width }}
                       />
                     </div>
-                    <span className={`text-sm font-medium ${
-                      strength.label === "Strong" ? "text-success" :
+                    <span className={`text-sm font-medium ${strength.label === "Strong" ? "text-success" :
                       strength.label === "Medium" ? "text-warning" : "text-destructive"
-                    }`}>
+                      }`}>
                       {strength.label}
                     </span>
                   </div>
@@ -170,9 +220,8 @@ export const ChangePasswordPage = () => {
                   return (
                     <div
                       key={req.id}
-                      className={`flex items-center gap-2 text-sm ${
-                        passed ? "text-success" : "text-muted-foreground"
-                      }`}
+                      className={`flex items-center gap-2 text-sm ${passed ? "text-success" : "text-muted-foreground"
+                        }`}
                     >
                       {passed ? (
                         <Check className="h-4 w-4" />
@@ -208,9 +257,8 @@ export const ChangePasswordPage = () => {
                 </button>
               </div>
               {formData.confirmPassword && (
-                <p className={`text-sm flex items-center gap-1 ${
-                  passwordsMatch ? "text-success" : "text-destructive"
-                }`}>
+                <p className={`text-sm flex items-center gap-1 ${passwordsMatch ? "text-success" : "text-destructive"
+                  }`}>
                   {passwordsMatch ? (
                     <><Check className="h-4 w-4" /> Passwords match</>
                   ) : (
@@ -225,8 +273,8 @@ export const ChangePasswordPage = () => {
               <Button type="button" variant="outline" onClick={() => navigate(-1)}>
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={!canSubmit || isLoading}
                 className="bg-primary hover:bg-primary/90"
               >
