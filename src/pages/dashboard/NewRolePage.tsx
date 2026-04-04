@@ -10,19 +10,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { ArrowLeft, Check, CheckCircle2, FolderOpen, Save, Shield, ShieldAlert, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 // Mock applications data
-const availableApplications = [
-  { id: "salesforce", name: "Salesforce CRM", category: "CRM", icon: "💼" },
-  { id: "jira", name: "Jira", category: "Project Management", icon: "📋" },
-  { id: "slack", name: "Slack Enterprise", category: "Communication", icon: "💬" },
-  { id: "tableau", name: "Tableau", category: "Analytics", icon: "📊" },
-  { id: "github", name: "GitHub Enterprise", category: "Development", icon: "🐙" },
-  { id: "confluence", name: "Confluence", category: "Documentation", icon: "📝" },
-  { id: "okta", name: "Okta", category: "Identity", icon: "🔐" },
-  { id: "zoom", name: "Zoom", category: "Communication", icon: "📹" },
-];
+const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
 
 type BlueprintApp = {
   id: string;
@@ -40,14 +31,8 @@ export const NewRolePage = () => {
   const [roleName, setRoleName] = useState("");
   const [roleDescription, setRoleDescription] = useState("");
   const [selectedAppId, setSelectedAppId] = useState("");
-  const [blueprintApps, setBlueprintApps] = useState<BlueprintApp[]>([
-    { id: "salesforce", name: "Salesforce CRM", category: "CRM", icon: "💼", accessLevel: "Full Access", grantedDate: "2023-06-15", essential: false },
-    { id: "jira", name: "Jira", category: "Project Management", icon: "📋", accessLevel: "Standard", grantedDate: "2023-08-20", essential: true },
-    { id: "slack", name: "Slack Enterprise", category: "Communication", icon: "💬", accessLevel: "Full Access", grantedDate: "2023-01-10", essential: true },
-    { id: "tableau", name: "Tableau", category: "Analytics", icon: "📊", accessLevel: "Read Only", grantedDate: "2023-11-05", essential: false },
-    { id: "github", name: "GitHub Enterprise", category: "Development", icon: "🐙", accessLevel: "Contributor", grantedDate: "2023-03-22", essential: true },
-    { id: "confluence", name: "Confluence", category: "Documentation", icon: "📝", accessLevel: "Standard", grantedDate: "2023-04-18", essential: false },
-  ]);
+  const [jobOptions, setJobOptions] = useState<{ label: string; value: string }[]>([]);
+  const [blueprintApps, setBlueprintApps] = useState<BlueprintApp[]>([]);
 
   const handleAddApp = () => {
     if (!selectedAppId) return;
@@ -65,13 +50,6 @@ export const NewRolePage = () => {
     setSelectedAppId("");
   };
 
-  const jobOptions = [
-    { label: "HR Manager", value: "hr_manager" },
-    { label: "Recruiter", value: "recruiter" },
-    { label: "HR Executive", value: "hr_executive" },
-    { label: "Talent Acquisition", value: "talent_acquisition" },
-  ];
-
   const [selectedJobs, setSelectedJobs] = useState<string[]>([]);
 
   const toggleJob = (value: string) => {
@@ -88,11 +66,11 @@ export const NewRolePage = () => {
     setBlueprintApps((prev) => prev.filter((a) => a.id !== id));
   };
 
-  const handleSaveRole = () => {
+  const handleSaveRole = async () => {
     if (!roleName.trim()) {
       toast({
         title: "Error",
-        description: "Role name is required",
+        description: "Blueprint name is required",
         variant: "destructive",
       });
       return;
@@ -107,13 +85,104 @@ export const NewRolePage = () => {
       return;
     }
 
-    toast({
-      title: "Role Created",
-      description: `Role "${roleName}" has been created with ${blueprintApps.length} applications.`,
-    });
+    try {
+      const token = localStorage.getItem("auth-token");
 
-    navigate("/roles/manage");
+      const payload = {
+        name: roleName,
+        jobTitleIds: selectedJobs.map((id) => Number(id)), // ✅ convert to Long
+        applicationIds: blueprintApps.map((app) => Number(app.id)), // ✅ convert to Long
+      };
+
+      const res = await fetch(`${API_BASE_URL}/blueprints`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error("Failed to create blueprint");
+
+      toast({
+        title: "Success",
+        description: "Blueprint created successfully",
+      });
+
+      navigate("/roles/manage");
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create blueprint",
+        variant: "destructive",
+      });
+    }
   };
+
+  useEffect(() => {
+    const fetchJobTitles = async () => {
+      try {
+        const response = await fetch(API_BASE_URL + "/job-titles"); // replace with your API
+        const result = await response.json();
+
+        // assuming API response like: [{ id, name }]
+        const formatted = result.data.map((job: any) => ({
+          label: job.name,
+          value: job.id,
+        }));
+
+        setJobOptions(formatted);
+      } catch (error) {
+        console.error("Failed to fetch job titles", error);
+      }
+    };
+
+    fetchJobTitles();
+  }, []);
+
+  const [availableApplications, setAvailableAppsToAdd] = useState<any[]>([]);
+  /* FETCH APPS */
+  useEffect(() => {
+    const fetchApplications = async () => {
+      try {
+        const token = localStorage.getItem("auth-token");
+
+        const res = await fetch(`${API_BASE_URL}/applications`, {
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: token ? `Bearer ${token}` : "",
+          },
+        });
+
+        if (!res.ok) throw new Error("Failed to fetch applications");
+
+        const response = await res.json();
+
+        const appsArray = Array.isArray(response)
+          ? response
+          : response.data.content || [];
+
+        const mappedApps = appsArray.map((app: any) => ({
+          id: app.id || app.appId,
+          name: app.name || app.appName,
+          category: app.category || "General",
+          icon: app.icon || "📦", // fallback icon
+        }));
+
+        setAvailableAppsToAdd(mappedApps);
+      } catch (err) {
+        toast({
+          title: "Error",
+          description: "Failed to load applications",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchApplications();
+  }, [toast]);
 
   return (
     <motion.div
@@ -279,64 +348,70 @@ export const NewRolePage = () => {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {blueprintApps.map((app) => (
-              <div
-                key={app.id}
-                className="relative rounded-xl border border-border bg-card p-5 space-y-3 transition-shadow hover:shadow-md"
-              >
-                {/* Remove button */}
-                <div className="absolute top-3 right-3">
-                  {app.essential ? (
-                    <ShieldAlert className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <button
-                      onClick={() => handleRemoveApp(app.id)}
-                      className="text-muted-foreground hover:text-destructive transition-colors"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-
-                {/* App info */}
-                <div className="flex items-center gap-3">
-                  <div className="text-2xl">{app.icon}</div>
-                  <div>
-                    <p className="font-semibold text-sm">{app.name}</p>
-                    <p className="text-xs text-muted-foreground">{app.category}</p>
-                  </div>
-                </div>
-
-                {/* Details */}
-                <div className="space-y-1.5 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Access Level:</span>
-                    <Badge variant="outline" className="text-xs font-medium">
-                      {app.accessLevel}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Granted:</span>
-                    <span className="text-xs">{app.grantedDate}</span>
-                  </div>
-                </div>
-
-                {/* Status */}
-                <div className="pt-1">
-                  {app.essential ? (
-                    <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground border border-border rounded-full py-1.5 px-3">
-                      <ShieldAlert className="h-3.5 w-3.5" />
-                      Essential — Cannot Remove
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center gap-1.5 text-xs text-green-600 border border-green-200 bg-green-50 rounded-full py-1.5 px-3">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      Active Access
-                    </div>
-                  )}
-                </div>
+            {blueprintApps.length === 0 ? (
+              <div className="col-span-full text-center text-muted-foreground py-10">
+                No applications available for selected blueprint
               </div>
-            ))}
+            ) : (
+              blueprintApps.map((app) => (
+                <div
+                  key={app.id}
+                  className="relative rounded-xl border border-border bg-card p-5 space-y-3 transition-shadow hover:shadow-md"
+                >
+                  {/* Remove / Essential icon */}
+                  <div className="absolute top-3 right-3">
+                    {app.essential ? (
+                      <ShieldAlert className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <button
+                        onClick={() => handleRemoveApp(app.id)}
+                        className="text-muted-foreground hover:text-destructive transition-colors"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* App info */}
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">{app.icon}</div>
+                    <div>
+                      <p className="font-semibold text-sm">{app.name}</p>
+                      <p className="text-xs text-muted-foreground">{app.category}</p>
+                    </div>
+                  </div>
+
+                  {/* Details */}
+                  <div className="space-y-1.5 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Access Level:</span>
+                      <Badge variant="outline" className="text-xs font-medium">
+                        {app.accessLevel}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Granted:</span>
+                      <span className="text-xs">{app.grantedDate}</span>
+                    </div>
+                  </div>
+
+                  {/* Status */}
+                  <div className="pt-1">
+                    {app.essential ? (
+                      <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground border border-border rounded-full py-1.5 px-3">
+                        <ShieldAlert className="h-3.5 w-3.5" />
+                        Essential — Cannot Remove
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center gap-1.5 text-xs text-green-600 border border-green-200 bg-green-50 rounded-full py-1.5 px-3">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        Active Access
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </CardContent>
       </Card>

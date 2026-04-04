@@ -39,9 +39,11 @@ import { useEffect, useRef, useState } from "react";
 
 const authHeaders = () => {
   const token = localStorage.getItem("auth-token");
-  return { Authorization: token ? `Bearer ${token}` : "",
-  Accept: "application/json",
-  "Content-Type": "application/json"};
+  return {
+    Authorization: token ? `Bearer ${token}` : "",
+    Accept: "application/json",
+    "Content-Type": "application/json"
+  };
 };
 
 const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
@@ -105,12 +107,12 @@ const EmployeeSearchDropdown = ({
   }, []);
 
   const filtered = query
-  ? users.filter(
+    ? users.filter(
       (u) =>
         u.email.toLowerCase().includes(query.toLowerCase()) ||
         `${u.firstName} ${u.lastName}`.toLowerCase().includes(query.toLowerCase())
     )
-  : users;
+    : users;
 
   const handleSelect = (u: UserEntry) => {
     onSelect(u);
@@ -154,7 +156,7 @@ const EmployeeSearchDropdown = ({
       </div>
 
       <AnimatePresence>
-      {open && filtered.length > 0 && (
+        {open && filtered.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}

@@ -8,6 +8,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import {
     Table,
     TableBody,
@@ -17,7 +18,6 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { motion } from "framer-motion";
-import { Switch } from "@/components/ui/switch";
 import {
     ChevronLeft,
     ChevronRight,
@@ -50,8 +50,10 @@ export const UserAdministrationPage = () => {
     const [searchQuery, setSearchQuery] = useState("");
 
     useEffect(() => {
+        const token = localStorage.getItem("auth-token");
         fetch(`${API_BASE_URL}/users`, {
             headers: {
+                Authorization: token ? `Bearer ${token}` : "",
                 Accept: "application/json",
                 "Content-Type": "application/json",
             },
@@ -138,7 +140,7 @@ export const UserAdministrationPage = () => {
             <div className="glass-card overflow-hidden">
                 <Table>
                     <TableHeader>
-                    <TableRow>
+                        <TableRow>
                             <TableHead>Name</TableHead>
                             <TableHead>Role</TableHead>
                             <TableHead>Status</TableHead>

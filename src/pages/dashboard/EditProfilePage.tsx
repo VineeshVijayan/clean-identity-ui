@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { ArrowLeft, Camera, Save, Trash2, Upload, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
 const getUserFromToken = () => {
@@ -24,10 +24,16 @@ const getUserFromToken = () => {
 export const EditProfilePage = () => {
 
 
+  const location = useLocation();
+
+  const passedUserId = location.state?.userId;
+  const passedUser = location.state?.user;
+
+  // fallback (optional)
   const tokenUser = getUserFromToken();
 
-  const userId = tokenUser?.userId;
-  const userEmail = tokenUser?.sub;
+  const userId = passedUserId || tokenUser?.userId;
+  const userEmail = passedUser?.email || tokenUser?.sub;
   const navigate = useNavigate();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -50,6 +56,20 @@ export const EditProfilePage = () => {
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (passedUser) {
+      setForm({
+        employeeId: passedUser.id || "",
+        firstName: passedUser.firstName || "",
+        lastName: passedUser.lastName || "",
+        phoneNumber: "",
+        email: passedUser.email || "",
+        dob: "",
+        ssn: "",
+      });
+    }
+  }, []);
 
   /* ---------------- FETCH USER ---------------- */
 

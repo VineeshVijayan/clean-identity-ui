@@ -37,9 +37,11 @@ import { useNavigate } from "react-router-dom";
 
 const authHeaders = () => {
   const token = localStorage.getItem("auth-token");
-  return { Authorization: token ? `Bearer ${token}` : "",
-  Accept: "application/json",
-  "Content-Type": "application/json"};
+  return {
+    Authorization: token ? `Bearer ${token}` : "",
+    Accept: "application/json",
+    "Content-Type": "application/json"
+  };
 };
 
 const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
@@ -156,7 +158,11 @@ const UserTable = ({
                       <DropdownMenuItem>
                         <Eye className="h-4 w-4 mr-2" /> View
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate("/edit-profile", { state: { user } })}>
+                      <DropdownMenuItem onClick={() =>
+                        navigate("/edit-profile", {
+                          state: { userId: user.id, user },
+                        })
+                      }>
                         <Edit className="h-4 w-4 mr-2" /> Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem className="text-destructive">
@@ -197,7 +203,14 @@ export const UsersListPage = () => {
   const [delegateSearch, setDelegateSearch] = useState("");
 
   useEffect(() => {
-    fetch(`${CONNECTOR_API_BASE_URL}/odoo/hr/employees`, {
+    const deptId = getDeptId();
+
+    if (!deptId) {
+      console.error("No departmentId in token");
+      return;
+    }
+
+    fetch(`${API_BASE_URL}/users/department/${deptId}`, {
       headers: authHeaders(),
     })
       .then((res) => {
@@ -205,22 +218,21 @@ export const UsersListPage = () => {
         return res.json();
       })
       .then((response) => {
-        const mappedUsers = response.map((u: any) => ({
+        const mappedUsers = response.data.map((u: any) => ({
           id: u.id || u.username,
-          firstName: u.name?.split(" ")[0] || "",
-          lastName: u.name?.split(" ").slice(1).join(" ") || "",
+          firstName: u.firstName || "",   // ✅ FIX
+          lastName: u.lastName || "",     // ✅ FIX
           email: u.email,
           role: u.roles?.join(", ") || "N/A",
           status: "Active",
           lastLogin: u.lastLogin || "—",
           departmentId: u.departmentId || "",
-          departmentName: u.departmentName
+          departmentName: u.departmentName || ""
         }));
-        setUsers(mappedUsers);
+
+        setUsers(mappedUsers); // ✅ VERY IMPORTANT
       })
-      .catch((err) => {
-        console.error("User fetch failed:", err);
-      });
+      .catch((err) => console.error(err));
   }, []);
 
   // Split users: first half = My Team, second half = Delegate
@@ -239,6 +251,17 @@ export const UsersListPage = () => {
       `${u.firstName} ${u.lastName}`.toLowerCase().includes(delegateSearch.toLowerCase()) ||
       u.email.toLowerCase().includes(delegateSearch.toLowerCase())
   );
+  const getDeptId = () => {
+    const token = localStorage.getItem("auth-token");
+    if (!token) return null;
+
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      return payload.departmentId; // or check exact key
+    } catch {
+      return null;
+    }
+  };
 
   return (
     <motion.div
