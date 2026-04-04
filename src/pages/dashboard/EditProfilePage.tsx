@@ -5,69 +5,139 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { CountryCodeSelect } from "@/components/ui/country-code-select";
 import { ArrowLeft, Camera, Save, Trash2, Upload, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
+const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
+const getUserFromToken = () => {
+  const token = localStorage.getItem("auth-token");
+  if (!token) return null;
+
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return payload;
+  } catch {
+    return null;
+  }
+};
 export const EditProfilePage = () => {
+
+
+  const tokenUser = getUserFromToken();
+
+  const userId = tokenUser?.userId;
+  const userEmail = tokenUser?.sub;
   const navigate = useNavigate();
-  const location = useLocation();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Check if user data was passed via navigation state (from Edit action)
-  const editUser = location.state?.user;
+  /* ---------------- GET USER FROM LOCAL STORAGE ---------------- */
 
-  // Try to pre-fill from localStorage
-  const storedUser = (() => {
-    try {
-      return JSON.parse(localStorage.getItem("user") || "{}");
-    } catch {
-      return {};
-    }
-  })();
+  /* ---------------- STATES ---------------- */
 
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [countryCode, setCountryCode] = useState("US:+1");
 
   const [form, setForm] = useState({
-    employeeId: editUser?.employeeId || storedUser.employeeId || "",
-    firstName: editUser?.firstName || storedUser.firstName || storedUser.name?.split(" ")[0] || "",
-    lastName: editUser?.lastName || storedUser.lastName || storedUser.name?.split(" ")[1] || "",
-    phone: editUser?.phone || "",
-    dob: editUser?.dob || "",
-    ssn: editUser?.ssn || "",
+    employeeId: "",
+    firstName: "",
+    lastName: "",
+    phoneNumber: "",
+    email: "",
+    dob: "",
+    ssn: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  /* ---------------- FETCH USER ---------------- */
+
+  useEffect(() => {
+
+    const fetchUser = async () => {
+
+      const token = localStorage.getItem("auth-token");
+
+      try {
+
+        const res = await fetch(`${API_BASE_URL}/users/${userId}`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: token ? `Bearer ${token}` : "",
+          },
+        });
+
+        if (!res.ok) throw new Error();
+
+
+
+        const data = await res.json();
+        const user = data?.data || data;
+
+        setForm({
+          employeeId: user.id || "",
+          firstName: user.firstName || "",
+          lastName: user.lastName || "",
+          phoneNumber: user.phoneNumber || "",
+          email: user.email || "",
+          dob: user.dob ? user.dob.substring(0, 10) : "",
+          ssn: user.maskedSsn ? user.maskedSsn.slice(-4) : "", // ✅ FIX
+
+        });
+
+      } catch {
+
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load user data",
+        });
+
+      }
+    };
+
+    if (userId) fetchUser();
+
+  }, [userId, toast]);
+
+  /* ---------------- UPDATE FORM ---------------- */
 
   const set = (key: string, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
     if (errors[key]) setErrors((prev) => ({ ...prev, [key]: "" }));
   };
 
+  /* ---------------- PHOTO ---------------- */
+
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+
     const file = e.target.files?.[0];
     if (!file) return;
+
     const reader = new FileReader();
     reader.onloadend = () => setPhotoPreview(reader.result as string);
     reader.readAsDataURL(file);
   };
 
+  /* ---------------- VALIDATION ---------------- */
+
   const validate = () => {
+
     const newErrors: Record<string, string> = {};
 
-    if (!form.employeeId.trim()) newErrors.employeeId = "Employee ID is required.";
+    if (!form.employeeId) newErrors.employeeId = "Employee ID is required.";
     if (!form.firstName.trim()) newErrors.firstName = "First Name is required.";
     if (!form.lastName.trim()) newErrors.lastName = "Last Name is required.";
-    if (!form.phone.trim()) {
-      newErrors.phone = "Phone Number is required.";
-    } else if (!/^\+?[\d\s\-()]{7,15}$/.test(form.phone)) {
-      newErrors.phone = "Enter a valid phone number.";
+
+    if (!form.phoneNumber.trim()) {
+      newErrors.phoneNumber = "phoneNumber Number is required.";
+    } else if (!/^\+?[\d\s\-()]{7,15}$/.test(form.phoneNumber)) {
+      newErrors.phoneNumber = "Enter a valid phoneNumber number.";
     }
+
     if (!form.dob) newErrors.dob = "Date of Birth is required.";
+
     if (!form.ssn.trim()) {
       newErrors.ssn = "Last 4 SSN is required.";
     } else if (!/^\d{4}$/.test(form.ssn)) {
@@ -75,11 +145,16 @@ export const EditProfilePage = () => {
     }
 
     setErrors(newErrors);
+
     return Object.keys(newErrors).length === 0;
   };
 
+  /* ---------------- UPDATE USER ---------------- */
+
   const handleSubmit = async (e: React.FormEvent) => {
+
     e.preventDefault();
+
     if (!validate()) {
       toast({
         title: "Validation Error",
@@ -88,25 +163,82 @@ export const EditProfilePage = () => {
       });
       return;
     }
+
     setIsLoading(true);
-    // Simulate save
-    await new Promise((r) => setTimeout(r, 800));
-    setIsLoading(false);
-    toast({ title: "Profile Updated", description: "Your profile has been saved successfully." });
+
+    const token = localStorage.getItem("auth-token");
+
+    const payload = {
+      username: userEmail,
+      email: userEmail,
+      firstName: form.firstName,
+      lastName: form.lastName,
+
+      phoneNumber: form.phoneNumber,
+      ssn: form.ssn,
+      dob: form.dob ? new Date(form.dob).toISOString() : null,
+    };
+
+    try {
+
+      const res = await fetch(`${API_BASE_URL}/users/${userId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error();
+
+      toast({
+        title: "Profile Updated",
+        description: "User profile updated successfully",
+      });
+
+      navigate("/users");
+
+    } catch {
+
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update profile",
+      });
+
+    } finally {
+      setIsLoading(false);
+    }
   };
 
+  /* ---------------- CLEAR ---------------- */
+
   const handleClear = () => {
-    setForm({ employeeId: "", firstName: "", lastName: "", phone: "", dob: "", ssn: "" });
+    setForm({
+      employeeId: "",
+      firstName: "",
+      lastName: "",
+      phoneNumber: "",
+      email: "",
+      dob: "",
+      ssn: "",
+    });
     setPhotoPreview(null);
     setErrors({});
   };
+
+  /* ---------------- ANIMATION ---------------- */
 
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { staggerChildren: 0.08 } },
   };
 
-  const itemVariants = { hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } };
+  const itemVariants = {
+    hidden: { opacity: 0, y: 12 },
+    visible: { opacity: 1, y: 0 },
+  };
 
   return (
     <motion.div
@@ -115,51 +247,71 @@ export const EditProfilePage = () => {
       variants={containerVariants}
       className="max-w-3xl mx-auto space-y-6"
     >
+
       {/* Header */}
+
       <motion.div variants={itemVariants} className="flex items-center gap-4">
+
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
+
         <div className="flex items-center gap-3">
+
           <div className="p-2 rounded-lg bg-primary/10">
             <User className="h-6 w-6 text-primary" />
           </div>
+
           <div>
-            <h1 className="text-2xl font-bold text-foreground">
-              {editUser ? `Edit User — ${editUser.firstName} ${editUser.lastName}` : "Edit Profile"}
-            </h1>
+            <h1 className="text-2xl font-bold text-foreground">Edit Profile</h1>
             <p className="text-muted-foreground text-sm">
-              {editUser ? "Update this user's information" : "Update your personal information"}
+              Update your personal information
             </p>
           </div>
+
         </div>
+
       </motion.div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
+
         {/* Photo Card */}
+
         <motion.div variants={itemVariants}>
+
           <Card>
+
             <CardHeader className="pb-4">
               <CardTitle className="text-base">Profile Photo</CardTitle>
             </CardHeader>
+
             <CardContent>
+
               <div className="flex flex-col sm:flex-row items-center gap-6">
+
                 <div className="relative">
+
                   <Avatar className="w-24 h-24 border-2 border-border">
+
                     <AvatarImage src={photoPreview || ""} />
+
                     <AvatarFallback className="text-xl bg-primary/10 text-primary font-bold">
                       {form.firstName.charAt(0) || "U"}
                       {form.lastName.charAt(0)}
                     </AvatarFallback>
+
                   </Avatar>
+
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="absolute -bottom-1 -right-1 p-2 rounded-full bg-primary text-primary-foreground shadow-md hover:bg-primary/90 transition-colors"
+                    className="absolute -bottom-1 -right-1 p-2 rounded-full bg-primary text-primary-foreground shadow-md"
                   >
                     <Camera className="h-3.5 w-3.5" />
                   </button>
+
                 </div>
+
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -167,9 +319,15 @@ export const EditProfilePage = () => {
                   onChange={handlePhotoChange}
                   className="hidden"
                 />
+
                 <div className="flex flex-col gap-2 items-start">
-                  <p className="text-sm text-muted-foreground">Upload a profile photo (JPG, PNG)</p>
+
+                  <p className="text-sm text-muted-foreground">
+                    Upload a profile photo (JPG, PNG)
+                  </p>
+
                   <div className="flex gap-2">
+
                     <Button
                       type="button"
                       variant="outline"
@@ -179,150 +337,131 @@ export const EditProfilePage = () => {
                       <Upload className="h-3.5 w-3.5 mr-2" />
                       Upload Photo
                     </Button>
+
                     {photoPreview && (
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
                         onClick={() => setPhotoPreview(null)}
-                        className="text-destructive border-destructive/30 hover:bg-destructive/5"
                       >
                         <Trash2 className="h-3.5 w-3.5 mr-2" />
                         Remove
                       </Button>
                     )}
+
                   </div>
+
                 </div>
+
               </div>
+
             </CardContent>
+
           </Card>
+
         </motion.div>
 
-        {/* Info Card */}
+        {/* Personal Info */}
+
         <motion.div variants={itemVariants}>
+
           <Card>
+
             <CardHeader className="pb-4">
               <CardTitle className="text-base">Personal Information</CardTitle>
             </CardHeader>
+
             <CardContent className="space-y-5">
-              {/* Employee ID */}
+
               <div className="space-y-1.5">
-                <Label htmlFor="employeeId">
-                  Employee ID <span className="text-destructive">*</span>
-                </Label>
+                <Label>Employee ID</Label>
                 <Input
-                  id="employeeId"
                   value={form.employeeId}
                   onChange={(e) => set("employeeId", e.target.value)}
-                  placeholder="e.g. EMP-001"
-                  className={errors.employeeId ? "border-destructive focus:ring-destructive/30" : ""}
                 />
-                {errors.employeeId && <p className="text-xs text-destructive">{errors.employeeId}</p>}
               </div>
 
-              {/* Name row */}
               <div className="grid sm:grid-cols-2 gap-4">
+
                 <div className="space-y-1.5">
-                  <Label htmlFor="firstName">
-                    First Name <span className="text-destructive">*</span>
-                  </Label>
+                  <Label>First Name</Label>
                   <Input
-                    id="firstName"
                     value={form.firstName}
                     onChange={(e) => set("firstName", e.target.value)}
-                    placeholder="John"
-                    className={errors.firstName ? "border-destructive focus:ring-destructive/30" : ""}
                   />
-                  {errors.firstName && <p className="text-xs text-destructive">{errors.firstName}</p>}
                 </div>
+
                 <div className="space-y-1.5">
-                  <Label htmlFor="lastName">
-                    Last Name <span className="text-destructive">*</span>
-                  </Label>
+                  <Label>Last Name</Label>
                   <Input
-                    id="lastName"
                     value={form.lastName}
                     onChange={(e) => set("lastName", e.target.value)}
-                    placeholder="Doe"
-                    className={errors.lastName ? "border-destructive focus:ring-destructive/30" : ""}
                   />
-                  {errors.lastName && <p className="text-xs text-destructive">{errors.lastName}</p>}
                 </div>
+
               </div>
 
-              {/* Phone */}
               <div className="space-y-1.5">
-                <Label htmlFor="phone">
-                  Phone Number <span className="text-destructive">*</span>
-                </Label>
-                <div className="flex gap-2">
-                  <CountryCodeSelect value={countryCode} onChange={setCountryCode} />
-                  <Input
-                    id="phone"
-                    value={form.phone}
-                    onChange={(e) => set("phone", e.target.value)}
-                    placeholder="(555) 000-0000"
-                    type="tel"
-                    className={`flex-1 ${errors.phone ? "border-destructive focus:ring-destructive/30" : ""}`}
-                  />
-                </div>
-                {errors.phone && <p className="text-xs text-destructive">{errors.phone}</p>}
+                <Label>Phone</Label>
+                <Input
+                  value={form.phoneNumber}
+                  onChange={(e) => set("phoneNumber", e.target.value)}
+                />
               </div>
-
-              {/* DOB + SSN */}
+              <div className="space-y-1.5">
+                <Label>Email</Label>
+                <Input
+                  value={userEmail || ""}
+                  disabled
+                />
+              </div>
               <div className="grid sm:grid-cols-2 gap-4">
+
                 <div className="space-y-1.5">
-                  <Label htmlFor="dob">
-                    Date of Birth <span className="text-destructive">*</span>
-                  </Label>
+                  <Label>Date of Birth</Label>
                   <Input
-                    id="dob"
                     type="date"
                     value={form.dob}
                     onChange={(e) => set("dob", e.target.value)}
-                    className={errors.dob ? "border-destructive focus:ring-destructive/30" : ""}
                   />
-                  {errors.dob && <p className="text-xs text-destructive">{errors.dob}</p>}
                 </div>
+
                 <div className="space-y-1.5">
-                  <Label htmlFor="ssn">
-                    Last 4 SSN <span className="text-destructive">*</span>
-                  </Label>
+                  <Label>Last 4 SSN</Label>
                   <Input
-                    id="ssn"
                     value={form.ssn}
-                    onChange={(e) => set("ssn", e.target.value.replace(/\D/g, "").slice(0, 4))}
-                    placeholder="e.g. 1234"
-                    maxLength={4}
-                    className={errors.ssn ? "border-destructive focus:ring-destructive/30" : ""}
+                    onChange={(e) =>
+                      set("ssn", e.target.value.replace(/\D/g, "").slice(0, 4))
+                    }
                   />
-                  {errors.ssn && <p className="text-xs text-destructive">{errors.ssn}</p>}
                 </div>
+
               </div>
+
             </CardContent>
+
           </Card>
+
         </motion.div>
 
         {/* Actions */}
-        <motion.div variants={itemVariants} className="flex items-center justify-end gap-3 pb-6">
-          <Button type="button" variant="outline" onClick={handleClear}>
+
+        <motion.div variants={itemVariants} className="flex justify-end gap-3">
+
+          <Button variant="outline" type="button" onClick={handleClear}>
             Clear
           </Button>
+
           <Button type="submit" disabled={isLoading}>
-            {isLoading ? (
-              <span className="flex items-center gap-2">
-                <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                Saving...
-              </span>
-            ) : (
-              <>
-                <Save className="h-4 w-4 mr-2" />
-                Save Profile
-              </>
-            )}
+            <Save className="h-4 w-4 mr-2" />
+            {isLoading ? "Saving..." : "Save Profile"}
           </Button>
+
         </motion.div>
+
       </form>
+
     </motion.div>
   );
 };

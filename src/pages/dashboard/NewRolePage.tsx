@@ -1,16 +1,17 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { ArrowLeft, CheckCircle2, FolderOpen, Save, Shield, ShieldAlert, X } from "lucide-react";
+import { ArrowLeft, Check, CheckCircle2, FolderOpen, Save, Shield, ShieldAlert, X } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
 // Mock applications data
 const availableApplications = [
   { id: "salesforce", name: "Salesforce CRM", category: "CRM", icon: "💼" },
@@ -62,6 +63,23 @@ export const NewRolePage = () => {
       },
     ]);
     setSelectedAppId("");
+  };
+
+  const jobOptions = [
+    { label: "HR Manager", value: "hr_manager" },
+    { label: "Recruiter", value: "recruiter" },
+    { label: "HR Executive", value: "hr_executive" },
+    { label: "Talent Acquisition", value: "talent_acquisition" },
+  ];
+
+  const [selectedJobs, setSelectedJobs] = useState<string[]>([]);
+
+  const toggleJob = (value: string) => {
+    setSelectedJobs((prev) =>
+      prev.includes(value)
+        ? prev.filter((v) => v !== value)
+        : [...prev, value]
+    );
   };
 
   const handleRemoveApp = (id: string) => {
@@ -141,17 +159,63 @@ export const NewRolePage = () => {
             </div>
             <div className="space-y-2">
               <Label>Job Titles</Label>
-              <Select>
-                <SelectTrigger className="h-10 px-3 rounded-lg border bg-muted/50">
-                  <SelectValue placeholder="Select job role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="hr_manager">HR Manager</SelectItem>
-                  <SelectItem value="recruiter">Recruiter</SelectItem>
-                  <SelectItem value="hr_executive">HR Executive</SelectItem>
-                  <SelectItem value="talent_acquisition">Talent Acquisition</SelectItem>
-                </SelectContent>
-              </Select>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-between h-10 px-3 bg-muted/50"
+                  >
+                    {selectedJobs.length > 0
+                      ? `${selectedJobs.length} selected`
+                      : "Select job roles"}
+                  </Button>
+                </PopoverTrigger>
+
+                <PopoverContent className="w-full p-0">
+                  <Command>
+                    <CommandInput placeholder="Search job roles..." />
+                    <CommandEmpty>No results found.</CommandEmpty>
+
+                    <CommandGroup>
+                      {jobOptions.map((job) => {
+                        const isSelected = selectedJobs.includes(job.value);
+
+                        return (
+                          <CommandItem
+                            key={job.value}
+                            onSelect={() => toggleJob(job.value)}
+                          >
+                            <Check
+                              className={`mr-2 h-4 w-4 ${isSelected ? "opacity-100" : "opacity-0"
+                                }`}
+                            />
+                            {job.label}
+                          </CommandItem>
+                        );
+                      })}
+                    </CommandGroup>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+
+              {/* Selected badges */}
+              <div className="flex flex-wrap gap-2 mt-2">
+                {selectedJobs.map((value) => {
+                  const job = jobOptions.find((j) => j.value === value);
+                  return (
+                    <Badge key={value} variant="secondary">
+                      {job?.label}
+                      <button
+                        className="ml-2"
+                        onClick={() => toggleJob(value)}
+                      >
+                        ×
+                      </button>
+                    </Badge>
+                  );
+                })}
+              </div>
             </div>
           </div>
           <div className="space-y-2">
