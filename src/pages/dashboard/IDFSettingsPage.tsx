@@ -4,15 +4,16 @@ import {
   Settings,
   Palette,
   Menu,
-  ChevronRight,
+  Shield,
   Save,
   RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChangeSidebarIconSettings } from "@/components/settings/ChangeSidebarIconSettings";
 import { ChangeButtonColorSettings } from "@/components/settings/ChangeButtonColorSettings";
+import { ManageRolesSettings } from "@/components/settings/ManageRolesSettings";
 import { useToast } from "@/hooks/use-toast";
 
 export const IDFSettingsPage = () => {
@@ -83,6 +84,13 @@ export const IDFSettingsPage = () => {
                   <Palette className="h-4 w-4" />
                   Button Colors
                 </TabsTrigger>
+                <TabsTrigger
+                  value="manage-roles"
+                  className="data-[state=active]:bg-muted rounded-none border-b-2 border-transparent data-[state=active]:border-primary px-6 py-4 gap-2"
+                >
+                  <Shield className="h-4 w-4" />
+                  Manage Roles
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -92,6 +100,10 @@ export const IDFSettingsPage = () => {
 
             <TabsContent value="button-colors" className="p-6 mt-0">
               <ChangeButtonColorSettings />
+            </TabsContent>
+
+            <TabsContent value="manage-roles" className="p-6 mt-0">
+              <ManageRolesSettings />
             </TabsContent>
           </Tabs>
         </CardContent>
