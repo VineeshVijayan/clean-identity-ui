@@ -8,6 +8,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -18,7 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Shield } from "lucide-react";
+import { Plus, Shield, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -35,6 +45,8 @@ export const ManageRolesSettings = () => {
   const [roles, setRoles] = useState<Role[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newRole, setNewRole] = useState({ name: "", description: "" });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [roleToDelete, setRoleToDelete] = useState<Role | null>(null);
 
   /* ---------------- FETCH ROLES ---------------- */
 
@@ -59,9 +71,7 @@ export const ManageRolesSettings = () => {
         const mapped: Role[] = list.map((r: any) => ({
           id: r.id,
           name: r.name,
-          description: r.description || ""
-            ? r.createdAt.split("T")[0]
-            : "",
+          description: r.description || "",
           status: r.status || "Active",
         }));
 
@@ -101,7 +111,6 @@ export const ManageRolesSettings = () => {
         throw new Error(data?.message || "Failed to create role");
       }
 
-      // Map API response safely
       const createdRole: Role = {
         id: data?.id || String(Date.now()),
         name: data?.name || newRole.name,
@@ -109,10 +118,7 @@ export const ManageRolesSettings = () => {
         status: data?.status || "Active",
       };
 
-      // Update UI instantly
       setRoles((prev) => [...prev, createdRole]);
-
-      // Reset form
       setNewRole({ name: "", description: "" });
       setIsDialogOpen(false);
 
@@ -123,6 +129,30 @@ export const ManageRolesSettings = () => {
     } catch (error: any) {
       toast.error(error.message || "Failed to create role");
     }
+  };
+
+  /* ---------------- DELETE ROLE ---------------- */
+
+  const handleDeleteClick = (role: Role) => {
+    setRoleToDelete(role);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!roleToDelete) return;
+
+    setRoles((prev) => prev.filter((r) => r.id !== roleToDelete.id));
+    setDeleteDialogOpen(false);
+    setRoleToDelete(null);
+
+    toast.success("Role deleted successfully", {
+      description: `"${roleToDelete.name}" has been removed.`,
+    });
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setRoleToDelete(null);
   };
 
   return (
@@ -150,15 +180,14 @@ export const ManageRolesSettings = () => {
               <TableHead>Role Name</TableHead>
               <TableHead>Description</TableHead>
               <TableHead className="text-center">Users</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead className="text-center">Status</TableHead>
+              <TableHead className="text-center">Actions</TableHead>
             </TableRow>
           </TableHeader>
 
           <TableBody>
             {roles.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-6">
+                <TableCell colSpan={4} className="text-center py-6">
                   No roles found
                 </TableCell>
               </TableRow>
@@ -177,15 +206,18 @@ export const ManageRolesSettings = () => {
                   </TableCell>
 
                   <TableCell className="text-center">
-                    <Badge
-                      variant={
-                        role.status === "Active"
-                          ? "default"
-                          : "secondary"
-                      }
+                    <Badge variant="secondary">0</Badge>
+                  </TableCell>
+
+                  <TableCell className="text-center">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDeleteClick(role)}
+                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                     >
-                      {role.status}
-                    </Badge>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))
@@ -194,7 +226,7 @@ export const ManageRolesSettings = () => {
         </Table>
       </div>
 
-      {/* Dialog */}
+      {/* Create Role Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -250,6 +282,24 @@ export const ManageRolesSettings = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Role</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the role "{roleToDelete?.name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelDelete}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
