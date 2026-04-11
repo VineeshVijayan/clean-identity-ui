@@ -1,6 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CountryCodeSelect } from "@/components/ui/country-code-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -28,6 +29,7 @@ export const EditProfilePage = () => {
 
   const passedUserId = location.state?.userId;
   const passedUser = location.state?.user;
+  const [countryCode, setCountryCode] = useState("US:+1");
 
   // fallback (optional)
   const tokenUser = getUserFromToken();
@@ -423,11 +425,17 @@ export const EditProfilePage = () => {
               </div>
 
               <div className="space-y-1.5">
-                <Label>Phone</Label>
-                <Input
-                  value={form.phoneNumber}
-                  onChange={(e) => set("phoneNumber", e.target.value)}
-                />
+                <Label>Phone Number</Label>
+                <div className="flex gap-2">
+                  <CountryCodeSelect value={countryCode} onChange={setCountryCode} />
+                  <Input
+                    value={form.phoneNumber}
+                    type="tel"
+                    onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })}
+                    placeholder="(555) 000-0000"
+                    className="flex-1"
+                  />
+                </div>
               </div>
               <div className="space-y-1.5">
                 <Label>Email</Label>

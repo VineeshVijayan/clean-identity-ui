@@ -63,14 +63,6 @@ type UserEntry = {
   departmentName: string;
 };
 
-const availableApplications = [
-  { id: "1", name: "Salesforce CRM", description: "Customer relationship management" },
-  { id: "2", name: "Jira", description: "Issue tracking and project management" },
-  { id: "3", name: "Slack Enterprise", description: "Team messaging and collaboration" },
-  { id: "4", name: "Tableau", description: "Data visualization and analytics" },
-  { id: "5", name: "GitHub Enterprise", description: "Code hosting and version control" },
-  { id: "6", name: "Confluence", description: "Team workspace and documentation" },
-];
 
 const availableProjects = ["Project Alpha", "Project Beta", "Project Gamma", "Enterprise Suite"];
 const availableRoles = ["Viewer", "Editor", "Admin", "Contributor", "Read Only"];
@@ -223,6 +215,7 @@ const UserDetailsCard = ({ user }: { user: UserEntry }) => (
 export const ApplicationManagementPage = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("request");
+  const [availableApplications, setAvailableApplications] = useState<any[]>([]);
 
   // Users from API
   const [users, setUsers] = useState<UserEntry[]>([]);
@@ -275,6 +268,42 @@ export const ApplicationManagementPage = () => {
       .catch(() => { });
   }, []);
 
+  // Fetch Request Application
+  useEffect(() => {
+    const fetchApplications = async () => {
+      try {
+        const token = localStorage.getItem("auth-token");
+
+        const res = await fetch(`${API_BASE_URL}/applications`, {
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: token ? `Bearer ${token}` : "",
+          },
+        });
+
+        if (!res.ok) throw new Error("Failed to fetch applications");
+
+        const response = await res.json();
+
+        const appsArray = Array.isArray(response)
+          ? response
+          : response.data?.content || [];
+
+        const mappedApps = appsArray.map((app: any) => ({
+          id: app.id || app.appId,
+          name: app.name || app.appName,
+          description: app.description || "",
+        }));
+
+        setAvailableApplications(mappedApps);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    fetchApplications();
+  }, []);
   /* ── Request Access submit ── */
   const handleRequestSubmit = () => {
     if (!reqSelectedUser) {
@@ -384,7 +413,7 @@ export const ApplicationManagementPage = () => {
             </SelectTrigger>
             <SelectContent className="bg-popover border border-border shadow-lg z-50">
               {availableApplications.map((app) => (
-                <SelectItem key={app.id} value={app.name}>
+                <SelectItem key={app.id} value={String(app.id)}>
                   {app.name}
                 </SelectItem>
               ))}
