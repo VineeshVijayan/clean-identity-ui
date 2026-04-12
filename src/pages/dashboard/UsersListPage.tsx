@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   DropdownMenu,
@@ -221,7 +221,8 @@ export const UsersListPage = () => {
   const [delegateModalOpen, setDelegateModalOpen] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [delegateReason, setDelegateReason] = useState("");
-
+  // ADD this state
+  const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
   useEffect(() => {
     const deptId = getDeptId();
 
@@ -230,7 +231,7 @@ export const UsersListPage = () => {
       return;
     }
 
-    fetch(`${API_BASE_URL}/users/department/${deptId}`, {
+    fetch(`${API_BASE_URL}/users/departments/${deptId}`, {
       headers: authHeaders(),
     })
       .then((res) => {
@@ -254,6 +255,25 @@ export const UsersListPage = () => {
       })
       .catch((err) => console.error(err));
   }, []);
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/departments`, {
+      headers: authHeaders(),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch departments");
+        return res.json();
+      })
+      .then((response) => {
+        const deptList = response.data.map((d: any) => ({
+          id: d.id,
+          name: d.name,
+        }));
+        setDepartments(deptList);
+      })
+      .catch((err) => console.error(err));
+  }, []);
+
 
   const teamUsers = users;
   const delegateUsers: User[] = [];
@@ -281,12 +301,34 @@ export const UsersListPage = () => {
     }
   };
 
-  const handleSendRequest = () => {
+  const handleSendRequest = async () => {
     if (!selectedDepartment) return;
-    setDelegateModalOpen(false);
-    setSelectedDepartment("");
-    setDelegateReason("");
-    toast.success("Request sent successfully");
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/delegates/request`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({
+          targetDepartmentId: Number(selectedDepartment),
+          comments: delegateReason || "",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to send request");
+      }
+
+      // ✅ Success
+      toast.success("Request sent successfully");
+
+      // Reset
+      setDelegateModalOpen(false);
+      setSelectedDepartment("");
+      setDelegateReason("");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to send request");
+    }
   };
 
   return (
@@ -368,12 +410,11 @@ export const UsersListPage = () => {
                   <SelectValue placeholder="Select a department" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="engineering">Engineering</SelectItem>
-                  <SelectItem value="marketing">Marketing</SelectItem>
-                  <SelectItem value="sales">Sales</SelectItem>
-                  <SelectItem value="hr">Human Resources</SelectItem>
-                  <SelectItem value="finance">Finance</SelectItem>
-                  <SelectItem value="operations">Operations</SelectItem>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
