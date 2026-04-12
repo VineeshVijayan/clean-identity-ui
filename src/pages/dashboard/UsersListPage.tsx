@@ -292,11 +292,7 @@ export const UsersListPage = () => {
       u.email.toLowerCase().includes(teamSearch.toLowerCase())
   );
 
-  const filteredDelegates = delegateUsers.filter(
-    (u) =>
-      `${u.firstName} ${u.lastName}`.toLowerCase().includes(delegateSearch.toLowerCase()) ||
-      u.email.toLowerCase().includes(delegateSearch.toLowerCase())
-  );
+  // delegateSearch is kept for future use
 
   const getDeptId = () => {
     const token = localStorage.getItem("auth-token");
