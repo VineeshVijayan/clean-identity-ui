@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -8,16 +7,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -28,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Shield, Trash2 } from "lucide-react";
+import { Plus, Shield } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -38,49 +27,51 @@ interface Role {
   id: string;
   name: string;
   description: string;
-  status: "Active" | "Inactive";
 }
 
 export const ManageRolesSettings = () => {
   const [roles, setRoles] = useState<Role[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [deleteRoleId, setDeleteRoleId] = useState<string | null>(null);
   const [newRole, setNewRole] = useState({ name: "", description: "" });
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [roleToDelete, setRoleToDelete] = useState<Role | null>(null);
 
   /* ---------------- FETCH ROLES ---------------- */
 
   useEffect(() => {
+    fetchRoles();
+  }, []);
+
+  const fetchRoles = async () => {
     const token = localStorage.getItem("auth-token");
 
-    fetch(`${API_BASE_URL}/roles`, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: token ? `Bearer ${token}` : "",
-      },
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error();
-        return res.json();
-      })
-      .then((data) => {
-        const list = Array.isArray(data)
-          ? data
-          : data?.data || data?.roles || [];
-
-        const mapped: Role[] = list.map((r: any) => ({
-          id: r.id,
-          name: r.name,
-          description: r.description || "",
-          status: r.status || "Active",
-        }));
-
-        setRoles(mapped);
-      })
-      .catch(() => {
-        toast.error("Failed to load roles");
+    try {
+      const res = await fetch(`${API_BASE_URL}/roles`, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
+        },
       });
-  }, []);
+
+      if (!res.ok) throw new Error();
+
+      const data = await res.json();
+
+      const list = Array.isArray(data)
+        ? data
+        : data?.data || data?.roles || [];
+
+      const mapped: Role[] = list.map((r: any) => ({
+        id: r.id,
+        name: r.name,
+        description: r.description || "",
+      }));
+
+      setRoles(mapped);
+
+    } catch {
+      toast.error("Failed to load roles");
+    }
+  };
 
   /* ---------------- CREATE ROLE ---------------- */
 
@@ -115,10 +106,10 @@ export const ManageRolesSettings = () => {
         id: data?.id || String(Date.now()),
         name: data?.name || newRole.name,
         description: data?.description || newRole.description,
-        status: data?.status || "Active",
       };
 
       setRoles((prev) => [...prev, createdRole]);
+
       setNewRole({ name: "", description: "" });
       setIsDialogOpen(false);
 
@@ -133,26 +124,30 @@ export const ManageRolesSettings = () => {
 
   /* ---------------- DELETE ROLE ---------------- */
 
-  const handleDeleteClick = (role: Role) => {
-    setRoleToDelete(role);
-    setDeleteDialogOpen(true);
-  };
+  const handleDeleteRole = async () => {
+    if (!deleteRoleId) return;
 
-  const handleConfirmDelete = () => {
-    if (!roleToDelete) return;
+    const token = localStorage.getItem("auth-token");
 
-    setRoles((prev) => prev.filter((r) => r.id !== roleToDelete.id));
-    setDeleteDialogOpen(false);
-    setRoleToDelete(null);
+    try {
+      const res = await fetch(`${API_BASE_URL}/roles/${deleteRoleId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+      });
 
-    toast.success("Role deleted successfully", {
-      description: `"${roleToDelete.name}" has been removed.`,
-    });
-  };
+      if (!res.ok) throw new Error();
 
-  const handleCancelDelete = () => {
-    setDeleteDialogOpen(false);
-    setRoleToDelete(null);
+      setRoles((prev) => prev.filter((r) => r.id !== deleteRoleId));
+
+      toast.success("Role deleted successfully");
+
+    } catch {
+      toast.error("Failed to delete role");
+    } finally {
+      setDeleteRoleId(null);
+    }
   };
 
   return (
@@ -179,15 +174,14 @@ export const ManageRolesSettings = () => {
             <TableRow>
               <TableHead>Role Name</TableHead>
               <TableHead>Description</TableHead>
-              <TableHead className="text-center">Users</TableHead>
-              <TableHead className="text-center">Actions</TableHead>
+              <TableHead className="text-center">Action</TableHead>
             </TableRow>
           </TableHeader>
 
           <TableBody>
             {roles.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-6">
+                <TableCell colSpan={3} className="text-center py-6">
                   No roles found
                 </TableCell>
               </TableRow>
@@ -206,17 +200,12 @@ export const ManageRolesSettings = () => {
                   </TableCell>
 
                   <TableCell className="text-center">
-                    <Badge variant="secondary">0</Badge>
-                  </TableCell>
-
-                  <TableCell className="text-center">
                     <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDeleteClick(role)}
-                      className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setDeleteRoleId(role.id)}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      Delete
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -226,7 +215,7 @@ export const ManageRolesSettings = () => {
         </Table>
       </div>
 
-      {/* Create Role Dialog */}
+      {/* Create Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -238,9 +227,8 @@ export const ManageRolesSettings = () => {
 
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="role-name">Role Name</Label>
+              <Label>Role Name</Label>
               <Input
-                id="role-name"
                 placeholder="e.g. Editor"
                 value={newRole.name}
                 onChange={(e) =>
@@ -253,9 +241,8 @@ export const ManageRolesSettings = () => {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="role-desc">Description</Label>
+              <Label>Description</Label>
               <Input
-                id="role-desc"
                 placeholder="e.g. Can edit content"
                 value={newRole.description}
                 onChange={(e) =>
@@ -284,22 +271,32 @@ export const ManageRolesSettings = () => {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Role</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete the role "{roleToDelete?.name}"? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={handleCancelDelete}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+      <Dialog open={!!deleteRoleId} onOpenChange={() => setDeleteRoleId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Role</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this role? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteRoleId(null)}
+            >
+              Cancel
+            </Button>
+
+            <Button
+              variant="destructive"
+              onClick={handleDeleteRole}
+            >
               Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
