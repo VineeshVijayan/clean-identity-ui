@@ -21,6 +21,7 @@ import { IDFAdministrationPage } from "./pages/dashboard/IDFAdministrationPage";
 import { IDFSettingsPage } from "./pages/dashboard/IDFSettingsPage";
 import { ManageRolesPage } from "./pages/dashboard/ManageRolesPage";
 import { NewRolePage } from "./pages/dashboard/NewRolePage";
+import { MyApprovalPage } from "./pages/dashboard/MyApprovalPage";
 import { ReportsPage } from "./pages/dashboard/ReportsPage";
 import { UserAdministrationPage } from "./pages/dashboard/UserAdministrationPage";
 import { UsersListPage } from "./pages/dashboard/UsersListPage";
@@ -114,7 +115,7 @@ const App = () => (
           </Route>
 
           <Route path="/approvals" element={<DashboardLayout />}>
-            <Route index element={<DashboardHome />} />
+            <Route index element={<MyApprovalPage />} />
           </Route>
 
           {/* Catch-all */}
