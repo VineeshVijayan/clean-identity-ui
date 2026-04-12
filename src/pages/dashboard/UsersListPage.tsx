@@ -377,6 +377,15 @@ export const UsersListPage = () => {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="reason">Reason</Label>
+              <Input
+                id="reason"
+                placeholder="Enter reason for delegate request"
+                value={delegateReason}
+                onChange={(e) => setDelegateReason(e.target.value)}
+              />
+            </div>
             <Button
               className="w-full"
               onClick={handleSendRequest}
