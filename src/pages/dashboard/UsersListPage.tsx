@@ -220,6 +220,7 @@ export const UsersListPage = () => {
   const [delegateSearch, setDelegateSearch] = useState("");
   const [delegateModalOpen, setDelegateModalOpen] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [delegateReason, setDelegateReason] = useState("");
 
   useEffect(() => {
     const deptId = getDeptId();
@@ -284,6 +285,7 @@ export const UsersListPage = () => {
     if (!selectedDepartment) return;
     setDelegateModalOpen(false);
     setSelectedDepartment("");
+    setDelegateReason("");
     toast.success("Request sent successfully");
   };
 
@@ -374,6 +376,15 @@ export const UsersListPage = () => {
                   <SelectItem value="operations">Operations</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reason">Reason</Label>
+              <Input
+                id="reason"
+                placeholder="Enter reason for delegate request"
+                value={delegateReason}
+                onChange={(e) => setDelegateReason(e.target.value)}
+              />
             </div>
             <Button
               className="w-full"
