@@ -220,6 +220,7 @@ export const UsersListPage = () => {
   const [delegateSearch, setDelegateSearch] = useState("");
   const [delegateModalOpen, setDelegateModalOpen] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [delegateReason, setDelegateReason] = useState("");
 
   useEffect(() => {
     const deptId = getDeptId();
@@ -284,6 +285,7 @@ export const UsersListPage = () => {
     if (!selectedDepartment) return;
     setDelegateModalOpen(false);
     setSelectedDepartment("");
+    setDelegateReason("");
     toast.success("Request sent successfully");
   };
 
