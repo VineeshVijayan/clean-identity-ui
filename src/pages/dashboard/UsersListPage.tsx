@@ -218,6 +218,8 @@ export const UsersListPage = () => {
   const [activeTab, setActiveTab] = useState("myteam");
   const [teamSearch, setTeamSearch] = useState("");
   const [delegateSearch, setDelegateSearch] = useState("");
+  const [delegateModalOpen, setDelegateModalOpen] = useState(false);
+  const [selectedDepartment, setSelectedDepartment] = useState("");
 
   useEffect(() => {
     const deptId = getDeptId();
@@ -237,8 +239,8 @@ export const UsersListPage = () => {
       .then((response) => {
         const mappedUsers = response.data.map((u: any) => ({
           id: u.id || u.username,
-          firstName: u.firstName || "",   // ✅ FIX
-          lastName: u.lastName || "",     // ✅ FIX
+          firstName: u.firstName || "",
+          lastName: u.lastName || "",
           email: u.email,
           role: u.roles?.join(", ") || "N/A",
           status: "Active",
@@ -247,15 +249,13 @@ export const UsersListPage = () => {
           departmentName: u.departmentName || ""
         }));
 
-        setUsers(mappedUsers); // ✅ VERY IMPORTANT
+        setUsers(mappedUsers);
       })
       .catch((err) => console.error(err));
   }, []);
 
-  // Split users: first half = My Team, second half = Delegate
-  const midpoint = Math.ceil(users.length / 2);
   const teamUsers = users;
-  const delegateUsers = [];
+  const delegateUsers: User[] = [];
 
   const filteredTeam = teamUsers.filter(
     (u) =>
@@ -268,16 +268,23 @@ export const UsersListPage = () => {
       `${u.firstName} ${u.lastName}`.toLowerCase().includes(delegateSearch.toLowerCase()) ||
       u.email.toLowerCase().includes(delegateSearch.toLowerCase())
   );
+
   const getDeptId = () => {
     const token = localStorage.getItem("auth-token");
     if (!token) return null;
-
     try {
       const payload = JSON.parse(atob(token.split(".")[1]));
-      return payload.departmentId; // or check exact key
+      return payload.departmentId;
     } catch {
       return null;
     }
+  };
+
+  const handleSendRequest = () => {
+    if (!selectedDepartment) return;
+    setDelegateModalOpen(false);
+    setSelectedDepartment("");
+    toast.success("Request sent successfully");
   };
 
   return (
@@ -297,10 +304,17 @@ export const UsersListPage = () => {
             <p className="text-muted-foreground">View your direct reports</p>
           </div>
         </div>
-        <Button onClick={() => navigate("/users/create")}>
-          <UserPlus className="h-4 w-4 mr-2" />
-          New Team Member
-        </Button>
+        {activeTab === "myteam" ? (
+          <Button onClick={() => navigate("/users/create")}>
+            <UserPlus className="h-4 w-4 mr-2" />
+            New Team Member
+          </Button>
+        ) : (
+          <Button onClick={() => setDelegateModalOpen(true)}>
+            <Send className="h-4 w-4 mr-2" />
+            New Delegate
+          </Button>
+        )}
       </div>
 
       {/* Tabs */}
@@ -334,6 +348,44 @@ export const UsersListPage = () => {
           />
         </TabsContent>
       </Tabs>
+
+      {/* New Delegate Modal */}
+      <Dialog open={delegateModalOpen} onOpenChange={setDelegateModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>New Delegate Request</DialogTitle>
+            <DialogDescription>
+              Select a department to send a delegate request.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label htmlFor="department">Department</Label>
+              <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                <SelectTrigger id="department">
+                  <SelectValue placeholder="Select a department" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="engineering">Engineering</SelectItem>
+                  <SelectItem value="marketing">Marketing</SelectItem>
+                  <SelectItem value="sales">Sales</SelectItem>
+                  <SelectItem value="hr">Human Resources</SelectItem>
+                  <SelectItem value="finance">Finance</SelectItem>
+                  <SelectItem value="operations">Operations</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              className="w-full"
+              onClick={handleSendRequest}
+              disabled={!selectedDepartment}
+            >
+              <Send className="h-4 w-4 mr-2" />
+              Send Request
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 };
