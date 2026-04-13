@@ -34,6 +34,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion } from "framer-motion";
 import {
+  Check,
   ChevronLeft,
   ChevronRight,
   ClipboardList,
@@ -46,8 +47,10 @@ import {
   Send,
   Trash2,
   UserCheck,
+  UserMinus,
   UserPlus,
   Users,
+  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -287,7 +290,7 @@ export const UsersListPage = () => {
     requestedAt: string;
   };
 
-  const [delegateRequests] = useState<AccessRequest[]>([
+  const [requestAccessList, setRequestAccessList] = useState<AccessRequest[]>([
     {
       id: "1",
       requesterName: "John Smith",
@@ -305,6 +308,46 @@ export const UsersListPage = () => {
       requestedAt: "2026-04-09 02:15 PM",
     },
   ]);
+
+  const [removeAccessList, setRemoveAccessList] = useState<AccessRequest[]>([
+    {
+      id: "3",
+      requesterName: "Mike Davis",
+      departmentName: "Finance",
+      status: "Pending",
+      comments: "Project completed, access no longer needed",
+      requestedAt: "2026-04-11 11:00 AM",
+    },
+    {
+      id: "4",
+      requesterName: "Emily Chen",
+      departmentName: "HR",
+      status: "Approved",
+      comments: "Role change — removing old department access",
+      requestedAt: "2026-04-08 04:45 PM",
+    },
+  ]);
+
+  const [delegateSubTab, setDelegateSubTab] = useState("request");
+
+  const handleApproveRequest = (id: string) => {
+    setRequestAccessList((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, status: "Approved" } : r))
+    );
+    toast.success("Request approved successfully");
+  };
+
+  const handleRejectRequest = (id: string) => {
+    setRequestAccessList((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, status: "Rejected" } : r))
+    );
+    toast.success("Request rejected");
+  };
+
+  const handleRemoveAccess = (id: string) => {
+    setRemoveAccessList((prev) => prev.filter((r) => r.id !== id));
+    toast.success("Access removed successfully");
+  };
 
   const filteredTeam = teamUsers.filter(
     (u) =>
@@ -417,45 +460,139 @@ export const UsersListPage = () => {
               </Button>
             </div>
 
-            <div className="glass-card overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Requester Name</TableHead>
-                    <TableHead>Department Name</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="hidden md:table-cell">Comments</TableHead>
-                    <TableHead className="hidden sm:table-cell">Requested At</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {delegateRequests.map((request) => (
-                    <TableRow key={request.id}>
-                      <TableCell className="font-medium">{request.requesterName}</TableCell>
-                      <TableCell>{request.departmentName}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={getStatusColor(request.status)}>
-                          {request.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell text-muted-foreground max-w-[200px] truncate">
-                        {request.comments}
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell text-muted-foreground">
-                        {request.requestedAt}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {delegateRequests.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                        No access requests found
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+            <Tabs value={delegateSubTab} onValueChange={setDelegateSubTab} className="w-full">
+              <TabsList className="grid w-full max-w-md grid-cols-2">
+                <TabsTrigger value="request" className="gap-2">
+                  <UserPlus className="h-4 w-4" />
+                  Request Access
+                </TabsTrigger>
+                <TabsTrigger value="remove" className="gap-2">
+                  <UserMinus className="h-4 w-4" />
+                  Remove Access
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="request" className="mt-4">
+                <div className="glass-card overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Requester Name</TableHead>
+                        <TableHead>Department Name</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="hidden md:table-cell">Comments</TableHead>
+                        <TableHead className="hidden sm:table-cell">Requested At</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {requestAccessList.map((request) => (
+                        <TableRow key={request.id}>
+                          <TableCell className="font-medium">{request.requesterName}</TableCell>
+                          <TableCell>{request.departmentName}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={getStatusColor(request.status)}>
+                              {request.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell text-muted-foreground max-w-[200px] truncate">
+                            {request.comments}
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell text-muted-foreground">
+                            {request.requestedAt}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-green-500 hover:bg-green-500/10 border-green-500/20"
+                                onClick={() => handleApproveRequest(request.id)}
+                                disabled={request.status !== "Pending"}
+                              >
+                                <Check className="h-4 w-4 mr-1" />
+                                Approve
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-destructive hover:bg-destructive/10 border-destructive/20"
+                                onClick={() => handleRejectRequest(request.id)}
+                                disabled={request.status !== "Pending"}
+                              >
+                                <X className="h-4 w-4 mr-1" />
+                                Reject
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {requestAccessList.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                            No access requests found
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="remove" className="mt-4">
+                <div className="glass-card overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Requester Name</TableHead>
+                        <TableHead>Department Name</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="hidden md:table-cell">Comments</TableHead>
+                        <TableHead className="hidden sm:table-cell">Requested At</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {removeAccessList.map((request) => (
+                        <TableRow key={request.id}>
+                          <TableCell className="font-medium">{request.requesterName}</TableCell>
+                          <TableCell>{request.departmentName}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={getStatusColor(request.status)}>
+                              {request.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="hidden md:table-cell text-muted-foreground max-w-[200px] truncate">
+                            {request.comments}
+                          </TableCell>
+                          <TableCell className="hidden sm:table-cell text-muted-foreground">
+                            {request.requestedAt}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-destructive hover:bg-destructive/10 border-destructive/20"
+                              onClick={() => handleRemoveAccess(request.id)}
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Remove
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {removeAccessList.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                            No remove access requests found
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
         </TabsContent>
       </Tabs>
