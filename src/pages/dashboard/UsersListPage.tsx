@@ -34,6 +34,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion } from "framer-motion";
 import {
+  Check,
   ChevronLeft,
   ChevronRight,
   ClipboardList,
@@ -46,8 +47,10 @@ import {
   Send,
   Trash2,
   UserCheck,
+  UserMinus,
   UserPlus,
   Users,
+  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
