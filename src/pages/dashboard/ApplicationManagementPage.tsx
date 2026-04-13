@@ -748,6 +748,107 @@ export const ApplicationManagementPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* ─── New Request Modal ─── */}
+      <Dialog open={showNewRequestModal} onOpenChange={setShowNewRequestModal}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>New Access Request</DialogTitle>
+            <DialogDescription>Select an employee and application to request access.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label>Employee</Label>
+              <EmployeeSearchDropdown users={users} selectedUser={reqSelectedUser} onSelect={setReqSelectedUser} />
+            </div>
+            <AnimatePresence>
+              {reqSelectedUser && <UserDetailsCard user={reqSelectedUser} />}
+            </AnimatePresence>
+            <div className="space-y-2">
+              <Label>Application</Label>
+              <Select value={reqApp} onValueChange={setReqApp}>
+                <SelectTrigger><SelectValue placeholder="Choose an application..." /></SelectTrigger>
+                <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                  {availableApplications.map((app) => (
+                    <SelectItem key={app.id} value={String(app.id)}>{app.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Project</Label>
+              <Select value={reqProject} onValueChange={setReqProject}>
+                <SelectTrigger><SelectValue placeholder="Choose a project..." /></SelectTrigger>
+                <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                  {availableProjects.map((p) => (<SelectItem key={p} value={p}>{p}</SelectItem>))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Role</Label>
+              <Select value={reqRole} onValueChange={setReqRole}>
+                <SelectTrigger><SelectValue placeholder="Choose a role..." /></SelectTrigger>
+                <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                  {availableRoles.map((r) => (<SelectItem key={r} value={r}>{r}</SelectItem>))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button className="w-full" onClick={() => { handleRequestSubmit(); setShowNewRequestModal(false); }}>
+              <Send className="h-4 w-4 mr-2" /> Submit Request
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── New Remove Modal ─── */}
+      <Dialog open={showNewRemoveModal} onOpenChange={setShowNewRemoveModal}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>New Removal Request</DialogTitle>
+            <DialogDescription>Select an employee and application to remove access.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label>Employee</Label>
+              <EmployeeSearchDropdown users={users} selectedUser={remSelectedUser} onSelect={setRemSelectedUser} />
+            </div>
+            <AnimatePresence>
+              {remSelectedUser && <UserDetailsCard user={remSelectedUser} />}
+            </AnimatePresence>
+            <div className="space-y-2">
+              <Label>Application</Label>
+              <Select value={remApp} onValueChange={setRemApp}>
+                <SelectTrigger><SelectValue placeholder="Choose an application..." /></SelectTrigger>
+                <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                  {availableApplications.map((app) => (
+                    <SelectItem key={app.id} value={String(app.id)}>{app.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Project</Label>
+              <Select value={remProject} onValueChange={setRemProject}>
+                <SelectTrigger><SelectValue placeholder="Choose a project..." /></SelectTrigger>
+                <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                  {availableProjects.map((p) => (<SelectItem key={p} value={p}>{p}</SelectItem>))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Role</Label>
+              <Select value={remRole} onValueChange={setRemRole}>
+                <SelectTrigger><SelectValue placeholder="Choose a role..." /></SelectTrigger>
+                <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                  {availableRoles.map((r) => (<SelectItem key={r} value={r}>{r}</SelectItem>))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button className="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => { handleRemoveSubmit(); setShowNewRemoveModal(false); }}>
+              <Trash2 className="h-4 w-4 mr-2" /> Submit Removal
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 };
