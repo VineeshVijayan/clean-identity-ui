@@ -257,6 +257,55 @@ export const ApplicationManagementPage = () => {
   const [showCardRemoveConfirm, setShowCardRemoveConfirm] = useState(false);
   const [cardToRemove, setCardToRemove] = useState<number | null>(null);
 
+  // New Request / Remove modals
+  const [showNewRequestModal, setShowNewRequestModal] = useState(false);
+  const [showNewRemoveModal, setShowNewRemoveModal] = useState(false);
+
+  // Request Access table data
+  type AccessRequestEntry = {
+    id: string;
+    requesterName: string;
+    departmentName: string;
+    status: string;
+    comments: string;
+    requestedAt: string;
+  };
+
+  const [requestAccessEntries, setRequestAccessEntries] = useState<AccessRequestEntry[]>([
+    { id: "1", requesterName: "John Smith", departmentName: "Engineering", status: "Pending", comments: "Need Salesforce access for Q2 project", requestedAt: "2026-04-10 09:30 AM" },
+    { id: "2", requesterName: "Sarah Johnson", departmentName: "Marketing", status: "Approved", comments: "Tableau access for campaign analytics", requestedAt: "2026-04-09 02:15 PM" },
+    { id: "3", requesterName: "David Lee", departmentName: "Product", status: "Pending", comments: "GitHub Enterprise for code reviews", requestedAt: "2026-04-11 10:00 AM" },
+  ]);
+
+  const [removeAccessEntries, setRemoveAccessEntries] = useState<AccessRequestEntry[]>([
+    { id: "4", requesterName: "Mike Davis", departmentName: "Finance", status: "Pending", comments: "Project completed — Jira access no longer needed", requestedAt: "2026-04-11 11:00 AM" },
+    { id: "5", requesterName: "Emily Chen", departmentName: "HR", status: "Approved", comments: "Role change — removing Confluence access", requestedAt: "2026-04-08 04:45 PM" },
+  ]);
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Approved": return "bg-green-500/10 text-green-500 border-green-500/20";
+      case "Pending": return "bg-amber-500/10 text-amber-500 border-amber-500/20";
+      case "Rejected": return "bg-red-500/10 text-red-500 border-red-500/20";
+      default: return "bg-muted text-muted-foreground";
+    }
+  };
+
+  const handleApproveRequest = (id: string) => {
+    setRequestAccessEntries((prev) => prev.map((r) => r.id === id ? { ...r, status: "Approved" } : r));
+    toast({ title: "Approved", description: "Request approved successfully." });
+  };
+
+  const handleRejectRequest = (id: string) => {
+    setRequestAccessEntries((prev) => prev.map((r) => r.id === id ? { ...r, status: "Rejected" } : r));
+    toast({ title: "Rejected", description: "Request rejected." });
+  };
+
+  const handleRemoveEntry = (id: string) => {
+    setRemoveAccessEntries((prev) => prev.filter((r) => r.id !== id));
+    toast({ title: "Removed", description: "Access removed successfully." });
+  };
+
   /* Fetch users */
   useEffect(() => {
     const token = localStorage.getItem("auth-token");
