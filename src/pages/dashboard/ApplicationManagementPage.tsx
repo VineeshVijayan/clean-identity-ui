@@ -554,171 +554,141 @@ export const ApplicationManagementPage = () => {
 
           {/* ────────── REQUEST ACCESS TAB ────────── */}
           <TabsContent value="request" className="mt-6 space-y-5">
-            {/* Employee Selection — outside container */}
-            <motion.div variants={itemVariants}>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-600 text-white text-xs font-bold">1</span>
-                <span className="font-semibold text-foreground">Enter Name of Team Member</span>
-              </div>
-              <div className="space-y-4">
-                <EmployeeSearchDropdown
-                  users={users}
-                  selectedUser={reqSelectedUser}
-                  onSelect={setReqSelectedUser}
-                />
-                <AnimatePresence>
-                  {reqSelectedUser && <UserDetailsCard user={reqSelectedUser} />}
-                </AnimatePresence>
-              </div>
-            </motion.div>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Access Requests</h2>
+              <Button onClick={() => setShowNewRequestModal(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                New Request
+              </Button>
+            </div>
 
-            {/* Application Selection */}
-            <motion.div variants={itemVariants}>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-600 text-white text-xs font-bold">2</span>
-                <span className="font-semibold text-foreground">Requested Application(s)</span>
-              </div>
-              <AppSelectionSection
-                // headerLabel="Application(s) being requested"
-                appValue={reqApp}
-                setApp={setReqApp}
-                projectValue={reqProject}
-                setProject={setReqProject}
-                roleValue={reqRole}
-                setRole={setReqRole}
-                onSubmit={handleRequestSubmit}
-                submitLabel="Submit Request"
-                submitIcon={<Send className="h-4 w-4 mr-2" />}
-                submitClass="bg-green-600 text-white hover:bg-green-700"
-              />
-            </motion.div>
+            <div className="glass-card overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Requester Name</TableHead>
+                    <TableHead>Department Name</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="hidden md:table-cell">Comments</TableHead>
+                    <TableHead className="hidden sm:table-cell">Requested At</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {requestAccessEntries.map((entry) => (
+                    <TableRow key={entry.id}>
+                      <TableCell className="font-medium">{entry.requesterName}</TableCell>
+                      <TableCell>{entry.departmentName}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={getStatusColor(entry.status)}>
+                          {entry.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-muted-foreground max-w-[200px] truncate">
+                        {entry.comments}
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell text-muted-foreground">
+                        {entry.requestedAt}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-green-500 hover:bg-green-500/10 border-green-500/20"
+                            onClick={() => handleApproveRequest(entry.id)}
+                            disabled={entry.status !== "Pending"}
+                          >
+                            <Check className="h-4 w-4 mr-1" />
+                            Approve
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-destructive hover:bg-destructive/10 border-destructive/20"
+                            onClick={() => handleRejectRequest(entry.id)}
+                            disabled={entry.status !== "Pending"}
+                          >
+                            <X className="h-4 w-4 mr-1" />
+                            Reject
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {requestAccessEntries.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                        No access requests found
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </TabsContent>
 
           {/* ────────── REMOVE ACCESS TAB ────────── */}
           <TabsContent value="remove" className="mt-6 space-y-5">
-            {/* Info alert */}
-            <Alert className="border-warning/50 bg-warning/5">
-              <AlertTriangle className="h-4 w-4 text-warning" />
-              <AlertTitle className="text-warning">Important Notice</AlertTitle>
-              <AlertDescription className="text-muted-foreground">
-                Essential applications marked with a shield icon cannot be removed. Contact your administrator for assistance.
-              </AlertDescription>
-            </Alert>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold">Remove Access Requests</h2>
+              <Button variant="destructive" onClick={() => setShowNewRemoveModal(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                New Removal
+              </Button>
+            </div>
 
-            {/* Employee Selection — outside container */}
-            <motion.div variants={itemVariants}>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-600 text-white text-xs font-bold">1</span>
-                <span className="font-semibold text-foreground">Enter Name of Team Member</span>
-              </div>
-              <div className="space-y-4">
-                <EmployeeSearchDropdown
-                  users={users}
-                  selectedUser={remSelectedUser}
-                  onSelect={setRemSelectedUser}
-                />
-                <AnimatePresence>
-                  {remSelectedUser && <UserDetailsCard user={remSelectedUser} />}
-                </AnimatePresence>
-              </div>
-            </motion.div>
-
-            {/* Container 2 — Application being Removed */}
-            <motion.div variants={itemVariants}>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-600 text-white text-xs font-bold">2</span>
-                <span className="font-semibold text-foreground">Removed Application(s)</span>
-              </div>
-              <AppSelectionSection
-                // headerLabel="Application(s) being Removed"
-                appValue={remApp}
-                setApp={setRemApp}
-                projectValue={remProject}
-                setProject={setRemProject}
-                roleValue={remRole}
-                setRole={setRemRole}
-                onSubmit={handleRemoveSubmit}
-                submitLabel="Submit Removal"
-                submitIcon={<Trash2 className="h-4 w-4 mr-2" />}
-                submitClass="bg-green-600 text-white hover:bg-green-700"
-              />
-            </motion.div>
-
-            {/* Current Apps Grid */}
-            <motion.div variants={itemVariants}>
-              <Card>
-                <CardHeader className="pb-4">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <div className="p-1.5 rounded-md bg-primary/10">
-                      <AppWindow className="h-4 w-4 text-primary" />
-                    </div>
-                    My Current Applications
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {remCardList.map((app) => (
-                      <motion.div
-                        key={app.id}
-                        layout
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                      >
-                        <Card
-                          className={`relative transition-all duration-200 ${app.isEssential
-                            ? "opacity-70 cursor-not-allowed"
-                            : "hover:shadow-md cursor-pointer"
-                            }`}
+            <div className="glass-card overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Requester Name</TableHead>
+                    <TableHead>Department Name</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="hidden md:table-cell">Comments</TableHead>
+                    <TableHead className="hidden sm:table-cell">Requested At</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {removeAccessEntries.map((entry) => (
+                    <TableRow key={entry.id}>
+                      <TableCell className="font-medium">{entry.requesterName}</TableCell>
+                      <TableCell>{entry.departmentName}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={getStatusColor(entry.status)}>
+                          {entry.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell text-muted-foreground max-w-[200px] truncate">
+                        {entry.comments}
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell text-muted-foreground">
+                        {entry.requestedAt}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive hover:bg-destructive/10 border-destructive/20"
+                          onClick={() => handleRemoveEntry(entry.id)}
                         >
-                          <CardContent className="pt-5">
-                            <div className="flex items-start justify-between mb-3">
-                              <div className="flex items-center gap-3">
-                                <div className="text-2xl">{app.icon}</div>
-                                <div>
-                                  <p className="font-semibold text-foreground text-sm">{app.name}</p>
-                                  <p className="text-xs text-muted-foreground">{app.category}</p>
-                                </div>
-                              </div>
-                              {app.isEssential ? (
-                                <Shield className="h-4 w-4 text-warning" />
-                              ) : (
-                                <button
-                                  onClick={() => handleCardRemove(app.id)}
-                                  className="p-1 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                                >
-                                  <X className="h-4 w-4" />
-                                </button>
-                              )}
-                            </div>
-                            <div className="space-y-1.5 text-xs">
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Access Level:</span>
-                                <Badge variant="secondary" className="text-xs h-5">{app.accessLevel}</Badge>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Granted:</span>
-                                <span className="text-foreground">{app.grantedDate}</span>
-                              </div>
-                            </div>
-                            {app.isEssential && (
-                              <Badge variant="outline" className="mt-3 w-full justify-center bg-warning/10 text-warning border-warning/30 text-xs">
-                                <Shield className="w-3 h-3 mr-1" />Essential — Cannot Remove
-                              </Badge>
-                            )}
-                            {!app.isEssential && (
-                              <Badge variant="outline" className="mt-3 w-full justify-center bg-success/10 text-success border-success/30 text-xs">
-                                <CheckCircle className="w-3 h-3 mr-1" />Active Access
-                              </Badge>
-                            )}
-                          </CardContent>
-                        </Card>
-                      </motion.div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Remove
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {removeAccessEntries.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                        No removal requests found
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </TabsContent>
         </Tabs>
       </motion.div>
