@@ -290,7 +290,7 @@ export const UsersListPage = () => {
     requestedAt: string;
   };
 
-  const [delegateRequests] = useState<AccessRequest[]>([
+  const [requestAccessList, setRequestAccessList] = useState<AccessRequest[]>([
     {
       id: "1",
       requesterName: "John Smith",
@@ -308,6 +308,46 @@ export const UsersListPage = () => {
       requestedAt: "2026-04-09 02:15 PM",
     },
   ]);
+
+  const [removeAccessList, setRemoveAccessList] = useState<AccessRequest[]>([
+    {
+      id: "3",
+      requesterName: "Mike Davis",
+      departmentName: "Finance",
+      status: "Pending",
+      comments: "Project completed, access no longer needed",
+      requestedAt: "2026-04-11 11:00 AM",
+    },
+    {
+      id: "4",
+      requesterName: "Emily Chen",
+      departmentName: "HR",
+      status: "Approved",
+      comments: "Role change — removing old department access",
+      requestedAt: "2026-04-08 04:45 PM",
+    },
+  ]);
+
+  const [delegateSubTab, setDelegateSubTab] = useState("request");
+
+  const handleApproveRequest = (id: string) => {
+    setRequestAccessList((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, status: "Approved" } : r))
+    );
+    toast.success("Request approved successfully");
+  };
+
+  const handleRejectRequest = (id: string) => {
+    setRequestAccessList((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, status: "Rejected" } : r))
+    );
+    toast.success("Request rejected");
+  };
+
+  const handleRemoveAccess = (id: string) => {
+    setRemoveAccessList((prev) => prev.filter((r) => r.id !== id));
+    toast.success("Access removed successfully");
+  };
 
   const filteredTeam = teamUsers.filter(
     (u) =>
