@@ -36,7 +36,6 @@ import { motion } from "framer-motion";
 import {
   ChevronLeft,
   ChevronRight,
-  ClipboardList,
   Download,
   Edit,
   Eye,
@@ -47,7 +46,7 @@ import {
   Trash2,
   UserCheck,
   UserPlus,
-  Users,
+  Users
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -287,24 +286,7 @@ export const UsersListPage = () => {
     requestedAt: string;
   };
 
-  const [delegateRequests] = useState<AccessRequest[]>([
-    {
-      id: "1",
-      requesterName: "John Smith",
-      departmentName: "Engineering",
-      status: "Pending",
-      comments: "Need access for project collaboration",
-      requestedAt: "2026-04-10 09:30 AM",
-    },
-    {
-      id: "2",
-      requesterName: "Sarah Johnson",
-      departmentName: "Marketing",
-      status: "Approved",
-      comments: "Cross-team initiative support",
-      requestedAt: "2026-04-09 02:15 PM",
-    },
-  ]);
+  const [delegateUsers, setDelegateUsers] = useState<User[]>([]);
 
   const filteredTeam = teamUsers.filter(
     (u) =>
@@ -354,7 +336,31 @@ export const UsersListPage = () => {
       toast.error("Failed to send request");
     }
   };
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/delegates/users`, {
+      headers: authHeaders(),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch delegate users");
+        return res.json();
+      })
+      .then((response) => {
+        const mapped = response.data.map((u: any) => ({
+          id: String(u.id),
+          firstName: u.firstName || "",
+          lastName: u.lastName || "",
+          email: u.email || "",
+          role: "Delegate",
+          status: u.status ? "Active" : "Inactive",
+          lastLogin: "—",
+          departmentId: "",
+          departmentName: "",
+        }));
 
+        setDelegateUsers(mapped);
+      })
+      .catch((err) => console.error(err));
+  }, []);
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -408,55 +414,12 @@ export const UsersListPage = () => {
         </TabsContent>
 
         <TabsContent value="delegate" className="mt-6">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Manage Team Access</h2>
-              <Button variant="outline" onClick={() => navigate("/approvals")}>
-                <ClipboardList className="h-4 w-4 mr-2" />
-                My Approval
-              </Button>
-            </div>
-
-            <div className="glass-card overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Requester Name</TableHead>
-                    <TableHead>Department Name</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="hidden md:table-cell">Comments</TableHead>
-                    <TableHead className="hidden sm:table-cell">Requested At</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {delegateRequests.map((request) => (
-                    <TableRow key={request.id}>
-                      <TableCell className="font-medium">{request.requesterName}</TableCell>
-                      <TableCell>{request.departmentName}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className={getStatusColor(request.status)}>
-                          {request.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell text-muted-foreground max-w-[200px] truncate">
-                        {request.comments}
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell text-muted-foreground">
-                        {request.requestedAt}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {delegateRequests.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                        No access requests found
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
+          <UserTable
+            users={delegateUsers}
+            searchQuery={delegateSearch}
+            setSearchQuery={setDelegateSearch}
+            totalCount={delegateUsers.length}
+          />
         </TabsContent>
       </Tabs>
 
