@@ -40,27 +40,93 @@ type AccessRequestEntry = {
 export const ApplicationManagementPage = () => {
   const { toast } = useToast();
 
-  const [activeTab, setActiveTab] = useState("request");
+  const [activeTab, setActiveTab] = useState("requests");
 
   // ✅ EXISTING STATE (KEPT SAME)
-  const [requestAccessEntries, setRequestAccessEntries] = useState<AccessRequestEntry[]>([
-    {
-      id: "1",
-      requesterName: "John Smith",
-      departmentName: "Engineering",
-      status: "Pending",
-      comments: "Need Salesforce access",
-      requestedAt: "2026-04-10 09:30 AM",
-    },
-  ]);
+  const [requestAccessEntries, setRequestAccessEntries] = useState<AccessRequestEntry[]>([]);
+  const [approvalEntries, setApprovalEntries] = useState<AccessRequestEntry[]>([]);
+
+  const getDeptId = () => {
+    const token = localStorage.getItem("auth-token");
+    if (!token) return null;
+
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      return payload.departmentId;
+    } catch {
+      return null;
+    }
+  };
 
   // ✅ NEW API INTEGRATION
   useEffect(() => {
-    fetch(`${API_BASE_URL}/delegates/my-requests`, {
+    if (activeTab !== "requests") return;
+
+    const loadRequests = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/delegates/my-requests`, {
+          headers: authHeaders(),
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to fetch requests");
+        }
+
+        const response = await res.json();
+
+        const mapped = response.data.map((item: any) => {
+          const status =
+            item.status === "PENDING"
+              ? "Pending"
+              : item.status === "APPROVED"
+                ? "Approved"
+                : item.status === "REJECTED"
+                  ? "Rejected"
+                  : item.status;
+
+          return {
+            id: String(item.id),
+            requesterName: item.requesterName,
+            departmentName: item.departmentName,
+            status,
+            comments: item.comments,
+            requestedAt: new Date(item.requestedAt).toLocaleString(),
+            actionedAt: item.actionedAt
+              ? new Date(item.actionedAt).toLocaleString()
+              : "Not actioned yet",
+            actionedByName:
+              status === "Approved" || status === "Rejected"
+                ? item.actionedByName || "Unknown User"
+                : "Awaiting approval",
+          };
+        });
+
+        setRequestAccessEntries(mapped);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    loadRequests();
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab !== "approvals") return;
+
+    if (approvalEntries.length > 0) return;
+
+    const departmentId = getDeptId();
+
+    if (!departmentId) {
+      console.error("No departmentId found in token");
+      return;
+    }
+
+    fetch(`${API_BASE_URL}/delegates/requests?departmentId=${departmentId}`, {
       headers: authHeaders(),
     })
       .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch requests");
+        if (!res.ok) throw new Error("Failed to fetch approvals");
         return res.json();
       })
       .then((response) => {
@@ -80,10 +146,10 @@ export const ApplicationManagementPage = () => {
           requestedAt: new Date(item.requestedAt).toLocaleString(),
         }));
 
-        setRequestAccessEntries(mapped);
+        setApprovalEntries(mapped);
       })
       .catch((err) => console.error(err));
-  }, []);
+  }, [activeTab]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -122,12 +188,12 @@ export const ApplicationManagementPage = () => {
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="request">Request Access</TabsTrigger>
-          <TabsTrigger value="remove">Remove Access</TabsTrigger>
+          <TabsTrigger value="requests">My Requests</TabsTrigger>
+          <TabsTrigger value="approvals">My Approvals</TabsTrigger>
         </TabsList>
 
         {/* REQUEST TAB */}
-        <TabsContent value="request">
+        <TabsContent value="requests">
           <Table>
             <TableHeader>
               <TableRow>
@@ -136,7 +202,8 @@ export const ApplicationManagementPage = () => {
                 <TableHead>Status</TableHead>
                 <TableHead>Comments</TableHead>
                 <TableHead>Requested At</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead>Actioned By</TableHead>
+                <TableHead>Actioned At</TableHead>
               </TableRow>
             </TableHeader>
 
@@ -152,18 +219,54 @@ export const ApplicationManagementPage = () => {
                   </TableCell>
                   <TableCell>{r.comments}</TableCell>
                   <TableCell>{r.requestedAt}</TableCell>
+                  <TableCell>{r.actionedByName}</TableCell>
+                  <TableCell>{r.actionedAt}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TabsContent>
+
+        <TabsContent value="approvals">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Requester Name</TableHead>
+                <TableHead>Department</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Comments</TableHead>
+                <TableHead>Requested At</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+
+            <TableBody>
+              {approvalEntries.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell>{r.requesterName}</TableCell>
+                  <TableCell>{r.departmentName}</TableCell>
+                  <TableCell>
+                    <Badge className={getStatusColor(r.status)}>
+                      {r.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{r.comments}</TableCell>
+                  <TableCell>{r.requestedAt}</TableCell>
                   <TableCell className="flex gap-2">
                     <Button
                       size="sm"
                       onClick={() => handleApproveRequest(r.id)}
+                      disabled={r.status !== "Pending"}
                     >
                       <Check className="h-4 w-4 mr-1" />
                       Approve
                     </Button>
+
                     <Button
                       size="sm"
                       variant="destructive"
                       onClick={() => handleRejectRequest(r.id)}
+                      disabled={r.status !== "Pending"}
                     >
                       <X className="h-4 w-4 mr-1" />
                       Reject
@@ -175,6 +278,7 @@ export const ApplicationManagementPage = () => {
           </Table>
         </TabsContent>
       </Tabs>
+
     </div>
   );
 };
