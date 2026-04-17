@@ -35,6 +35,9 @@ type AccessRequestEntry = {
   status: string;
   comments: string;
   requestedAt: string;
+  actionedByName: string;
+  actionedAt: string;
+  
 };
 
 export const AccessRequestsPage = () => {
