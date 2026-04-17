@@ -83,6 +83,13 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     href: "/dashboard",
   };
 
+  const accessRequests: MenuItem = {
+    label: "My Requests & Approvals",
+    icon: ClipboardList,
+    href: "/access-requests",
+  };
+  
+
   const userManagementItem: MenuItem = {
     label: "Team Management",
     icon: Home,
@@ -144,6 +151,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
   if (hasAllRoles(["super_admin", "user"])) {
     menuItems = [
       dashboardItem,
+      accessRequests,
       userManagementItem,
       roleBasedAccess,
       idfAdministration,
@@ -152,6 +160,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     ];
   } else if (hasRole("administration") && hasRole("user") && !hasRole("super_admin")) {
     menuItems = [
+      accessRequests,
       userManagementBasic,
       roleBasedAccess,
       reporting,
@@ -159,6 +168,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     ];
   } else if (hasRole("manager") && hasRole("user") && !hasRole("super_admin") && !hasRole("administration")) {
     menuItems = [
+      accessRequests,
       userManagementBasic,
       reporting,
       checkout,
@@ -166,6 +176,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
   } else if (hasRole("user")) {
     menuItems = [
       dashboardItem,
+      accessRequests,
       checkout,
     ];
   } else {

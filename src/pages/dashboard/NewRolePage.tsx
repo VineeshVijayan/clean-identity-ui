@@ -123,21 +123,30 @@ export const NewRolePage = () => {
   useEffect(() => {
     const fetchJobTitles = async () => {
       try {
-        const response = await fetch(API_BASE_URL + "/job-titles"); // replace with your API
+        const token = localStorage.getItem("auth-token");
+        const response = await fetch(`${API_BASE_URL}/job-titles`, {
+          headers: {
+            Authorization: token ? `Bearer ${token}` : ""
+          },
+        });
+  
+        if (!response.ok) {
+          throw new Error("Failed to fetch job titles");
+        }
+  
         const result = await response.json();
-
-        // assuming API response like: [{ id, name }]
+  
         const formatted = result.data.map((job: any) => ({
           label: job.name,
           value: job.id,
         }));
-
+  
         setJobOptions(formatted);
       } catch (error) {
         console.error("Failed to fetch job titles", error);
       }
     };
-
+  
     fetchJobTitles();
   }, []);
 

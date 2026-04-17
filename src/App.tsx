@@ -34,6 +34,7 @@ import PrivacyPage from "./pages/PrivacyPage";
 import Register from "./pages/Register";
 import SecurityPage from "./pages/SecurityPage";
 import TermsPage from "./pages/TermsPage";
+import { AccessRequestsPage } from "./pages/dashboard/AccessRequests";
 
 const queryClient = new QueryClient();
 
@@ -116,6 +117,10 @@ const App = () => (
 
           <Route path="/approvals" element={<DashboardLayout />}>
             <Route index element={<MyApprovalPage />} />
+          </Route>
+          
+          <Route path="/access-requests" element={<DashboardLayout />}>
+            <Route index element={<AccessRequestsPage />} />
           </Route>
 
           {/* Catch-all */}
