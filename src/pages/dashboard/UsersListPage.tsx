@@ -211,6 +211,127 @@ const UserTable = ({
   );
 };
 
+
+const DelegateTable = ({
+  users,
+  searchQuery,
+  setSearchQuery,
+  totalCount,
+}: {
+  users: User[];
+  searchQuery: string;
+  setSearchQuery: (v: string) => void;
+  totalCount: number;
+}) => {
+  const navigate = useNavigate();
+
+  return (
+    <div className="space-y-4">
+      {/* Filters */}
+      <div className="glass-card p-4">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search users..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+              autoComplete="off"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline">
+              <Filter className="h-4 w-4 mr-2" />
+              Filter
+            </Button>
+            <Button variant="outline">
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="glass-card overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>First Name</TableHead>
+              <TableHead>Last Name</TableHead>
+              <TableHead>Department</TableHead>
+              <TableHead className="hidden sm:table-cell">Email</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {users.map((user) => (
+              <TableRow key={user.id}>
+                <TableCell>
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-9 w-9 bg-primary/20">
+                      <AvatarFallback className="bg-primary/20 text-primary font-semibold">
+                        {user.firstName.charAt(0)}{user.lastName ? user.lastName.charAt(0) : ''}
+                      </AvatarFallback>
+                    </Avatar>
+                    <p className="font-medium">{user.firstName}</p>
+                  </div>
+                </TableCell>
+                <TableCell>{user.lastName}</TableCell>
+                <TableCell>
+                  <Badge variant="outline">{user.departmentName}</Badge>
+                </TableCell>
+                <TableCell className="hidden sm:table-cell text-muted-foreground">
+                  {user.email}
+                </TableCell>
+                <TableCell className="text-right">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem>
+                        <Eye className="h-4 w-4 mr-2" /> View
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() =>
+                        navigate("/edit-profile", {
+                          state: { userId: user.id, user },
+                        })
+                      }>
+                        <Edit className="h-4 w-4 mr-2" /> Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive">
+                        <Trash2 className="h-4 w-4 mr-2" /> Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+
+        <div className="flex items-center justify-between p-4 border-t border-border">
+          <p className="text-sm text-muted-foreground">
+            Showing {users.length} of {totalCount} users
+          </p>
+          <div className="flex gap-2">
+            <Button variant="outline" size="icon" disabled>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon">
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 /* ─── Main Component ─── */
 export const UsersListPage = () => {
   const navigate = useNavigate();
@@ -337,6 +458,11 @@ export const UsersListPage = () => {
     }
   };
   useEffect(() => {
+    if (activeTab !== "delegate") return;
+
+    // Prevent repeat API calls if already loaded
+    if (delegateUsers.length > 0) return;
+
     fetch(`${API_BASE_URL}/delegates/users`, {
       headers: authHeaders(),
     })
@@ -354,13 +480,13 @@ export const UsersListPage = () => {
           status: u.status ? "Active" : "Inactive",
           lastLogin: "—",
           departmentId: "",
-          departmentName: "",
+          departmentName: u.departmentName,
         }));
 
         setDelegateUsers(mapped);
       })
       .catch((err) => console.error(err));
-  }, []);
+  }, [activeTab]);
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -414,7 +540,7 @@ export const UsersListPage = () => {
         </TabsContent>
 
         <TabsContent value="delegate" className="mt-6">
-          <UserTable
+          <DelegateTable
             users={delegateUsers}
             searchQuery={delegateSearch}
             setSearchQuery={setDelegateSearch}
