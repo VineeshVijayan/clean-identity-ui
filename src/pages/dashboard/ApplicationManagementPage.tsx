@@ -38,6 +38,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 
 const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
+const CONNECTOR_API_BASE_URL = "https://idf-connector.ndashdigital.com/api";
 
 /* ─── Types ─── */
 type UserEntry = {
@@ -50,17 +51,14 @@ type UserEntry = {
   status?: string;
 };
 
-const availableApplications = [
-  { id: "1", name: "Salesforce CRM", description: "Customer relationship management" },
-  { id: "2", name: "Jira", description: "Issue tracking and project management" },
-  { id: "3", name: "Slack Enterprise", description: "Team messaging and collaboration" },
-  { id: "4", name: "Tableau", description: "Data visualization and analytics" },
-  { id: "5", name: "GitHub Enterprise", description: "Code hosting and version control" },
-  { id: "6", name: "Confluence", description: "Team workspace and documentation" },
-];
-
-const availableProjects = ["Project Alpha", "Project Beta", "Project Gamma", "Enterprise Suite"];
-const availableRoles = ["Viewer", "Editor", "Admin", "Contributor", "Read Only"];
+type Application = {
+  id: string;
+  name: string;
+  description: string;
+  appUrl: string;
+  active: boolean;
+  integrationName: string;
+};
 
 const userApplications = [
   { id: 1, name: "Salesforce CRM", category: "CRM", accessLevel: "Full Access", grantedDate: "2023-06-15", lastUsed: "2024-01-18", isEssential: false, icon: "💼" },
@@ -212,6 +210,10 @@ export const ApplicationManagementPage = () => {
   // Users from API
   const [users, setUsers] = useState<UserEntry[]>([]);
 
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [availableProjects, setAvailableProjects] = useState<string[]>([]);
+  const [availableRoles, setAvailableRoles] = useState<string[]>([]);
+
   // Request Access state
   const [reqSelectedUser, setReqSelectedUser] = useState<UserEntry | null>(null);
   const [reqApp, setReqApp] = useState("");
@@ -257,6 +259,84 @@ export const ApplicationManagementPage = () => {
       })
       .catch(() => { });
   }, []);
+
+  /* Fetch Applications */
+  useEffect(() => {
+    const token = localStorage.getItem("auth-token");
+    fetch(`${API_BASE_URL}/applications`, {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Authorization: token ? `Bearer ${token}` : "",
+      },
+    })
+      .then((r) => r.json())
+      .then((res) => {
+        const mapped: Application[] = (res.data.content || []).map((app: any) => ({
+          id: app.id,
+          name: app.name,
+          description: app.description,
+          appUrl: app.appUrl,
+          active: app.active,
+          integrationName: app.integrationName
+        }));
+        setApplications(mapped);
+      })
+      .catch(() => { });
+  }, []);
+
+  const getIntegrationApiBase = (applicationId: string) => {
+    const selectedApp = applications.find((app) => app.id === applicationId);
+
+    if (!selectedApp?.integrationName) return null;
+
+    return `${CONNECTOR_API_BASE_URL}/integrations/${selectedApp.integrationName.toLowerCase()}`;
+  };
+
+  const integrationBase = getIntegrationApiBase(reqApp);
+
+  const rolesApi = `${integrationBase}/roles`;
+  const projectsApi = `${integrationBase}/projects`;
+  const createUserApi = `${integrationBase}/create-user`;
+
+  useEffect(() => {
+    if (!reqApp) return;
+
+    const integrationBase = getIntegrationApiBase(reqApp);
+
+    if (!integrationBase) return;
+    const token = localStorage.getItem("auth-token");
+    const fetchIntegrationData = async () => {
+      try {
+        const [rolesRes, projectsRes] = await Promise.all([
+          fetch(`${integrationBase}/roles`, {
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+              Authorization: token ? `Bearer ${token}` : "",
+            },
+          }),
+          fetch(`${integrationBase}/projects`, {
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+              Authorization: token ? `Bearer ${token}` : "",
+            },
+          }),
+        ]);
+
+        const rolesData = await rolesRes.json();
+        const projectsData = await projectsRes.json();
+
+        setAvailableRoles(rolesData.data || []);
+        setAvailableProjects(projectsData.data || []);
+      } catch (error) {
+        console.error("Failed to fetch integration data", error);
+      }
+    };
+
+    fetchIntegrationData();
+  }, [reqApp, applications]);
 
   /* ── Request Access submit ── */
   const handleRequestSubmit = () => {
@@ -366,8 +446,8 @@ export const ApplicationManagementPage = () => {
               <SelectValue placeholder="Choose an application..." />
             </SelectTrigger>
             <SelectContent className="bg-popover border border-border shadow-lg z-50">
-              {availableApplications.map((app) => (
-                <SelectItem key={app.id} value={app.name}>
+              {applications.map((app) => (
+                <SelectItem key={app.id} value={app.id}>
                   {app.name}
                 </SelectItem>
               ))}

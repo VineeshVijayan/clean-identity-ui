@@ -187,7 +187,7 @@ export const AccessRequestsPage = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Manage Team Access</h1>
+      <h1 className="text-2xl font-bold">My Requests & Approvals</h1>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
@@ -200,20 +200,19 @@ export const AccessRequestsPage = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Requester Name</TableHead>
                 <TableHead>Department</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Comments</TableHead>
                 <TableHead>Requested At</TableHead>
                 <TableHead>Actioned By</TableHead>
                 <TableHead>Actioned At</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
 
             <TableBody>
               {requestAccessEntries.map((r) => (
                 <TableRow key={r.id}>
-                  <TableCell>{r.requesterName}</TableCell>
                   <TableCell>{r.departmentName}</TableCell>
                   <TableCell>
                     <Badge className={getStatusColor(r.status)}>
@@ -224,6 +223,16 @@ export const AccessRequestsPage = () => {
                   <TableCell>{r.requestedAt}</TableCell>
                   <TableCell>{r.actionedByName}</TableCell>
                   <TableCell>{r.actionedAt}</TableCell>
+                  <TableCell className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={() => handleApproveRequest(r.id)}
+                      disabled={r.status == "Pending"}
+                    >
+                      <Check className="h-4 w-4 mr-1" />
+                      Revoke
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
