@@ -342,9 +342,35 @@ export const UsersListPage = () => {
   const [delegateModalOpen, setDelegateModalOpen] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [delegateReason, setDelegateReason] = useState("");
+  const [syncing, setSyncing] = useState(false);
   // ADD this state
   const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
-  useEffect(() => {
+
+  const handleSyncUsers = async () => {
+    try {
+      setSyncing(true);
+
+      const res = await fetch(`${CONNECTOR_API_BASE_URL}/odoo/hr/employees/sync`, {
+        method: "POST",
+        headers: authHeaders(),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to sync users");
+      }
+
+      toast.success("Users synced successfully");
+
+      await fetchUsers();
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to sync users");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const fetchUsers = async () => {
     const deptId = getDeptId();
 
     if (!deptId) {
@@ -352,29 +378,33 @@ export const UsersListPage = () => {
       return;
     }
 
-    fetch(`${API_BASE_URL}/users/departments/${deptId}`, {
+    const res = await fetch(`${API_BASE_URL}/users/departments/${deptId}`, {
       headers: authHeaders(),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch users");
-        return res.json();
-      })
-      .then((response) => {
-        const mappedUsers = response.data.map((u: any) => ({
-          id: u.id || u.username,
-          firstName: u.firstName || "",
-          lastName: u.lastName || "",
-          email: u.email,
-          role: u.roles?.join(", ") || "N/A",
-          status: "Active",
-          lastLogin: u.lastLogin || "—",
-          departmentId: u.departmentId || "",
-          departmentName: u.departmentName || ""
-        }));
+    });
 
-        setUsers(mappedUsers);
-      })
-      .catch((err) => console.error(err));
+    if (!res.ok) {
+      throw new Error("Failed to fetch users");
+    }
+
+    const response = await res.json();
+
+    const mappedUsers = response.data.map((u: any) => ({
+      id: u.id || u.username,
+      firstName: u.firstName || "",
+      lastName: u.lastName || "",
+      email: u.email,
+      role: u.roles?.join(", ") || "N/A",
+      status: "Active",
+      lastLogin: u.lastLogin || "—",
+      departmentId: u.departmentId || "",
+      departmentName: u.departmentName || "",
+    }));
+
+    setUsers(mappedUsers);
+  };
+
+  useEffect(() => {
+    fetchUsers().catch((err) => console.error(err));
   }, []);
 
   useEffect(() => {
@@ -504,17 +534,30 @@ export const UsersListPage = () => {
             <p className="text-muted-foreground">View your direct reports</p>
           </div>
         </div>
-        {activeTab === "myteam" ? (
-          <Button onClick={() => navigate("/users/create")}>
-            <UserPlus className="h-4 w-4 mr-2" />
-            New Team Member
-          </Button>
-        ) : (
-          <Button onClick={() => setDelegateModalOpen(true)}>
-            <Send className="h-4 w-4 mr-2" />
-            New Delegate
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {activeTab === "myteam" && (
+            <Button
+              variant="outline"
+              onClick={handleSyncUsers}
+              disabled={syncing}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              {syncing ? "Syncing..." : "Sync"}
+            </Button>
+          )}
+
+          {activeTab === "myteam" ? (
+            <Button onClick={() => navigate("/users/create")}>
+              <UserPlus className="h-4 w-4 mr-2" />
+              New Team Member
+            </Button>
+          ) : (
+            <Button onClick={() => setDelegateModalOpen(true)}>
+              <Send className="h-4 w-4 mr-2" />
+              New Delegate
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Tabs */}

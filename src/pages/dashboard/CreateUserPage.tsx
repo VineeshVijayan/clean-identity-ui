@@ -41,7 +41,7 @@ export const CreateUserPage = () => {
 
     const token = localStorage.getItem("auth-token");
 
-    fetch(`${API_BASE_URL}/roles`, {
+    fetch(`${API_BASE_URL}/job-titles`, {
       headers: {
         "Content-Type": "application/json",
         Authorization: token ? `Bearer ${token}` : "",
