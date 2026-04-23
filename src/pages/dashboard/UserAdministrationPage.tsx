@@ -22,12 +22,11 @@ import {
     ChevronLeft,
     ChevronRight,
     Download,
-    Edit,
     Filter,
     KeyRound,
     MoreVertical,
     Search,
-    UserPlus,
+    UserPlus
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -192,10 +191,10 @@ export const UserAdministrationPage = () => {
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={() => navigate("/edit-profile", { state: { user } })}>
+                                                {/* <DropdownMenuItem onClick={() => navigate("/edit-profile", { state: { user } })}>
                                                     <Edit className="h-4 w-4 mr-2" />
                                                     Edit
-                                                </DropdownMenuItem>
+                                                </DropdownMenuItem> */}
                                                 <DropdownMenuItem>
                                                     <KeyRound className="h-4 w-4 mr-2" />
                                                     Reset Password

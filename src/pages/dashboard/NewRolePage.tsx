@@ -129,24 +129,24 @@ export const NewRolePage = () => {
             Authorization: token ? `Bearer ${token}` : ""
           },
         });
-  
+
         if (!response.ok) {
           throw new Error("Failed to fetch job titles");
         }
-  
+
         const result = await response.json();
-  
+
         const formatted = result.data.map((job: any) => ({
           label: job.name,
           value: job.id,
         }));
-  
+
         setJobOptions(formatted);
       } catch (error) {
         console.error("Failed to fetch job titles", error);
       }
     };
-  
+
     fetchJobTitles();
   }, []);
 

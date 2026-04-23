@@ -88,7 +88,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     icon: ClipboardList,
     href: "/access-requests",
   };
-  
+
 
   const userManagementItem: MenuItem = {
     label: "Team Management",
@@ -105,7 +105,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     label: "User Management",
     icon: Home,
     submenu: [
-      { label: "All Users", href: "/users", icon: Users },
+      { label: "My Team", href: "/users", icon: Users },
       { label: "Create New User", href: "/users/create", icon: UserPlus },
     ],
   };
