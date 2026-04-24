@@ -340,8 +340,11 @@ export const UsersListPage = () => {
   const [teamSearch, setTeamSearch] = useState("");
   const [delegateSearch, setDelegateSearch] = useState("");
   const [delegateModalOpen, setDelegateModalOpen] = useState(false);
+  const [revokeModalOpen, setRevokeModalOpen] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [delegateReason, setDelegateReason] = useState("");
+  const [revokeDepartment, setRevokeDepartment] = useState("");
+  const [revokeReason, setRevokeReason] = useState("");
   const [syncing, setSyncing] = useState(false);
   // ADD this state
   const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
