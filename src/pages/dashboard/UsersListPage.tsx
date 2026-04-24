@@ -490,6 +490,34 @@ export const UsersListPage = () => {
       toast.error("Failed to send request");
     }
   };
+
+  const handleRevokeRequest = async () => {
+    if (!revokeDepartment) return;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/delegates/request`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({
+          targetDepartmentId: Number(revokeDepartment),
+          comments: revokeReason || "",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to revoke");
+      }
+
+      toast.success("Revoke request sent successfully");
+
+      setRevokeModalOpen(false);
+      setRevokeDepartment("");
+      setRevokeReason("");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to send revoke request");
+    }
+  };
   useEffect(() => {
     if (activeTab !== "delegate") return;
 
@@ -557,10 +585,18 @@ export const UsersListPage = () => {
               New Team Member
             </Button>
           ) : (
-            <Button onClick={() => setDelegateModalOpen(true)}>
-              <Send className="h-4 w-4 mr-2" />
-              New Delegate
-            </Button>
+            <>
+              {delegateUsers.length > 0 && (
+                <Button variant="outline" onClick={() => setRevokeModalOpen(true)}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Revoke
+                </Button>
+              )}
+              <Button onClick={() => setDelegateModalOpen(true)}>
+                <Send className="h-4 w-4 mr-2" />
+                New Delegate
+              </Button>
+            </>
           )}
         </div>
       </div>
