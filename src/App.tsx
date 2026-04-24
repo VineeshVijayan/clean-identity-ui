@@ -35,6 +35,8 @@ import Register from "./pages/Register";
 import SecurityPage from "./pages/SecurityPage";
 import TermsPage from "./pages/TermsPage";
 import { AccessRequestsPage } from "./pages/dashboard/AccessRequests";
+import { CreateCompanyPage } from "./pages/dashboard/CreateCompanyPage";
+import { ManageCompanyPage } from "./pages/dashboard/ManageCompanyPage";
 
 const queryClient = new QueryClient();
 
