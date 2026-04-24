@@ -11,6 +11,7 @@ import {
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  Building2,
   ChevronDown,
   ChevronUp,
   ClipboardList,
@@ -22,6 +23,7 @@ import {
   LayoutDashboard,
   Link as LinkIcon,
   LogOut,
+  Plus,
   Settings,
   ShieldCheck,
   ShoppingCart,
