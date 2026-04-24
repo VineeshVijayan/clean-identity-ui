@@ -2,11 +2,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Building2, ArrowLeft } from "lucide-react";
+import { ArrowLeft, Building2 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 export const CreateCompanyPage = () => {
   const navigate = useNavigate();
@@ -43,7 +43,7 @@ export const CreateCompanyPage = () => {
         </div>
       </div>
 
-      <Card className="glass-card max-w-2xl">
+      <Card className="glass-card max-w-7xl">
         <CardHeader>
           <CardTitle>Company Details</CardTitle>
         </CardHeader>
