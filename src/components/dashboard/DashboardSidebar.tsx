@@ -165,6 +165,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
       accessRequests,
       userManagementItem,
       roleBasedAccess,
+      company,
       idfAdministration,
       reporting,
       checkout,
@@ -174,6 +175,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
       accessRequests,
       userManagementBasic,
       roleBasedAccess,
+      company,
       reporting,
       checkout,
     ];
@@ -181,6 +183,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     menuItems = [
       accessRequests,
       userManagementBasic,
+      company,
       reporting,
       checkout,
     ];
@@ -188,6 +191,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     menuItems = [
       dashboardItem,
       accessRequests,
+      company,
       checkout,
     ];
   } else {
