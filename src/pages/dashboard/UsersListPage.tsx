@@ -530,8 +530,10 @@ export const UsersListPage = () => {
             <Users className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">My Team</h1>
-            <p className="text-muted-foreground">View your direct reports</p>
+            <h1 className="text-2xl font-bold">{activeTab === "myteam" ? "My Team" : "Delegate"}</h1>
+            <p className="text-muted-foreground">
+              {activeTab === "myteam" ? "View your direct reports" : "View your delegated team members"}
+            </p>
           </div>
         </div>
         <div className="flex gap-2">
