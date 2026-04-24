@@ -340,8 +340,11 @@ export const UsersListPage = () => {
   const [teamSearch, setTeamSearch] = useState("");
   const [delegateSearch, setDelegateSearch] = useState("");
   const [delegateModalOpen, setDelegateModalOpen] = useState(false);
+  const [revokeModalOpen, setRevokeModalOpen] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [delegateReason, setDelegateReason] = useState("");
+  const [revokeDepartment, setRevokeDepartment] = useState("");
+  const [revokeReason, setRevokeReason] = useState("");
   const [syncing, setSyncing] = useState(false);
   // ADD this state
   const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
@@ -487,6 +490,34 @@ export const UsersListPage = () => {
       toast.error("Failed to send request");
     }
   };
+
+  const handleRevokeRequest = async () => {
+    if (!revokeDepartment) return;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/delegates/request`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({
+          targetDepartmentId: Number(revokeDepartment),
+          comments: revokeReason || "",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to revoke");
+      }
+
+      toast.success("Revoke request sent successfully");
+
+      setRevokeModalOpen(false);
+      setRevokeDepartment("");
+      setRevokeReason("");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to send revoke request");
+    }
+  };
   useEffect(() => {
     if (activeTab !== "delegate") return;
 
@@ -554,10 +585,18 @@ export const UsersListPage = () => {
               New Team Member
             </Button>
           ) : (
-            <Button onClick={() => setDelegateModalOpen(true)}>
-              <Send className="h-4 w-4 mr-2" />
-              New Delegate
-            </Button>
+            <>
+              {delegateUsers.length > 0 && (
+                <Button variant="outline" onClick={() => setRevokeModalOpen(true)}>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Revoke
+                </Button>
+              )}
+              <Button onClick={() => setDelegateModalOpen(true)}>
+                <Send className="h-4 w-4 mr-2" />
+                New Delegate
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -635,6 +674,52 @@ export const UsersListPage = () => {
             >
               <Send className="h-4 w-4 mr-2" />
               Send Request
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Revoke Delegate Modal */}
+      <Dialog open={revokeModalOpen} onOpenChange={setRevokeModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Revoke Delegate</DialogTitle>
+            <DialogDescription>
+              Select a department and provide a reason to revoke delegate access.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label htmlFor="revoke-department">Department</Label>
+              <Select value={revokeDepartment} onValueChange={setRevokeDepartment}>
+                <SelectTrigger id="revoke-department">
+                  <SelectValue placeholder="Select a department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="revoke-reason">Reason</Label>
+              <Input
+                id="revoke-reason"
+                placeholder="Enter reason for revoke"
+                value={revokeReason}
+                onChange={(e) => setRevokeReason(e.target.value)}
+              />
+            </div>
+            <Button
+              className="w-full"
+              onClick={handleRevokeRequest}
+              disabled={!revokeDepartment}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Revoke
             </Button>
           </div>
         </DialogContent>
