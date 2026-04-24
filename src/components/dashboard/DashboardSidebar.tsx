@@ -11,6 +11,7 @@ import {
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  Building2,
   ChevronDown,
   ChevronUp,
   ClipboardList,
@@ -22,6 +23,7 @@ import {
   LayoutDashboard,
   Link as LinkIcon,
   LogOut,
+  Plus,
   Settings,
   ShieldCheck,
   ShoppingCart,
@@ -145,6 +147,15 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     href: "/checkout",
   };
 
+  const company: MenuItem = {
+    label: "Company",
+    icon: Building2,
+    submenu: [
+      { label: "Create Company", href: "/company/create", icon: Plus },
+      { label: "Manage Company", href: "/company/manage", icon: Settings },
+    ],
+  };
+
   // Build menu based on roles
   let menuItems: MenuItem[] = [];
 
@@ -154,6 +165,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
       accessRequests,
       userManagementItem,
       roleBasedAccess,
+      company,
       idfAdministration,
       reporting,
       checkout,
@@ -163,6 +175,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
       accessRequests,
       userManagementBasic,
       roleBasedAccess,
+      company,
       reporting,
       checkout,
     ];
@@ -170,6 +183,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     menuItems = [
       accessRequests,
       userManagementBasic,
+      company,
       reporting,
       checkout,
     ];
@@ -177,6 +191,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     menuItems = [
       dashboardItem,
       accessRequests,
+      company,
       checkout,
     ];
   } else {
