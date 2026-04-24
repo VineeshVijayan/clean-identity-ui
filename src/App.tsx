@@ -125,6 +125,12 @@ const App = () => (
             <Route index element={<AccessRequestsPage />} />
           </Route>
 
+          {/* Company Routes */}
+          <Route path="/company" element={<DashboardLayout />}>
+            <Route path="create" element={<CreateCompanyPage />} />
+            <Route path="manage" element={<ManageCompanyPage />} />
+          </Route>
+
           {/* Catch-all */}
           <Route path="*" element={<NotFound />} />
         </Routes>
