@@ -678,6 +678,52 @@ export const UsersListPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Revoke Delegate Modal */}
+      <Dialog open={revokeModalOpen} onOpenChange={setRevokeModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Revoke Delegate</DialogTitle>
+            <DialogDescription>
+              Select a department and provide a reason to revoke delegate access.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label htmlFor="revoke-department">Department</Label>
+              <Select value={revokeDepartment} onValueChange={setRevokeDepartment}>
+                <SelectTrigger id="revoke-department">
+                  <SelectValue placeholder="Select a department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="revoke-reason">Reason</Label>
+              <Input
+                id="revoke-reason"
+                placeholder="Enter reason for revoke"
+                value={revokeReason}
+                onChange={(e) => setRevokeReason(e.target.value)}
+              />
+            </div>
+            <Button
+              className="w-full"
+              onClick={handleRevokeRequest}
+              disabled={!revokeDepartment}
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Revoke
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 };
