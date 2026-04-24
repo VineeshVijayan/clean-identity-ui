@@ -147,6 +147,15 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     href: "/checkout",
   };
 
+  const company: MenuItem = {
+    label: "Company",
+    icon: Building2,
+    submenu: [
+      { label: "Create Company", href: "/company/create", icon: Plus },
+      { label: "Manage Company", href: "/company/manage", icon: Settings },
+    ],
+  };
+
   // Build menu based on roles
   let menuItems: MenuItem[] = [];
 
