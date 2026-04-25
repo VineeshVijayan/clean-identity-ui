@@ -32,8 +32,8 @@ export const DashboardNavbar = ({ user, onMenuClick, onLogout }: DashboardNavbar
         <Menu className="h-6 w-6" />
       </button>
       <div className="absolute left-1/2 transform -translate-x-1/2 hidden sm:block">
-        <span className="text-sm font-medium text-foreground">
-          Welcome, <span className="text-primary font-semibold">{user?.name || "User"}</span>
+        <span className="text-xl font-medium text-foreground">
+          Welcome, <span className="text-primary font-semibold text-xl">{user?.name || "User"}</span>
         </span>
       </div>
       {/* Search bar removed */}
