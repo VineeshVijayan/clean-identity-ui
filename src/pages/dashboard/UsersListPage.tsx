@@ -537,41 +537,46 @@ export const UsersListPage = () => {
       setRevokeModalOpen(false);
       setRevokeDepartment("");
       setRevokeReason("");
+      await fetchDelegateUsers(); // 🔥 refresh table
     } catch (error) {
       console.error(error);
       toast.error("Failed to send revoke request");
     }
   };
+
   useEffect(() => {
     if (activeTab !== "delegate") return;
 
-    // Prevent repeat API calls if already loaded
-    if (delegateUsers.length > 0) return;
-
-    fetch(`${API_BASE_URL}/delegates/users`, {
-      headers: authHeaders(),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch delegate users");
-        return res.json();
-      })
-      .then((response) => {
-        const mapped = response.data.map((u: any) => ({
-          id: String(u.id),
-          firstName: u.firstName || "",
-          lastName: u.lastName || "",
-          email: u.email || "",
-          role: "Delegate",
-          status: u.status ? "Active" : "Inactive",
-          lastLogin: "—",
-          departmentId: u.departmentId,
-          departmentName: u.departmentName,
-        }));
-
-        setDelegateUsers(mapped);
-      })
-      .catch((err) => console.error(err));
+    fetchDelegateUsers();
   }, [activeTab]);
+
+  const fetchDelegateUsers = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/delegates/users`, {
+        headers: authHeaders(),
+      });
+
+      if (!res.ok) throw new Error("Failed to fetch delegate users");
+
+      const response = await res.json();
+
+      const mapped = response.data.map((u: any) => ({
+        id: String(u.id),
+        firstName: u.firstName || "",
+        lastName: u.lastName || "",
+        email: u.email || "",
+        role: "Delegate",
+        status: u.status ? "Active" : "Inactive",
+        lastLogin: "—",
+        departmentId: u.departmentId,
+        departmentName: u.departmentName,
+      }));
+
+      setDelegateUsers(mapped);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const delegatedDepartments = Array.from(
     new Map(
