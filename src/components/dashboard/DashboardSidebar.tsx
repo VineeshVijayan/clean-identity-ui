@@ -53,6 +53,25 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
   const location = useLocation();
   const navigate = useNavigate();
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    const updatedMenus: Record<string, boolean> = {};
+  
+    menuItems.forEach((item) => {
+      if (item.submenu) {
+        const isAnySubActive = item.submenu.some((sub) =>
+          location.pathname.startsWith(sub.href)
+        );
+  
+        if (isAnySubActive) {
+          updatedMenus[item.label] = true;
+        }
+      }
+    });
+  
+    setOpenMenus(updatedMenus);
+  }, [location.pathname]);
+  
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [customLogo, setCustomLogo] = useState<string | null>(null);
   const { settings } = useSettings();
@@ -167,7 +186,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
       accessRequests,
       userManagementItem,
       roleBasedAccess,
-      ...(settings.SHOW_COMPANY_MENU ? [company] : []),,
+      ...(settings.SHOW_COMPANY_MENU ? [company] : []),
       idfAdministration,
       reporting,
       checkout,
@@ -177,7 +196,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
       accessRequests,
       userManagementBasic,
       roleBasedAccess,
-      ...(settings.SHOW_COMPANY_MENU ? [company] : []),,
+      ...(settings.SHOW_COMPANY_MENU ? [company] : []),
       reporting,
       checkout,
     ];
@@ -185,7 +204,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     menuItems = [
       accessRequests,
       userManagementBasic,
-      ...(settings.SHOW_COMPANY_MENU ? [company] : []),,
+      ...(settings.SHOW_COMPANY_MENU ? [company] : []),
       reporting,
       checkout,
     ];
@@ -193,7 +212,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     menuItems = [
       dashboardItem,
       accessRequests,
-      ...(settings.SHOW_COMPANY_MENU ? [company] : []),,
+      ...(settings.SHOW_COMPANY_MENU ? [company] : []),
       checkout,
     ];
   } else {
@@ -202,7 +221,14 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
 
   const isActiveRoute = (href?: string) => {
     if (!href) return false;
-    return location.pathname === href || location.pathname.startsWith(href + "/");
+  
+    // exact match
+    if (location.pathname === href) return true;
+  
+    // avoid '/users' matching '/users/create'
+    if (href === "/users") return location.pathname === "/users";
+  
+    return location.pathname.startsWith(href + "/");
   };
 
   const handleNavigate = (href: string) => {
