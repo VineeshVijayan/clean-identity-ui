@@ -68,6 +68,21 @@ export const CreateCompanyPage = () => {
             <CardTitle>Company Details</CardTitle>
           </CardHeader>
           <CardContent>
+
+            {/* Approver (Right top aligned) */}
+            <div className="space-y-2">
+              <Label htmlFor="approver">Approver</Label>
+              <select
+                id="approver"
+                className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="">Search all users with manager role</option>
+                <option value="1">Manager 1</option>
+                <option value="2">Manager 2</option>
+              </select>
+            </div>
+
+
             <div className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="companyName">Company Name</Label>
@@ -78,6 +93,8 @@ export const CreateCompanyPage = () => {
                   onChange={(e) => setCompanyName(e.target.value)}
                 />
               </div>
+
+
               <div className="space-y-2">
                 <Label htmlFor="location">Location</Label>
                 <Input
