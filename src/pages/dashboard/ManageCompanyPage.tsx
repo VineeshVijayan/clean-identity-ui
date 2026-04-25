@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/table";
 import { motion } from "framer-motion";
 import { Building2, Edit, Plus, Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -31,33 +31,10 @@ interface Company {
   primaryContact: string;
 }
 
-const initialCompanies: Company[] = [
-  {
-    id: "1",
-    name: "Acme Corporation",
-    location: "New York, USA",
-    phoneNumber: "+1 555-0100",
-    primaryContact: "John Smith",
-  },
-  {
-    id: "2",
-    name: "Globex Industries",
-    location: "London, UK",
-    phoneNumber: "+44 20 7946 0958",
-    primaryContact: "Emma Watson",
-  },
-  {
-    id: "3",
-    name: "Initech Solutions",
-    location: "Bangalore, India",
-    phoneNumber: "+91 80 4123 4567",
-    primaryContact: "Raj Patel",
-  },
-];
-
 export const ManageCompanyPage = () => {
+  const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
   const navigate = useNavigate();
-  const [companies, setCompanies] = useState<Company[]>(initialCompanies);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [search, setSearch] = useState("");
   const [editOpen, setEditOpen] = useState(false);
   const [editing, setEditing] = useState<Company | null>(null);
@@ -79,12 +56,74 @@ export const ManageCompanyPage = () => {
     setEditOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!editing) return;
-    setCompanies((prev) => prev.map((c) => (c.id === editing.id ? editing : c)));
-    setEditOpen(false);
-    toast.success("Company updated successfully");
+  
+    try {
+      const token = localStorage.getItem("auth-token");
+  
+      await fetch(`${API_BASE_URL}/companies/${editing.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+        body: JSON.stringify({
+          name: editing.name,
+          location: editing.location,
+          phoneNumber: editing.phoneNumber,
+          contact: {
+            firstName: editing.primaryContact.split(" ")[0],
+            lastName: editing.primaryContact.split(" ")[1] || "",
+          },
+        }),
+      });
+  
+      // update UI
+      setCompanies((prev) =>
+        prev.map((c) => (c.id === editing.id ? editing : c))
+      );
+  
+      setEditOpen(false);
+      toast.success("Company updated successfully");
+  
+    } catch (err) {
+      toast.error("Update failed");
+    }
   };
+
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        const token = localStorage.getItem("auth-token");
+  
+        const res = await fetch(`${API_BASE_URL}/companies`, {
+          headers: {
+            Authorization: token ? `Bearer ${token}` : "",
+          },
+        });
+  
+        const data = await res.json();
+  
+        const list = data.data || data;
+  
+        const mapped = list.map((c: any) => ({
+          id: String(c.id),
+          name: c.name,
+          location: c.location,
+          phoneNumber: c.phoneNumber,
+          primaryContact: c.contactName || "",
+        }));
+  
+        setCompanies(mapped);
+  
+      } catch (err) {
+        console.error("Failed to load companies", err);
+      }
+    };
+  
+    fetchCompanies();
+  }, []);
 
   return (
     <motion.div

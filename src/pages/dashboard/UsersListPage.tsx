@@ -65,6 +65,13 @@ const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
 
 const CONNECTOR_API_BASE_URL = "https://idf-connector.ndashdigital.com/api";
 
+type Subordinate = {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+};
+
 type User = {
   id: string;
   firstName: string;
@@ -75,6 +82,7 @@ type User = {
   lastLogin: string;
   departmentId: string;
   departmentName: string;
+  subordinates: Subordinate[];
 };
 
 const getStatusColor = (status: string) => {
@@ -353,7 +361,7 @@ export const UsersListPage = () => {
     try {
       setSyncing(true);
 
-      const res = await fetch(`${CONNECTOR_API_BASE_URL}/odoo/hr/employees/sync`, {
+      const res = await fetch(`http://localhost:8081/api/odoo/hr/employees/sync`, {
         method: "POST",
         headers: authHeaders(),
       });
@@ -374,33 +382,36 @@ export const UsersListPage = () => {
   };
 
   const fetchUsers = async () => {
-    const deptId = getDeptId();
+    const userId = getUserId();
 
-    if (!deptId) {
-      console.error("No departmentId in token");
+    if (!userId) {
+      console.error("No userId in token");
       return;
     }
 
-    const res = await fetch(`${API_BASE_URL}/users/departments/${deptId}`, {
+    const res = await fetch(`${API_BASE_URL}/users/${userId}`, {
       headers: authHeaders(),
     });
 
     if (!res.ok) {
-      throw new Error("Failed to fetch users");
+      throw new Error("Failed to fetch user");
     }
 
     const response = await res.json();
 
-    const mappedUsers = response.data.map((u: any) => ({
-      id: u.id || u.username,
+    const user = response.data;
+
+    // 👇 map ONLY subordinates
+    const mappedUsers = (user.subordinates || []).map((u: any) => ({
+      id: String(u.id),
       firstName: u.firstName || "",
       lastName: u.lastName || "",
-      email: u.email,
-      role: u.roles?.join(", ") || "N/A",
+      email: u.email || "",
+      role: "Employee",
       status: "Active",
-      lastLogin: u.lastLogin || "—",
-      departmentId: u.departmentId || "",
-      departmentName: u.departmentName || "",
+      lastLogin: "—",
+      departmentId: "",
+      departmentName: "",
     }));
 
     setUsers(mappedUsers);
@@ -461,6 +472,17 @@ export const UsersListPage = () => {
     }
   };
 
+  const getUserId = () => {
+    const token = localStorage.getItem("auth-token");
+    if (!token) return null;
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      return payload.userId; // 👈 make sure this exists in token
+    } catch {
+      return null;
+    }
+  };
+
   const handleSendRequest = async () => {
     if (!selectedDepartment) return;
 
@@ -495,10 +517,12 @@ export const UsersListPage = () => {
     if (!revokeDepartment) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/delegates/request`, {
+      const userId = getUserId();
+      const response = await fetch(`${API_BASE_URL}/delegates/revoke`, {
         method: "POST",
         headers: authHeaders(),
         body: JSON.stringify({
+          requesterId: userId,
           targetDepartmentId: Number(revokeDepartment),
           comments: revokeReason || "",
         }),
@@ -540,7 +564,7 @@ export const UsersListPage = () => {
           role: "Delegate",
           status: u.status ? "Active" : "Inactive",
           lastLogin: "—",
-          departmentId: "",
+          departmentId: u.departmentId,
           departmentName: u.departmentName,
         }));
 
@@ -548,6 +572,16 @@ export const UsersListPage = () => {
       })
       .catch((err) => console.error(err));
   }, [activeTab]);
+
+  const delegatedDepartments = Array.from(
+    new Map(
+      delegateUsers.map((u) => [
+        u.departmentId,
+        { id: u.departmentId, name: u.departmentName },
+      ])
+    ).values()
+  );
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -696,11 +730,13 @@ export const UsersListPage = () => {
                   <SelectValue placeholder="Select a department" />
                 </SelectTrigger>
                 <SelectContent>
-                  {departments.map((dept) => (
-                    <SelectItem key={dept.id} value={dept.id}>
-                      {dept.name}
-                    </SelectItem>
-                  ))}
+                  <SelectContent>
+                    {delegatedDepartments.map((dept) => (
+                      <SelectItem key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </SelectContent>
               </Select>
             </div>

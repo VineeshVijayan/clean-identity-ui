@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useSettings } from "@/context/SettingsContext";
 
 interface SidebarProps {
   open: boolean;
@@ -54,6 +55,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({});
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [customLogo, setCustomLogo] = useState<string | null>(null);
+  const { settings } = useSettings();
 
   useEffect(() => {
     // Load saved logo on mount
@@ -165,7 +167,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
       accessRequests,
       userManagementItem,
       roleBasedAccess,
-      company,
+      ...(settings.SHOW_COMPANY_MENU ? [company] : []),,
       idfAdministration,
       reporting,
       checkout,
@@ -175,7 +177,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
       accessRequests,
       userManagementBasic,
       roleBasedAccess,
-      company,
+      ...(settings.SHOW_COMPANY_MENU ? [company] : []),,
       reporting,
       checkout,
     ];
@@ -183,7 +185,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     menuItems = [
       accessRequests,
       userManagementBasic,
-      company,
+      ...(settings.SHOW_COMPANY_MENU ? [company] : []),,
       reporting,
       checkout,
     ];
@@ -191,7 +193,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     menuItems = [
       dashboardItem,
       accessRequests,
-      company,
+      ...(settings.SHOW_COMPANY_MENU ? [company] : []),,
       checkout,
     ];
   } else {

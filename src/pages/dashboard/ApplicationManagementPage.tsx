@@ -40,15 +40,26 @@ import { useEffect, useRef, useState } from "react";
 const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
 const CONNECTOR_API_BASE_URL = "https://idf-connector.ndashdigital.com/api";
 
+
+type Subordinate = {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+};
 /* ─── Types ─── */
 type UserEntry = {
   id: string;
   firstName: string;
   lastName: string;
   email: string;
-  ssn?: string;
-  role?: string;
-  status?: string;
+  ssn: string,
+  role: string;
+  status: string;
+  lastLogin: string;
+  departmentId: string;
+  departmentName: string;
+  subordinates: Subordinate[];
 };
 
 type Application = {
@@ -234,10 +245,25 @@ export const ApplicationManagementPage = () => {
   const [showCardRemoveConfirm, setShowCardRemoveConfirm] = useState(false);
   const [cardToRemove, setCardToRemove] = useState<number | null>(null);
 
+  const getUserId = () => {
+    const token = localStorage.getItem("auth-token");
+    if (!token) return null;
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      return payload.userId; // 👈 make sure this exists in token
+    } catch {
+      return null;
+    }
+  };
+
   /* Fetch users */
   useEffect(() => {
     const token = localStorage.getItem("auth-token");
-    fetch(`${API_BASE_URL}/users`, {
+    const userId = getUserId();
+  
+    if (!userId) return;
+  
+    fetch(`${API_BASE_URL}/users/${userId}`, {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
@@ -246,18 +272,21 @@ export const ApplicationManagementPage = () => {
     })
       .then((r) => r.json())
       .then((res) => {
-        const mapped: UserEntry[] = (res.data || []).map((u: any) => ({
-          id: u.id || u.username,
+        const user = res.data;
+  
+        const mapped: UserEntry[] = (user.subordinates || []).map((u: any) => ({
+          id: String(u.id),
           firstName: u.firstName || "",
           lastName: u.lastName || "",
           email: u.email,
-          ssn: u.ssn || "",
-          role: u.roles?.join(", ") || "N/A",
-          status: u.status || "Active",
+          ssn: "",
+          role: "Employee",
+          status: "Active",
         }));
+  
         setUsers(mapped);
       })
-      .catch(() => { });
+      .catch(() => {});
   }, []);
 
   /* Fetch Applications */

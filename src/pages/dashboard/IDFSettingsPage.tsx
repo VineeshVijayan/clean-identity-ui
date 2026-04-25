@@ -15,24 +15,37 @@ import { ChangeSidebarIconSettings } from "@/components/settings/ChangeSidebarIc
 import { ChangeButtonColorSettings } from "@/components/settings/ChangeButtonColorSettings";
 import { ManageRolesSettings } from "@/components/settings/ManageRolesSettings";
 import { useToast } from "@/hooks/use-toast";
+import { useSettings } from "@/context/SettingsContext";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 export const IDFSettingsPage = () => {
+  const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
+  const { settings, setSettings } = useSettings();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("sidebar-icons");
 
-  const handleSaveAll = () => {
+
+  const handleSaveAll = async () => {
+    const token = localStorage.getItem("auth-token");
+    await fetch(`${API_BASE_URL}/settings`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: token ? `Bearer ${token}` : "",
+      },
+      body: JSON.stringify({
+        SHOW_COMPANY_MENU: String(settings.SHOW_COMPANY_MENU),
+      }),
+    });
+
     toast({
       title: "Settings Saved",
       description: "All IDF settings have been saved successfully.",
     });
   };
 
-  const handleResetAll = () => {
-    toast({
-      title: "Settings Reset",
-      description: "All settings have been reset to default values.",
-    });
-  };
+
 
   return (
     <motion.div
@@ -53,7 +66,7 @@ export const IDFSettingsPage = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleResetAll} className="gap-2">
+          <Button variant="outline" className="gap-2">
             <RotateCcw className="h-4 w-4" />
             Reset All
           </Button>
@@ -95,6 +108,28 @@ export const IDFSettingsPage = () => {
             </div>
 
             <TabsContent value="sidebar-icons" className="p-6 mt-0">
+              {/* 👇 NEW TOGGLE */}
+              <div className="flex items-center justify-between border rounded-lg p-4">
+                <div>
+                  <Label className="text-base font-medium">
+                    Show Company Menu
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Enable or disable Company sidebar menu
+                  </p>
+                </div>
+
+                <Switch
+                  checked={settings?.SHOW_COMPANY_MENU || false}
+                  onCheckedChange={(value) =>
+                    setSettings((prev: any) => ({
+                      ...prev,
+                      SHOW_COMPANY_MENU: value,
+                    }))
+                  }
+                />
+              </div>
+              <br></br>
               <ChangeSidebarIconSettings />
             </TabsContent>
 

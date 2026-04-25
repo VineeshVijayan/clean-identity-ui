@@ -206,7 +206,6 @@ export const AccessRequestsPage = () => {
                 <TableHead>Requested At</TableHead>
                 <TableHead>Actioned By</TableHead>
                 <TableHead>Actioned At</TableHead>
-                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
 
@@ -223,16 +222,6 @@ export const AccessRequestsPage = () => {
                   <TableCell>{r.requestedAt}</TableCell>
                   <TableCell>{r.actionedByName}</TableCell>
                   <TableCell>{r.actionedAt}</TableCell>
-                  <TableCell className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() => handleApproveRequest(r.id)}
-                      disabled={r.status == "Pending"}
-                    >
-                      <Check className="h-4 w-4 mr-1" />
-                      Revoke
-                    </Button>
-                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

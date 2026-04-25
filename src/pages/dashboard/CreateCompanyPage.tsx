@@ -4,15 +4,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import { ArrowLeft, Building2, UserRound } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 export const CreateCompanyPage = () => {
+  const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
   const navigate = useNavigate();
   const [companyName, setCompanyName] = useState("");
   const [location, setLocation] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [approverId, setApproverId] = useState("");
+  const [users, setUsers] = useState<any[]>([]);
 
   // Primary Contact Information
   const [contactFirstName, setContactFirstName] = useState("");
@@ -22,12 +25,14 @@ export const CreateCompanyPage = () => {
   const [contactDob, setContactDob] = useState("");
   const [contactSsn, setContactSsn] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!companyName || !location || !phoneNumber) {
       toast.error("Please fill in all company fields");
       return;
     }
+
     if (
       !contactFirstName ||
       !contactLastName ||
@@ -39,9 +44,68 @@ export const CreateCompanyPage = () => {
       toast.error("Please fill in all primary contact fields");
       return;
     }
-    toast.success("Company created successfully");
-    navigate("/company/manage");
+
+    try {
+      const token = localStorage.getItem("auth-token");
+
+      const res = await fetch(`${API_BASE_URL}/companies`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+        body: JSON.stringify({
+          name: companyName,
+          location,
+          phoneNumber,
+          approverId: approverId ? Number(approverId) : null,
+          contact: {
+            firstName: contactFirstName,
+            lastName: contactLastName,
+            phoneNumber: contactPhone,
+            email: contactEmail,
+            dob: contactDob,
+            ssn: contactSsn,
+          },
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed");
+
+      toast.success("Company created successfully");
+      navigate("/company/manage");
+
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to create company");
+    }
   };
+
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const token = localStorage.getItem("auth-token");
+
+        const res = await fetch(`${API_BASE_URL}/users`, {
+          headers: {
+            Authorization: token ? `Bearer ${token}` : "",
+          },
+        });
+
+        const data = await res.json();
+
+        // adjust based on your API response
+        const list = data.data || data;
+
+        setUsers(list);
+      } catch (err) {
+        console.error("Failed to load users", err);
+      }
+    };
+
+    fetchUsers();
+  }, []);
 
   return (
     <motion.div
@@ -74,11 +138,17 @@ export const CreateCompanyPage = () => {
               <Label htmlFor="approver">Approver</Label>
               <select
                 id="approver"
+                value={approverId}
+                onChange={(e) => setApproverId(e.target.value)}
                 className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
               >
-                <option value="">Search all users with manager role</option>
-                <option value="1">Manager 1</option>
-                <option value="2">Manager 2</option>
+                <option value="">Select approver</option>
+
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.firstName} {user.lastName} ({user.email})
+                  </option>
+                ))}
               </select>
             </div>
 
