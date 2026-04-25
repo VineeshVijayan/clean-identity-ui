@@ -22,6 +22,7 @@ import {
     ChevronLeft,
     ChevronRight,
     Download,
+    Edit,
     Filter,
     KeyRound,
     MoreVertical,
@@ -191,10 +192,10 @@ export const UserAdministrationPage = () => {
                                                 </Button>
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
-                                                {/* <DropdownMenuItem onClick={() => navigate("/edit-profile", { state: { user } })}>
+                                                <DropdownMenuItem onClick={() => navigate("/edit-profile", { state: { user } })}>
                                                     <Edit className="h-4 w-4 mr-2" />
                                                     Edit
-                                                </DropdownMenuItem> */}
+                                                </DropdownMenuItem>
                                                 <DropdownMenuItem>
                                                     <KeyRound className="h-4 w-4 mr-2" />
                                                     Reset Password
