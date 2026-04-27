@@ -361,7 +361,7 @@ export const UsersListPage = () => {
     try {
       setSyncing(true);
 
-      const res = await fetch(`http://localhost:8081/api/odoo/hr/employees/sync`, {
+      const res = await fetch(`${CONNECTOR_API_BASE_URL}/odoo/hr/employees/sync`, {
         method: "POST",
         headers: authHeaders(),
       });
