@@ -8,6 +8,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import {
   Table,
@@ -23,12 +30,21 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
+
 interface Company {
   id: string;
   name: string;
   location: string;
   phoneNumber: string;
   primaryContact: string;
+  approverId: number;
+}
+
+interface Approver {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
 }
 
 export const ManageCompanyPage = () => {
@@ -38,6 +54,7 @@ export const ManageCompanyPage = () => {
   const [search, setSearch] = useState("");
   const [editOpen, setEditOpen] = useState(false);
   const [editing, setEditing] = useState<Company | null>(null);
+  const [approvers, setApprovers] = useState<Approver[]>([]);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -58,10 +75,10 @@ export const ManageCompanyPage = () => {
 
   const handleSave = async () => {
     if (!editing) return;
-  
+
     try {
       const token = localStorage.getItem("auth-token");
-  
+
       await fetch(`${API_BASE_URL}/companies/${editing.id}`, {
         method: "PUT",
         headers: {
@@ -72,21 +89,22 @@ export const ManageCompanyPage = () => {
           name: editing.name,
           location: editing.location,
           phoneNumber: editing.phoneNumber,
+          approverId: editing.approverId,
           contact: {
             firstName: editing.primaryContact.split(" ")[0],
             lastName: editing.primaryContact.split(" ")[1] || "",
           },
         }),
       });
-  
+
       // update UI
       setCompanies((prev) =>
         prev.map((c) => (c.id === editing.id ? editing : c))
       );
-  
+
       setEditOpen(false);
       toast.success("Company updated successfully");
-  
+
     } catch (err) {
       toast.error("Update failed");
     }
@@ -96,33 +114,59 @@ export const ManageCompanyPage = () => {
     const fetchCompanies = async () => {
       try {
         const token = localStorage.getItem("auth-token");
-  
+
         const res = await fetch(`${API_BASE_URL}/companies`, {
           headers: {
             Authorization: token ? `Bearer ${token}` : "",
           },
         });
-  
+
         const data = await res.json();
-  
+
         const list = data.data || data;
-  
+
         const mapped = list.map((c: any) => ({
           id: String(c.id),
           name: c.name,
           location: c.location,
           phoneNumber: c.phoneNumber,
           primaryContact: c.contactName || "",
+          approverId: c.approverId
         }));
-  
+
         setCompanies(mapped);
-  
+
       } catch (err) {
         console.error("Failed to load companies", err);
       }
     };
-  
+
     fetchCompanies();
+  }, []);
+
+  useEffect(() => {
+    const fetchApprovers = async () => {
+      try {
+        const token = localStorage.getItem("auth-token");
+
+        const res = await fetch(`${API_BASE_URL}/users/managers`, {
+          headers: {
+            Authorization: token ? `Bearer ${token}` : "",
+          },
+        });
+
+        if (!res.ok) throw new Error();
+
+        const data = await res.json();
+        const list = data.data || data;
+
+        setApprovers(list);
+      } catch (err) {
+        console.error("Failed to load approvers", err);
+      }
+    };
+
+    fetchApprovers();
   }, []);
 
   return (
@@ -241,6 +285,34 @@ export const ManageCompanyPage = () => {
                   value={editing.primaryContact}
                   onChange={(e) => setEditing({ ...editing, primaryContact: e.target.value })}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label>Approver</Label>
+
+                <Select
+                  value={String(editing.approverId)}
+                  onValueChange={(value) =>
+                    setEditing({
+                      ...editing,
+                      approverId: Number(value),
+                    })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select approver" />
+                  </SelectTrigger>
+
+                  <SelectContent>
+                    {approvers.map((approver) => (
+                      <SelectItem
+                        key={approver.id}
+                        value={String(approver.id)}
+                      >
+                        {approver.firstName} {approver.lastName} ({approver.email})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           )}

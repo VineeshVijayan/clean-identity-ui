@@ -6,9 +6,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { ArrowLeft, Camera, Save, Trash2, Upload, User } from "lucide-react";
+import { ArrowLeft, Camera, Save, Trash2, Upload, User, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
 const getUserFromToken = () => {
@@ -26,6 +34,7 @@ export const EditProfilePage = () => {
 
 
   const location = useLocation();
+  const fromPage = location.state?.from || "/users";
 
   const passedUserId = location.state?.userId;
   const passedUser = location.state?.user;
@@ -39,6 +48,11 @@ export const EditProfilePage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [availableRoles, setAvailableRoles] = useState<
+    { id: number; name: string }[]
+  >([]);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [roleToAdd, setRoleToAdd] = useState("");
 
   /* ---------------- GET USER FROM LOCAL STORAGE ---------------- */
 
@@ -96,6 +110,7 @@ export const EditProfilePage = () => {
 
         const data = await res.json();
         const user = data?.data || data;
+        setSelectedRoles(user.roles || []);
 
         setForm({
           employeeId: user.id || "",
@@ -122,6 +137,57 @@ export const EditProfilePage = () => {
     if (userId) fetchUser();
 
   }, [userId, toast]);
+
+
+  const handleRoleSelect = (roleName: string) => {
+    if (!selectedRoles.includes(roleName)) {
+      setSelectedRoles([...selectedRoles, roleName]);
+    }
+
+    // Reset dropdown placeholder after selection
+    setRoleToAdd("");
+  };
+
+  const removeRole = (roleName: string) => {
+    setSelectedRoles(selectedRoles.filter((role) => role !== roleName));
+  };
+
+  useEffect(() => {
+    const fetchRoles = async () => {
+      const token = localStorage.getItem("auth-token");
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/roles`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: token ? `Bearer ${token}` : "",
+          },
+        });
+
+        if (!res.ok) throw new Error();
+
+        const data = await res.json();
+
+        // Supports ["admin","user"] OR {data:["admin","user"]}
+        const roles = data?.data || [];
+
+        setAvailableRoles(
+          roles.map((role: any) => ({
+            id: role.id,
+            name: role.name,
+          }))
+        );
+      } catch {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load roles",
+        });
+      }
+    };
+
+    fetchRoles();
+  }, [toast]);
 
   /* ---------------- UPDATE FORM ---------------- */
 
@@ -165,6 +231,7 @@ export const EditProfilePage = () => {
     } else if (!/^\d{4}$/.test(form.ssn)) {
       newErrors.ssn = "SSN must be exactly 4 digits.";
     }
+    if (selectedRoles.length === 0) newErrors.role = "At least one role is required.";
 
     setErrors(newErrors);
 
@@ -199,6 +266,7 @@ export const EditProfilePage = () => {
       phoneNumber: form.phoneNumber,
       ssn: form.ssn,
       dob: form.dob ? new Date(form.dob).toISOString() : null,
+      roles: selectedRoles,
     };
 
     try {
@@ -219,7 +287,7 @@ export const EditProfilePage = () => {
         description: "User profile updated successfully",
       });
 
-      navigate("/users");
+      navigate(fromPage);
 
     } catch {
 
@@ -463,6 +531,62 @@ export const EditProfilePage = () => {
                       set("ssn", e.target.value.replace(/\D/g, "").slice(0, 4))
                     }
                   />
+                </div>
+
+                <div className="space-y-3">
+                  <Label>Roles</Label>
+
+                  <Select
+                    value={roleToAdd}
+                    onValueChange={(value) => {
+                      setRoleToAdd(value);
+                      handleRoleSelect(value);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Add role" />
+                    </SelectTrigger>
+
+                    <SelectContent>
+                      {availableRoles
+                        .filter((role) => !selectedRoles.includes(role.name))
+                        .map((role) => (
+                          <SelectItem key={role.id} value={role.name}>
+                            {role.name
+                              .replace(/_/g, " ")
+                              .replace(/\b\w/g, (char) => char.toUpperCase())}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+
+                  {/* Selected Role Chips */}
+                  <div className="flex flex-wrap gap-2">
+                    {selectedRoles.map((role) => (
+                      <div
+                        key={role}
+                        className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm"
+                      >
+                        <span>
+                          {role
+                            .replace(/_/g, " ")
+                            .replace(/\b\w/g, (char) => char.toUpperCase())}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => removeRole(role)}
+                          className="hover:text-destructive"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {errors.role && (
+                    <p className="text-sm text-destructive">{errors.role}</p>
+                  )}
                 </div>
 
               </div>

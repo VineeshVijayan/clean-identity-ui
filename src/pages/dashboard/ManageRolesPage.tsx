@@ -27,7 +27,7 @@ import {
   User,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
@@ -73,9 +73,38 @@ export const ManageRolesPage = () => {
 
   const [roles, setRoles] = useState<Role[]>([]);
   const [selectedBlueprintId, setSelectedBlueprintId] = useState("");
+  const [blueprintSearch, setBlueprintSearch] = useState("");
+  const [blueprintDropdownOpen, setBlueprintDropdownOpen] = useState(false);
+  const blueprintDropdownRef = useRef<HTMLDivElement>(null);
   const [selectedAppToAdd, setSelectedAppToAdd] = useState("");
   const [blueprintApps, setBlueprintApps] = useState<BlueprintApp[]>([]);
   const [deleteRoleId, setDeleteRoleId] = useState<number | null>(null);
+
+  const filteredBlueprints = roles.filter((role) =>
+    role.name.toLowerCase().includes(blueprintSearch.toLowerCase())
+  );
+
+  const visibleBlueprints =
+    blueprintSearch.trim() === ""
+      ? filteredBlueprints.slice(0, 8) // initial limited list
+      : filteredBlueprints;
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (
+        blueprintDropdownRef.current &&
+        !blueprintDropdownRef.current.contains(e.target as Node)
+      ) {
+        setBlueprintDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handler);
+
+    return () => {
+      document.removeEventListener("mousedown", handler);
+    };
+  }, []);
 
   /* ================= FETCH ROLES ================= */
   useEffect(() => {
@@ -313,52 +342,89 @@ export const ManageRolesPage = () => {
           <h2 className="text-lg font-semibold">Select Blueprint</h2>
         </div>
         <div className="relative">
-          <Select
-            value={selectedBlueprintId}
-            onValueChange={(value) => {
-              setSelectedBlueprintId(value);
-
-              const selected = roles.find((r) => String(r.id) === value);
-
-              if (!selected || !selected.applications.length) {
-                setBlueprintApps([]); // ✅ EMPTY
-                return;
-              }
-
-              // ✅ MAP APPLICATIONS TO CARD FORMAT
-              const mappedApps = selected.applications.map((app: any) => ({
-                id: app.id || app.appId,
-                name: app.name || app.appName,
-                category: app.category || "General",
-                icon: app.icon || "📦",
-                accessLevel: app.accessLevel || "Standard",
-                grantedDate:
-                  app.grantedDate ||
-                  new Date().toISOString().split("T")[0],
-                essential: app.essential || false,
-              }));
-
-              setBlueprintApps(mappedApps);
-            }}
-          >
-            <SelectTrigger className="w-full h-12 pl-10">
+          <div ref={blueprintDropdownRef} className="relative">
+            <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <SelectValue placeholder="Choose an application..." />
-            </SelectTrigger>
-            <SelectContent>
-              {roles.length > 0 ? (
-                roles.map((role) => (
-                  <SelectItem key={role.id} value={String(role.id)}>
-                    {role.name}
-                  </SelectItem>
-                ))
-              ) : (
-                <SelectItem value="default-blueprint" >
-                  Default Blueprint
-                </SelectItem>
+
+              <input
+                type="text"
+                value={
+                  blueprintDropdownOpen
+                    ? blueprintSearch
+                    : roles.find((r) => String(r.id) === selectedBlueprintId)?.name || blueprintSearch
+                }
+                onChange={(e) => {
+                  setBlueprintSearch(e.target.value);
+                  setBlueprintDropdownOpen(true);
+                }}
+                onFocus={() => setBlueprintDropdownOpen(true)}
+                placeholder="Search blueprint..."
+                className="w-full h-12 rounded-md border border-input bg-background pl-10 pr-10 text-sm outline-none focus:ring-2 focus:ring-ring"
+              />
+
+              {selectedBlueprintId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedBlueprintId("");
+                    setBlueprintSearch("");
+                    setBlueprintApps([]);
+                  }}
+                  className="absolute right-10 top-1/2 -translate-y-1/2"
+                >
+                  <X className="h-4 w-4 text-muted-foreground" />
+                </button>
               )}
-            </SelectContent>
-          </Select>
+            </div>
+
+            {blueprintDropdownOpen && (
+              <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-lg max-h-72 overflow-y-auto">
+                {visibleBlueprints.length > 0 ? (
+                  visibleBlueprints.map((role) => (
+                    <button
+                      key={role.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedBlueprintId(String(role.id));
+                        setBlueprintSearch(role.name);
+                        setBlueprintDropdownOpen(false);
+
+                        const selected = roles.find(
+                          (r) => String(r.id) === String(role.id)
+                        );
+
+                        if (!selected || !selected.applications.length) {
+                          setBlueprintApps([]);
+                          return;
+                        }
+
+                        const mappedApps = selected.applications.map((app: any) => ({
+                          id: app.id || app.appId,
+                          name: app.name || app.appName,
+                          category: app.category || "General",
+                          icon: app.icon || "📦",
+                          accessLevel: app.accessLevel || "Standard",
+                          grantedDate:
+                            app.grantedDate ||
+                            new Date().toISOString().split("T")[0],
+                          essential: app.essential || false,
+                        }));
+
+                        setBlueprintApps(mappedApps);
+                      }}
+                      className="w-full text-left px-4 py-3 hover:bg-muted border-b last:border-0"
+                    >
+                      <div className="font-medium">{role.name}</div>
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-4 py-3 text-sm text-muted-foreground">
+                    No blueprints found
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

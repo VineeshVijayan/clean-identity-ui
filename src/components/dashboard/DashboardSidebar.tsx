@@ -189,7 +189,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
       ...(settings.SHOW_COMPANY_MENU ? [company] : []),
       idfAdministration,
       reporting,
-      checkout,
+      // checkout,
     ];
   } else if (hasRole("administration") && hasRole("user") && !hasRole("super_admin")) {
     menuItems = [
@@ -198,7 +198,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
       roleBasedAccess,
       ...(settings.SHOW_COMPANY_MENU ? [company] : []),
       reporting,
-      checkout,
+      // checkout,
     ];
   } else if (hasRole("manager") && hasRole("user") && !hasRole("super_admin") && !hasRole("administration")) {
     menuItems = [
@@ -206,14 +206,14 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
       userManagementBasic,
       ...(settings.SHOW_COMPANY_MENU ? [company] : []),
       reporting,
-      checkout,
+      // checkout,
     ];
   } else if (hasRole("user")) {
     menuItems = [
       dashboardItem,
       accessRequests,
       ...(settings.SHOW_COMPANY_MENU ? [company] : []),
-      checkout,
+      // checkout,
     ];
   } else {
     menuItems = [dashboardItem];

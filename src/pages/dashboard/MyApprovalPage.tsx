@@ -169,7 +169,7 @@ export const MyApprovalPage = () => {
           <TableHeader>
             <TableRow>
               <TableHead>Requester Name</TableHead>
-              <TableHead>Department Name</TableHead>
+              {/* <TableHead>Department Name</TableHead> */}
               <TableHead>Status</TableHead>
               <TableHead className="hidden md:table-cell">
                 Comments
@@ -203,9 +203,9 @@ export const MyApprovalPage = () => {
                     {request.requesterName}
                   </TableCell>
 
-                  <TableCell>
+                  {/* <TableCell>
                     {request.departmentName}
-                  </TableCell>
+                  </TableCell> */}
 
                   <TableCell>
                     <Badge

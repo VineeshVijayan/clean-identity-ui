@@ -41,7 +41,7 @@ export const DashboardNavbar = ({ user, onMenuClick, onLogout }: DashboardNavbar
 
       <div className="flex items-center gap-3">
         {/* Cart Icon */}
-        <Button
+        {/* <Button
           variant="ghost"
           size="icon"
           onClick={() => navigate("/checkout")}
@@ -51,7 +51,7 @@ export const DashboardNavbar = ({ user, onMenuClick, onLogout }: DashboardNavbar
           <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-primary-foreground text-xs font-bold rounded-full flex items-center justify-center">
             3
           </span>
-        </Button>
+        </Button> */}
 
         {/* Notifications */}
         <button className="relative p-2 text-muted-foreground hover:text-foreground transition-colors">

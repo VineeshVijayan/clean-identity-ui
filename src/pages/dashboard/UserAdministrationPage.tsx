@@ -25,6 +25,7 @@ import {
     Edit,
     Filter,
     KeyRound,
+    Loader2,
     MoreVertical,
     Search,
     UserPlus
@@ -48,8 +49,10 @@ export const UserAdministrationPage = () => {
     const navigate = useNavigate();
     const [users, setUsers] = useState<User[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
+        setIsLoading(true);
         const token = localStorage.getItem("auth-token");
         fetch(`${API_BASE_URL}/users`, {
             headers: {
@@ -73,6 +76,7 @@ export const UserAdministrationPage = () => {
                     lastLogin: u.lastLogin || "—",
                 }));
                 setUsers(mappedUsers);
+                setIsLoading(false);
             })
             .catch((err) => {
                 console.error("User fetch failed:", err);
@@ -150,62 +154,92 @@ export const UserAdministrationPage = () => {
                     </TableHeader>
 
                     <TableBody>
-                        {filteredUsers.map((user) => (
-                            <TableRow key={user.id}>
-                                <TableCell>
-                                    <div className="flex items-center gap-3">
-                                        <Avatar className="h-9 w-9 bg-primary/20">
-                                            <AvatarFallback className="bg-primary/20 text-primary font-semibold">
-                                                {user.firstName.charAt(0)}{user.lastName ? user.lastName.charAt(0) : ''}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <p className="font-medium">
-                                            {user.firstName} {user.lastName}
+                        {isLoading ? (
+                            <TableRow>
+                                <TableCell colSpan={5} className="h-40 text-center">
+                                    <div className="flex flex-col items-center justify-center gap-3">
+                                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                                        <p className="text-sm text-muted-foreground">
+                                            Loading users...
                                         </p>
                                     </div>
                                 </TableCell>
-
-                                <TableCell>
-                                    <Badge variant="outline">{user.role}</Badge>
-                                </TableCell>
-
-                                <TableCell>
-                                    <span className="text-sm font-medium text-green-500">
-                                        Active
-                                    </span>
-                                </TableCell>
-
-                                <TableCell className="hidden sm:table-cell text-muted-foreground">
-                                    {user.email}
-                                </TableCell>
-
-                                <TableCell className="text-right">
-                                    <div className="flex items-center justify-end gap-2">
-                                        <Switch
-                                            checked={user.status === "Active"}
-                                            aria-label={`Toggle status for ${user.firstName}`}
-                                        />
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon">
-                                                    <MoreVertical className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={() => navigate("/edit-profile", { state: { user } })}>
-                                                    <Edit className="h-4 w-4 mr-2" />
-                                                    Edit
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem>
-                                                    <KeyRound className="h-4 w-4 mr-2" />
-                                                    Reset Password
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
+                            </TableRow>
+                        ) : filteredUsers.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                                    No users found.
                                 </TableCell>
                             </TableRow>
-                        ))}
+                        ) : (
+                            filteredUsers.map((user) => (
+                                <TableRow key={user.id}>
+                                    <TableCell>
+                                        <div className="flex items-center gap-3">
+                                            <Avatar className="h-9 w-9 bg-primary/20">
+                                                <AvatarFallback className="bg-primary/20 text-primary font-semibold">
+                                                    {user.firstName.charAt(0)}
+                                                    {user.lastName ? user.lastName.charAt(0) : ""}
+                                                </AvatarFallback>
+                                            </Avatar>
+                                            <p className="font-medium">
+                                                {user.firstName} {user.lastName}
+                                            </p>
+                                        </div>
+                                    </TableCell>
+
+                                    <TableCell>
+                                        <Badge variant="outline">{user.role}</Badge>
+                                    </TableCell>
+
+                                    <TableCell>
+                                        <span className="text-sm font-medium text-green-500">
+                                            Active
+                                        </span>
+                                    </TableCell>
+
+                                    <TableCell className="hidden sm:table-cell text-muted-foreground">
+                                        {user.email}
+                                    </TableCell>
+
+                                    <TableCell className="text-right">
+                                        <div className="flex items-center justify-end gap-2">
+                                            <Switch
+                                                checked={user.status === "Active"}
+                                                aria-label={`Toggle status for ${user.firstName}`}
+                                            />
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon">
+                                                        <MoreVertical className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem
+                                                        onClick={() =>
+                                                            navigate("/edit-profile", {
+                                                                state: {
+                                                                    userId: user.id,
+                                                                    user,
+                                                                    from: location.pathname,
+                                                                },
+                                                            })
+                                                        }
+                                                    >
+                                                        <Edit className="h-4 w-4 mr-2" />
+                                                        Edit
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem>
+                                                        <KeyRound className="h-4 w-4 mr-2" />
+                                                        Reset Password
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        )}
                     </TableBody>
                 </Table>
 

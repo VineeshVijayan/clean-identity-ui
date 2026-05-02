@@ -87,7 +87,7 @@ export const CreateCompanyPage = () => {
       try {
         const token = localStorage.getItem("auth-token");
 
-        const res = await fetch(`${API_BASE_URL}/users`, {
+        const res = await fetch(`${API_BASE_URL}/users/managers`, {
           headers: {
             Authorization: token ? `Bearer ${token}` : "",
           },

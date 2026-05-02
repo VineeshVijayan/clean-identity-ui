@@ -37,7 +37,10 @@ type AccessRequestEntry = {
   requestedAt: string;
   actionedByName: string;
   actionedAt: string;
-  
+  requestType: "DELEGATE" | "COMPANY";
+  companyName?: string;
+  primaryContactEmail?: string;
+
 };
 
 export const AccessRequestsPage = () => {
@@ -116,25 +119,30 @@ export const AccessRequestsPage = () => {
   useEffect(() => {
     if (activeTab !== "approvals") return;
 
-    if (approvalEntries.length > 0) return;
+    const loadApprovals = async () => {
+      try {
+        const departmentId = getDeptId();
 
-    const departmentId = getDeptId();
+        // Existing delegate approvals
+        const delegatePromise = departmentId
+          ? fetch(`${API_BASE_URL}/delegates/requests?departmentId=${departmentId}`, {
+            headers: authHeaders(),
+          }).then((res) => (res.ok ? res.json() : { data: [] }))
+          : Promise.resolve({ data: [] });
 
-    if (!departmentId) {
-      console.error("No departmentId found in token");
-      return;
-    }
+        // NEW company approvals
+        const companyPromise = fetch(`${API_BASE_URL}/company-approvals/pending`, {
+          headers: authHeaders(),
+        }).then((res) => (res.ok ? res.json() : []));
 
-    fetch(`${API_BASE_URL}/delegates/requests?departmentId=${departmentId}`, {
-      headers: authHeaders(),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed to fetch approvals");
-        return res.json();
-      })
-      .then((response) => {
-        const mapped = response.data.map((item: any) => ({
-          id: String(item.id),
+        const [delegateResponse, companyResponse] = await Promise.all([
+          delegatePromise,
+          companyPromise,
+        ]);
+
+        // Delegate approvals
+        const delegateMapped = (delegateResponse.data || []).map((item: any) => ({
+          id: `DELEGATE-${item.id}`,
           requesterName: item.requesterName,
           departmentName: item.departmentName,
           status:
@@ -147,11 +155,36 @@ export const AccessRequestsPage = () => {
                   : item.status,
           comments: item.comments,
           requestedAt: new Date(item.requestedAt).toLocaleString(),
+          requestType: "DELEGATE",
         }));
 
-        setApprovalEntries(mapped);
-      })
-      .catch((err) => console.error(err));
+        // Company approvals
+        const companyMapped = (companyResponse || []).map((item: any) => ({
+          id: `COMPANY-${item.approvalId}`,
+          requesterName: item.requestedByName,
+          companyName: item.companyName,
+          primaryContactEmail: item.primaryContactEmail,
+          status:
+            item.status === "PENDING"
+              ? "Pending"
+              : item.status === "APPROVED"
+                ? "Approved"
+                : item.status === "REJECTED"
+                  ? "Rejected"
+                  : item.status,
+          comments: item.comments || "Company addition request",
+          requestedAt: new Date(item.requestedAt).toLocaleString(),
+          requestType: "COMPANY",
+        }));
+
+        // Merge both
+        setApprovalEntries([...delegateMapped, ...companyMapped]);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    loadApprovals();
   }, [activeTab]);
 
   const getStatusColor = (status: string) => {
@@ -167,13 +200,58 @@ export const AccessRequestsPage = () => {
     }
   };
 
-  const handleApproveRequest = (id: string) => {
-    setRequestAccessEntries((prev) =>
-      prev.map((r) =>
-        r.id === id ? { ...r, status: "Approved" } : r
-      )
-    );
-    toast({ title: "Approved" });
+  const handleApproveRequest = async (id: string) => {
+    try {
+      const [type, actualId] = id.split("-");
+
+      let res;
+
+      // Delegate approval
+      if (type === "DELEGATE") {
+        res = await fetch(
+          `${API_BASE_URL}/delegates/requests/${actualId}/approve`,
+          {
+            method: "PUT",
+            headers: authHeaders(),
+          }
+        );
+      }
+
+      // Company approval
+      if (type === "COMPANY") {
+        res = await fetch(
+          `${API_BASE_URL}/company-approvals/${actualId}/approve`,
+          {
+            method: "PUT",
+            headers: authHeaders(),
+          }
+        );
+      }
+
+      if (!res || !res.ok) {
+        throw new Error("Approval failed");
+      }
+
+      // Remove row after approval
+      setApprovalEntries((prev) =>
+        prev.filter((r) => r.id !== id)
+      );
+
+      toast({
+        title: "Approved",
+        description:
+          type === "COMPANY"
+            ? "Company approved successfully"
+            : "Delegate request approved successfully",
+      });
+    } catch (err) {
+      console.error(err);
+
+      toast({
+        title: "Approval failed",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleRejectRequest = (id: string) => {
@@ -232,8 +310,8 @@ export const AccessRequestsPage = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Type</TableHead>
                 <TableHead>Requester Name</TableHead>
-                <TableHead>Department</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Comments</TableHead>
                 <TableHead>Requested At</TableHead>
@@ -244,8 +322,18 @@ export const AccessRequestsPage = () => {
             <TableBody>
               {approvalEntries.map((r) => (
                 <TableRow key={r.id}>
+                  <TableCell>
+                    <Badge
+                      className={
+                        r.requestType === "COMPANY"
+                          ? "bg-blue-500/10 text-blue-500"
+                          : "bg-purple-500/10 text-purple-500"
+                      }
+                    >
+                      {r.requestType}
+                    </Badge>
+                  </TableCell>
                   <TableCell>{r.requesterName}</TableCell>
-                  <TableCell>{r.departmentName}</TableCell>
                   <TableCell>
                     <Badge className={getStatusColor(r.status)}>
                       {r.status}

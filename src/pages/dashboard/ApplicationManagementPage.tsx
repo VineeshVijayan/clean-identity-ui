@@ -60,6 +60,29 @@ type UserEntry = {
   departmentId: string;
   departmentName: string;
   subordinates: Subordinate[];
+  applications: UserApplicationEntry[];
+};
+
+type UserApplicationEntry = {
+  id: number;               // user_application mapping id
+  applicationId: number;    // actual application id
+
+  // Core
+  name: string;
+  description: string;
+
+  // UI compatibility
+  category: string;         // maps from description
+  icon: string;             // generated fallback icon
+
+  // Access
+  accessLevel: string;
+  grantedDate: string;
+
+  // Status
+  essential: boolean;
+  isEssential: boolean;     // keep old UI references working
+  active: boolean;
 };
 
 type Application = {
@@ -69,16 +92,8 @@ type Application = {
   appUrl: string;
   active: boolean;
   integrationName: string;
+  essential:boolean;
 };
-
-const userApplications = [
-  { id: 1, name: "Salesforce CRM", category: "CRM", accessLevel: "Full Access", grantedDate: "2023-06-15", lastUsed: "2024-01-18", isEssential: false, icon: "💼" },
-  { id: 2, name: "Jira", category: "Project Management", accessLevel: "Standard", grantedDate: "2023-08-20", lastUsed: "2024-01-19", isEssential: true, icon: "📋" },
-  { id: 3, name: "Slack Enterprise", category: "Communication", accessLevel: "Full Access", grantedDate: "2023-01-10", lastUsed: "2024-01-19", isEssential: true, icon: "💬" },
-  { id: 4, name: "Tableau", category: "Analytics", accessLevel: "Read Only", grantedDate: "2023-11-05", lastUsed: "2024-01-15", isEssential: false, icon: "📊" },
-  { id: 5, name: "GitHub Enterprise", category: "Development", accessLevel: "Contributor", grantedDate: "2023-03-22", lastUsed: "2024-01-19", isEssential: true, icon: "🐙" },
-  { id: 6, name: "Confluence", category: "Documentation", accessLevel: "Standard", grantedDate: "2023-04-18", lastUsed: "2024-01-10", isEssential: false, icon: "📝" },
-];
 
 /* ─── Employee Search Dropdown ─── */
 const EmployeeSearchDropdown = ({
@@ -241,7 +256,7 @@ export const ApplicationManagementPage = () => {
 
   // Remove card list state
   const [selectedAppsForRemoval, setSelectedAppsForRemoval] = useState<number[]>([]);
-  const [remCardList, setRemCardList] = useState(userApplications);
+  const [remCardList, setRemCardList] = useState<UserApplicationEntry[]>([]);
   const [showCardRemoveConfirm, setShowCardRemoveConfirm] = useState(false);
   const [cardToRemove, setCardToRemove] = useState<number | null>(null);
 
@@ -260,9 +275,9 @@ export const ApplicationManagementPage = () => {
   useEffect(() => {
     const token = localStorage.getItem("auth-token");
     const userId = getUserId();
-  
+
     if (!userId) return;
-  
+
     fetch(`${API_BASE_URL}/users/${userId}`, {
       headers: {
         Accept: "application/json",
@@ -273,20 +288,36 @@ export const ApplicationManagementPage = () => {
       .then((r) => r.json())
       .then((res) => {
         const user = res.data;
-  
+
         const mapped: UserEntry[] = (user.subordinates || []).map((u: any) => ({
           id: String(u.id),
           firstName: u.firstName || "",
           lastName: u.lastName || "",
           email: u.email,
-          ssn: "",
+          ssn: u.maskedSsn || "",
           role: "Employee",
           status: "Active",
+          lastLogin: "",
+          departmentId: "",
+          departmentName: "",
+          subordinates: [],
+          applications: (u.applications || [])
+            .filter((app: any) => app.active)
+            .map((app: any) => ({
+              id: app.id,
+              applicationId: app.applicationId,
+              name: app.name,
+              description: app.description || "",
+              accessLevel: app.accessLevel || "Standard",
+              grantedDate: app.grantedDate || "",
+              essential: app.essential || false,
+              active: app.active,
+            })),
         }));
-  
+
         setUsers(mapped);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   /* Fetch Applications */
@@ -313,6 +344,79 @@ export const ApplicationManagementPage = () => {
       })
       .catch(() => { });
   }, []);
+
+
+  useEffect(() => {
+    if (!remSelectedUser) {
+      setRemCardList([]);
+      return;
+    }
+  
+    const token = localStorage.getItem("auth-token");
+  
+    const fetchUserApplications = async () => {
+      try {
+        const res = await fetch(
+          `${API_BASE_URL}/applications/users/${remSelectedUser.id}`,
+          {
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+              Authorization: token ? `Bearer ${token}` : "",
+            },
+          }
+        );
+  
+        if (!res.ok) {
+          throw new Error("Failed to fetch applications");
+        }
+  
+        const response = await res.json();
+        const apps = response.data || response;
+  
+        const mapped: UserApplicationEntry[] = apps
+          .filter((app: any) => app.active)
+          .map((app: any) => ({
+            id: app.id,
+            applicationId: app.applicationId,
+  
+            // Core
+            name: app.name,
+            description: app.description || "",
+  
+            // UI compatibility
+            category: app.description || "Business App",
+            icon: app.name?.charAt(0)?.toUpperCase() || "A",
+  
+            // Access
+            accessLevel: app.accessLevel || "Standard",
+            grantedDate: app.grantedDate
+              ? new Date(app.grantedDate).toLocaleDateString()
+              : "",
+  
+            // Status
+            essential: app.essential || false,
+            isEssential: app.essential || false,
+            active: app.active,
+          }));
+  
+        setRemCardList(mapped);
+        setSelectedAppsForRemoval([]);
+      } catch (err) {
+        console.error(err);
+  
+        toast({
+          title: "Failed to load applications",
+          description: "Could not fetch user applications.",
+          variant: "destructive",
+        });
+  
+        setRemCardList([]);
+      }
+    };
+  
+    fetchUserApplications();
+  }, [remSelectedUser]);
 
   const getIntegrationApiBase = (applicationId: string) => {
     const selectedApp = applications.find((app) => app.id === applicationId);
@@ -621,25 +725,7 @@ export const ApplicationManagementPage = () => {
             </motion.div>
 
             {/* Container 2 — Application being Removed */}
-            <motion.div variants={itemVariants}>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-600 text-white text-xs font-bold">2</span>
-                <span className="font-semibold text-foreground">Removed Application(s)</span>
-              </div>
-              <AppSelectionSection
-                // headerLabel="Application(s) being Removed"
-                appValue={remApp}
-                setApp={setRemApp}
-                projectValue={remProject}
-                setProject={setRemProject}
-                roleValue={remRole}
-                setRole={setRemRole}
-                onSubmit={handleRemoveSubmit}
-                submitLabel="Submit Removal"
-                submitIcon={<Trash2 className="h-4 w-4 mr-2" />}
-                submitClass="bg-green-600 text-white hover:bg-green-700"
-              />
-            </motion.div>
+
 
             {/* Current Apps Grid */}
             <motion.div variants={itemVariants}>
@@ -649,7 +735,7 @@ export const ApplicationManagementPage = () => {
                     <div className="p-1.5 rounded-md bg-primary/10">
                       <AppWindow className="h-4 w-4 text-primary" />
                     </div>
-                    My Current Applications
+                    Current Applications
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
