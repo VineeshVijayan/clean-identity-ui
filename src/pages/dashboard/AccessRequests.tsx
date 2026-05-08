@@ -130,14 +130,8 @@ export const AccessRequestsPage = () => {
           }).then((res) => (res.ok ? res.json() : { data: [] }))
           : Promise.resolve({ data: [] });
 
-        // NEW company approvals
-        const companyPromise = fetch(`${API_BASE_URL}/company-approvals/pending`, {
-          headers: authHeaders(),
-        }).then((res) => (res.ok ? res.json() : []));
-
-        const [delegateResponse, companyResponse] = await Promise.all([
-          delegatePromise,
-          companyPromise,
+        const [delegateResponse] = await Promise.all([
+          delegatePromise
         ]);
 
         // Delegate approvals
@@ -157,28 +151,8 @@ export const AccessRequestsPage = () => {
           requestedAt: new Date(item.requestedAt).toLocaleString(),
           requestType: "DELEGATE",
         }));
-
-        // Company approvals
-        const companyMapped = (companyResponse || []).map((item: any) => ({
-          id: `COMPANY-${item.approvalId}`,
-          requesterName: item.requestedByName,
-          companyName: item.companyName,
-          primaryContactEmail: item.primaryContactEmail,
-          status:
-            item.status === "PENDING"
-              ? "Pending"
-              : item.status === "APPROVED"
-                ? "Approved"
-                : item.status === "REJECTED"
-                  ? "Rejected"
-                  : item.status,
-          comments: item.comments || "Company addition request",
-          requestedAt: new Date(item.requestedAt).toLocaleString(),
-          requestType: "COMPANY",
-        }));
-
         // Merge both
-        setApprovalEntries([...delegateMapped, ...companyMapped]);
+        setApprovalEntries([...delegateMapped]);
       } catch (err) {
         console.error(err);
       }
@@ -210,17 +184,6 @@ export const AccessRequestsPage = () => {
       if (type === "DELEGATE") {
         res = await fetch(
           `${API_BASE_URL}/delegates/requests/${actualId}/approve`,
-          {
-            method: "PUT",
-            headers: authHeaders(),
-          }
-        );
-      }
-
-      // Company approval
-      if (type === "COMPANY") {
-        res = await fetch(
-          `${API_BASE_URL}/company-approvals/${actualId}/approve`,
           {
             method: "PUT",
             headers: authHeaders(),
