@@ -178,6 +178,15 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     ],
   };
 
+  const applications: MenuItem = {
+    label: "Applications",
+    icon: AppWindow,
+    submenu: [
+      { label: "New Application", href: "/applications/new", icon: Plus },
+      { label: "Update Application", href: "/applications/update", icon: Settings },
+    ],
+  };
+
   // Build menu based on roles
   let menuItems: MenuItem[] = [];
 
