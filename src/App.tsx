@@ -133,6 +133,12 @@ const App = () => (
             <Route path="manage" element={<ManageCompanyPage />} />
           </Route>
 
+          {/* Applications Routes */}
+          <Route path="/applications" element={<DashboardLayout />}>
+            <Route path="new" element={<NewApplicationPage />} />
+            <Route path="update" element={<UpdateApplicationPage />} />
+          </Route>
+
           {/* Catch-all */}
           <Route path="*" element={<NotFound />} />
         </Routes>
