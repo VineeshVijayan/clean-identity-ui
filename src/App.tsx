@@ -37,6 +37,8 @@ import TermsPage from "./pages/TermsPage";
 import { AccessRequestsPage } from "./pages/dashboard/AccessRequests";
 import { CreateCompanyPage } from "./pages/dashboard/CreateCompanyPage";
 import { ManageCompanyPage } from "./pages/dashboard/ManageCompanyPage";
+import { NewApplicationPage } from "./pages/dashboard/NewApplicationPage";
+import { UpdateApplicationPage } from "./pages/dashboard/UpdateApplicationPage";
 
 const queryClient = new QueryClient();
 
@@ -129,6 +131,12 @@ const App = () => (
           <Route path="/company" element={<DashboardLayout />}>
             <Route path="create" element={<CreateCompanyPage />} />
             <Route path="manage" element={<ManageCompanyPage />} />
+          </Route>
+
+          {/* Applications Routes */}
+          <Route path="/applications" element={<DashboardLayout />}>
+            <Route path="new" element={<NewApplicationPage />} />
+            <Route path="update" element={<UpdateApplicationPage />} />
           </Route>
 
           {/* Catch-all */}

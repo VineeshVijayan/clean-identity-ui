@@ -11,6 +11,7 @@ import {
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  AppWindow,
   Building2,
   ChevronDown,
   ChevronUp,
@@ -177,6 +178,15 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     ],
   };
 
+  const applications: MenuItem = {
+    label: "Applications",
+    icon: AppWindow,
+    submenu: [
+      { label: "New Application", href: "/applications/new", icon: Plus },
+      { label: "Update Application", href: "/applications/update", icon: Settings },
+    ],
+  };
+
   // Build menu based on roles
   let menuItems: MenuItem[] = [];
 
@@ -186,6 +196,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
       accessRequests,
       userManagementItem,
       roleBasedAccess,
+      applications,
       ...(settings.SHOW_COMPANY_MENU ? [company] : []),
       idfAdministration,
       reporting,
@@ -196,6 +207,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
       accessRequests,
       userManagementBasic,
       roleBasedAccess,
+      applications,
       ...(settings.SHOW_COMPANY_MENU ? [company] : []),
       reporting,
       // checkout,
