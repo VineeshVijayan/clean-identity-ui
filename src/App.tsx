@@ -37,6 +37,8 @@ import TermsPage from "./pages/TermsPage";
 import { AccessRequestsPage } from "./pages/dashboard/AccessRequests";
 import { CreateCompanyPage } from "./pages/dashboard/CreateCompanyPage";
 import { ManageCompanyPage } from "./pages/dashboard/ManageCompanyPage";
+import { NewApplicationPage } from "./pages/dashboard/NewApplicationPage";
+import { UpdateApplicationPage } from "./pages/dashboard/UpdateApplicationPage";
 
 const queryClient = new QueryClient();
 
