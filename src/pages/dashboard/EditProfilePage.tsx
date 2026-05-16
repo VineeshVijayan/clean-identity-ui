@@ -35,10 +35,16 @@ export const EditProfilePage = () => {
 
   const location = useLocation();
   const fromPage = location.state?.from || "/users";
+  const source: "myteam" | "navbar" | "useradmin" =
+    location.state?.source || (location.state?.userId ? "useradmin" : "navbar");
 
   const passedUserId = location.state?.userId;
   const passedUser = location.state?.user;
   const [countryCode, setCountryCode] = useState("US:+1");
+
+  // Field-level edit permissions based on source
+  const employeeIdDisabled = true; // Non-editable across all three sources
+  const rolesDisabled = source === "myteam" || source === "navbar";
 
   // fallback (optional)
   const tokenUser = getUserFromToken();
