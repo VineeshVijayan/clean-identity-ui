@@ -51,8 +51,14 @@ export const EditProfilePage = () => {
   const [availableRoles, setAvailableRoles] = useState<
     { id: number; name: string }[]
   >([]);
+
+  const [availableBlueprints, setAvailableBluePrints] = useState<
+    { id: number; name: string }[]
+  >([]);
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [roleToAdd, setRoleToAdd] = useState("");
+  const [blueprintsToAdd, setBluePrintsToAdd] = useState("");
+  const [selectedBluePrints, setSelectedBluePrints] = useState<string[]>([]);
 
   /* ---------------- GET USER FROM LOCAL STORAGE ---------------- */
 
@@ -148,8 +154,21 @@ export const EditProfilePage = () => {
     setRoleToAdd("");
   };
 
+  const handleBluePrintSelect = (roleName: string) => {
+    if (!selectedBluePrints.includes(roleName)) {
+      setSelectedBluePrints([...selectedBluePrints, roleName]);
+    }
+
+    // Reset dropdown placeholder after selection
+    setBluePrintsToAdd("");
+  };
+
   const removeRole = (roleName: string) => {
     setSelectedRoles(selectedRoles.filter((role) => role !== roleName));
+  };
+
+  const removeBluePrint = (roleName: string) => {
+    setSelectedBluePrints(selectedBluePrints.filter((role) => role !== roleName));
   };
 
   useEffect(() => {
@@ -187,6 +206,44 @@ export const EditProfilePage = () => {
     };
 
     fetchRoles();
+  }, [toast]);
+
+
+  useEffect(() => {
+    const fetchBluePrints = async () => {
+      const token = localStorage.getItem("auth-token");
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/blueprints`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: token ? `Bearer ${token}` : "",
+          },
+        });
+
+        if (!res.ok) throw new Error();
+
+        const data = await res.json();
+
+        // Supports ["admin","user"] OR {data:["admin","user"]}
+        const roles = data?.data || [];
+
+        setAvailableBluePrints(
+          roles.map((role: any) => ({
+            id: role.id,
+            name: role.name,
+          }))
+        );
+      } catch {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load blueprints",
+        });
+      }
+    };
+
+    fetchBluePrints();
   }, [toast]);
 
   /* ---------------- UPDATE FORM ---------------- */
@@ -576,6 +633,63 @@ export const EditProfilePage = () => {
                         <button
                           type="button"
                           onClick={() => removeRole(role)}
+                          className="hover:text-destructive"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {errors.role && (
+                    <p className="text-sm text-destructive">{errors.role}</p>
+                  )}
+                </div>
+
+
+                <div className="space-y-3">
+                  <Label>Blueprints</Label>
+
+                  <Select
+                    value={blueprintsToAdd}
+                    onValueChange={(value) => {
+                      setBluePrintsToAdd(value);
+                      handleBluePrintSelect(value);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Add Blueprints" />
+                    </SelectTrigger>
+
+                    <SelectContent>
+                      {availableBlueprints
+                        .filter((role) => !selectedBluePrints.includes(role.name))
+                        .map((role) => (
+                          <SelectItem key={role.id} value={role.name}>
+                            {role.name
+                              .replace(/_/g, " ")
+                              .replace(/\b\w/g, (char) => char.toUpperCase())}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+
+                  {/* Selected Role Chips */}
+                  <div className="flex flex-wrap gap-2">
+                    {selectedBluePrints.map((role) => (
+                      <div
+                        key={role}
+                        className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm"
+                      >
+                        <span>
+                          {role
+                            .replace(/_/g, " ")
+                            .replace(/\b\w/g, (char) => char.toUpperCase())}
+                        </span>
+
+                        <button
+                          type="button"
+                          onClick={() => removeBluePrint(role)}
                           className="hover:text-destructive"
                         >
                           <X className="h-3.5 w-3.5" />

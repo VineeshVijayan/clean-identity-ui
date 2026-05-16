@@ -23,6 +23,7 @@ export const CreateUserPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
+  const [idfRoles, setIDFRoles] = useState<string[]>([]);
   const [countryCode, setCountryCode] = useState("US:+1");
 
   const [formData, setFormData] = useState({
@@ -33,6 +34,7 @@ export const CreateUserPage = () => {
     ssn: "",
     dob: "",
     role: [] as string[],
+    idfRoles: [] as string[],
   });
 
   /* ---------------- FETCH ROLES ---------------- */
@@ -41,7 +43,7 @@ export const CreateUserPage = () => {
 
     const token = localStorage.getItem("auth-token");
 
-    fetch(`${API_BASE_URL}/job-titles`, {
+    fetch(`${API_BASE_URL}/blueprints`, {
       headers: {
         "Content-Type": "application/json",
         Authorization: token ? `Bearer ${token}` : "",
@@ -56,6 +58,37 @@ export const CreateUserPage = () => {
           ? data
           : data?.data || data?.roles || [];
         setRoles(list.map((r: any) => r.name));
+      })
+      .catch(() => {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load roles",
+        });
+      });
+
+  }, []);
+
+
+  useEffect(() => {
+
+    const token = localStorage.getItem("auth-token");
+
+    fetch(`${API_BASE_URL}/roles`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: token ? `Bearer ${token}` : "",
+      },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
+      .then((data) => {
+        const list = Array.isArray(data)
+          ? data
+          : data?.data || data?.roles || [];
+        setIDFRoles(list.map((r: any) => r.name));
       })
       .catch(() => {
         toast({
@@ -353,6 +386,54 @@ export const CreateUserPage = () => {
                   <PopoverContent className="w-[--radix-popover-trigger-width] p-2">
 
                     {roles.map((role) => {
+
+                      const checked = formData.role.includes(role);
+
+                      return (
+                        <div
+                          key={role}
+                          className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted cursor-pointer"
+                          onClick={() =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              role: checked
+                                ? prev.role.filter((r) => r !== role)
+                                : [...prev.role, role],
+                            }))
+                          }
+                        >
+                          <Checkbox checked={checked} />
+                          <span className="text-sm">{role}</span>
+                        </div>
+                      );
+                    })}
+
+                  </PopoverContent>
+
+                </Popover>
+
+              </div>
+
+
+              <div className="space-y-1.5">
+
+                <Label>IDF Role</Label>
+
+                <Popover>
+
+                  <PopoverTrigger asChild>
+
+                    <Button variant="outline" className="w-full justify-between">
+                      {formData.idfRoles.length
+                        ? formData.idfRoles.join(", ")
+                        : "Select role"}
+                    </Button>
+
+                  </PopoverTrigger>
+
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-2">
+
+                    {idfRoles.map((role) => {
 
                       const checked = formData.role.includes(role);
 
