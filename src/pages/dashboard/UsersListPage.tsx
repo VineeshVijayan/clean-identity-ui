@@ -185,7 +185,7 @@ const UserTable = ({
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() =>
                         navigate("/edit-profile", {
-                          state: { userId: user.id, user },
+                          state: { userId: user.id, user, source: "myteam" },
                         })
                       }>
                         <Edit className="h-4 w-4 mr-2" /> Edit
@@ -306,7 +306,7 @@ const DelegateTable = ({
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() =>
                         navigate("/edit-profile", {
-                          state: { userId: user.id, user },
+                          state: { userId: user.id, user, source: "myteam" },
                         })
                       }>
                         <Edit className="h-4 w-4 mr-2" /> Edit

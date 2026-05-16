@@ -35,10 +35,16 @@ export const EditProfilePage = () => {
 
   const location = useLocation();
   const fromPage = location.state?.from || "/users";
+  const source: "myteam" | "navbar" | "useradmin" =
+    location.state?.source || (location.state?.userId ? "useradmin" : "navbar");
 
   const passedUserId = location.state?.userId;
   const passedUser = location.state?.user;
   const [countryCode, setCountryCode] = useState("US:+1");
+
+  // Field-level edit permissions based on source
+  const employeeIdDisabled = true; // Non-editable across all three sources
+  const rolesDisabled = source === "myteam" || source === "navbar";
 
   // fallback (optional)
   const tokenUser = getUserFromToken();
@@ -526,6 +532,7 @@ export const EditProfilePage = () => {
                 <Input
                   value={form.employeeId}
                   onChange={(e) => set("employeeId", e.target.value)}
+                  disabled={employeeIdDisabled}
                 />
               </div>
 
@@ -593,32 +600,37 @@ export const EditProfilePage = () => {
                 <div className="space-y-3">
                   <Label>Roles</Label>
 
-                  <Select
-                    value={roleToAdd}
-                    onValueChange={(value) => {
-                      setRoleToAdd(value);
-                      handleRoleSelect(value);
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Add role" />
-                    </SelectTrigger>
+                  {!rolesDisabled && (
+                    <Select
+                      value={roleToAdd}
+                      onValueChange={(value) => {
+                        setRoleToAdd(value);
+                        handleRoleSelect(value);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Add role" />
+                      </SelectTrigger>
 
-                    <SelectContent>
-                      {availableRoles
-                        .filter((role) => !selectedRoles.includes(role.name))
-                        .map((role) => (
-                          <SelectItem key={role.id} value={role.name}>
-                            {role.name
-                              .replace(/_/g, " ")
-                              .replace(/\b\w/g, (char) => char.toUpperCase())}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
+                      <SelectContent>
+                        {availableRoles
+                          .filter((role) => !selectedRoles.includes(role.name))
+                          .map((role) => (
+                            <SelectItem key={role.id} value={role.name}>
+                              {role.name
+                                .replace(/_/g, " ")
+                                .replace(/\b\w/g, (char) => char.toUpperCase())}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  )}
 
                   {/* Selected Role Chips */}
                   <div className="flex flex-wrap gap-2">
+                    {selectedRoles.length === 0 && rolesDisabled && (
+                      <span className="text-sm text-muted-foreground">No roles assigned</span>
+                    )}
                     {selectedRoles.map((role) => (
                       <div
                         key={role}
@@ -630,13 +642,15 @@ export const EditProfilePage = () => {
                             .replace(/\b\w/g, (char) => char.toUpperCase())}
                         </span>
 
-                        <button
-                          type="button"
-                          onClick={() => removeRole(role)}
-                          className="hover:text-destructive"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
+                        {!rolesDisabled && (
+                          <button
+                            type="button"
+                            onClick={() => removeRole(role)}
+                            className="hover:text-destructive"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
