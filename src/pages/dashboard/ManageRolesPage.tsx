@@ -470,43 +470,56 @@ export const ManageRolesPage = () => {
             </span>
             <h3 className="text-lg font-semibold">Add Application(s)</h3>
           </div>
-          <div className="relative">
-            <Select value={selectedAppToAdd} onValueChange={(val) => {
-              setSelectedAppToAdd(val);
-              // Auto-add on select
-              const app = availableAppsToAdd.find((a) => a.id === val);
-              if (app && !blueprintApps.find((a) => a.id === app.id)) {
-                setBlueprintApps((prev) => [
-                  ...prev,
-                  {
-                    ...app,
-                    accessLevel: "Standard",
-                    grantedDate: new Date().toISOString().split("T")[0],
-                    essential: false,
-                  },
-                ]);
-                setSelectedAppToAdd("");
-              }
-            }}>
-              <SelectTrigger className="w-full h-12 pl-10">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <SelectValue placeholder="Choose an application(s) to add to Blueprint..." />
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Select Application</label>
+            <div className="relative">
+              <Select value={selectedAppToAdd} onValueChange={setSelectedAppToAdd}>
+                <SelectTrigger className="w-full h-12 pl-10">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <SelectValue placeholder="Choose an application to add to Blueprint..." />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                  {availableAppsToAdd
+                    .filter((app) => !blueprintApps.find((a) => a.id === app.id))
+                    .map((app) => (
+                      <SelectItem key={app.id} value={app.id}>
+                        <span className="flex items-center gap-2">
+                          <span>{app.icon}</span>
+                          <span>{app.name}</span>
+                          <span className="text-muted-foreground text-xs">— {app.category}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Select Role</label>
+            <Select value={selectedRole} onValueChange={setSelectedRole}>
+              <SelectTrigger className="w-full h-12">
+                <SelectValue placeholder="Choose a role..." />
               </SelectTrigger>
-              <SelectContent>
-                {availableAppsToAdd
-                  .filter((app) => !blueprintApps.find((a) => a.id === app.id))
-                  .map((app) => (
-                    <SelectItem key={app.id} value={app.id}>
-                      <span className="flex items-center gap-2">
-                        <span>{app.icon}</span>
-                        <span>{app.name}</span>
-                        <span className="text-muted-foreground text-xs">— {app.category}</span>
-                      </span>
-                    </SelectItem>
-                  ))}
+              <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                {availableRoles.map((r) => (
+                  <SelectItem key={r} value={r}>{r}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
+
+          {selectedAppToAdd && selectedRole && (
+            <div className="flex justify-end pt-2">
+              <Button
+                onClick={handleAddApp}
+                className="gap-2 bg-amber-600 text-white hover:bg-amber-700"
+              >
+                <Plus className="h-4 w-4" />
+                Add Application
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
