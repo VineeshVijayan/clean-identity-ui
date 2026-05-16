@@ -63,6 +63,18 @@ type UserEntry = {
   applications: UserApplicationEntry[];
 };
 
+type IntegrationProject = {
+  id: string;
+  key: string;
+  name: string;
+};
+
+type IntegrationRole = {
+  id: string;
+  name: string;
+  description?: string;
+};
+
 type UserApplicationEntry = {
   id: number;               // user_application mapping id
   applicationId: number;    // actual application id
@@ -237,8 +249,8 @@ export const ApplicationManagementPage = () => {
   const [users, setUsers] = useState<UserEntry[]>([]);
 
   const [applications, setApplications] = useState<Application[]>([]);
-  const [availableProjects, setAvailableProjects] = useState<string[]>([]);
-  const [availableRoles, setAvailableRoles] = useState<string[]>([]);
+  const [availableProjects, setAvailableProjects] = useState<IntegrationProject[]>([]);
+  const [availableRoles, setAvailableRoles] = useState<IntegrationRole[]>([]);
 
   // Request Access state
   const [reqSelectedUser, setReqSelectedUser] = useState<UserEntry | null>(null);
@@ -461,8 +473,11 @@ export const ApplicationManagementPage = () => {
         const rolesData = await rolesRes.json();
         const projectsData = await projectsRes.json();
 
-        setAvailableRoles(rolesData.data || []);
-        setAvailableProjects(projectsData.data || []);
+        setAvailableRoles(Array.isArray(rolesData) ? rolesData : rolesData.data || []);
+
+        setAvailableProjects(
+          Array.isArray(projectsData) ? projectsData : projectsData.data || []
+        );
       } catch (error) {
         console.error("Failed to fetch integration data", error);
       }
@@ -596,7 +611,9 @@ export const ApplicationManagementPage = () => {
             </SelectTrigger>
             <SelectContent className="bg-popover border border-border shadow-lg z-50">
               {availableProjects.map((p) => (
-                <SelectItem key={p} value={p}>{p}</SelectItem>
+                <SelectItem key={p.id} value={p.key}>
+                  {p.name}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -610,7 +627,9 @@ export const ApplicationManagementPage = () => {
             </SelectTrigger>
             <SelectContent className="bg-popover border border-border shadow-lg z-50">
               {availableRoles.map((r) => (
-                <SelectItem key={r} value={r}>{r}</SelectItem>
+                <SelectItem key={r.id} value={r.id}>
+                  {r.name}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
