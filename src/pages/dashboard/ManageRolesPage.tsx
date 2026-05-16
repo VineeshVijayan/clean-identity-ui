@@ -70,6 +70,7 @@ export const ManageRolesPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [availableAppsToAdd, setAvailableAppsToAdd] = useState<any[]>([]);
+  const [availableRoles, setAvailableRoles] = useState<string[]>([]);
 
   const [roles, setRoles] = useState<Role[]>([]);
   const [selectedBlueprintId, setSelectedBlueprintId] = useState("");
@@ -77,6 +78,8 @@ export const ManageRolesPage = () => {
   const [blueprintDropdownOpen, setBlueprintDropdownOpen] = useState(false);
   const blueprintDropdownRef = useRef<HTMLDivElement>(null);
   const [selectedAppToAdd, setSelectedAppToAdd] = useState("");
+  const [selectedRole, setSelectedRole] = useState("");
+  const [hasAddedApp, setHasAddedApp] = useState(false);
   const [blueprintApps, setBlueprintApps] = useState<BlueprintApp[]>([]);
   const [deleteRoleId, setDeleteRoleId] = useState<number | null>(null);
 
