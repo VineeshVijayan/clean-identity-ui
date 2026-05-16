@@ -92,7 +92,7 @@ type Application = {
   appUrl: string;
   active: boolean;
   integrationName: string;
-  essential:boolean;
+  essential: boolean;
 };
 
 /* ─── Employee Search Dropdown ─── */
@@ -351,9 +351,9 @@ export const ApplicationManagementPage = () => {
       setRemCardList([]);
       return;
     }
-  
+
     const token = localStorage.getItem("auth-token");
-  
+
     const fetchUserApplications = async () => {
       try {
         const res = await fetch(
@@ -366,55 +366,55 @@ export const ApplicationManagementPage = () => {
             },
           }
         );
-  
+
         if (!res.ok) {
           throw new Error("Failed to fetch applications");
         }
-  
+
         const response = await res.json();
         const apps = response.data || response;
-  
+
         const mapped: UserApplicationEntry[] = apps
           .filter((app: any) => app.active)
           .map((app: any) => ({
             id: app.id,
             applicationId: app.applicationId,
-  
+
             // Core
             name: app.name,
             description: app.description || "",
-  
+
             // UI compatibility
             category: app.description || "Business App",
             icon: app.name?.charAt(0)?.toUpperCase() || "A",
-  
+
             // Access
             accessLevel: app.accessLevel || "Standard",
             grantedDate: app.grantedDate
               ? new Date(app.grantedDate).toLocaleDateString()
               : "",
-  
+
             // Status
             essential: app.essential || false,
             isEssential: app.essential || false,
             active: app.active,
           }));
-  
+
         setRemCardList(mapped);
         setSelectedAppsForRemoval([]);
       } catch (err) {
         console.error(err);
-  
+
         toast({
           title: "Failed to load applications",
           description: "Could not fetch user applications.",
           variant: "destructive",
         });
-  
+
         setRemCardList([]);
       }
     };
-  
+
     fetchUserApplications();
   }, [remSelectedUser]);
 

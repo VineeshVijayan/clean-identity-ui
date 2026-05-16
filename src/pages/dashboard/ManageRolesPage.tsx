@@ -70,7 +70,9 @@ export const ManageRolesPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [availableAppsToAdd, setAvailableAppsToAdd] = useState<any[]>([]);
-  const [availableRoles, setAvailableRoles] = useState<string[]>([]);
+  const [availableRoles, setAvailableRoles] = useState<
+    { id: number; name: string }[]
+  >([]);
 
   const [roles, setRoles] = useState<Role[]>([]);
   const [selectedBlueprintId, setSelectedBlueprintId] = useState("");
@@ -254,12 +256,17 @@ export const ManageRolesPage = () => {
   };
 
   const handleAddApp = () => {
-    if (!selectedAppToAdd || !selectedRole) return;
-    const app = availableAppsToAdd.find((a) => a.id === selectedAppToAdd);
+    if (!selectedAppToAdd || !selectedRole || !selectedBlueprintId) return;
+
+    const app = availableAppsToAdd.find(
+      (a) => a.id === selectedAppToAdd
+    );
+
     if (!app) {
       setHasAddedApp(true);
       return;
     }
+
     if (!blueprintApps.find((a) => a.id === app.id)) {
       setBlueprintApps((prev) => [
         ...prev,
@@ -271,8 +278,10 @@ export const ManageRolesPage = () => {
         },
       ]);
     }
+
     setSelectedAppToAdd("");
     setSelectedRole("");
+    setSelectedBlueprintId("");
     setHasAddedApp(true);
   };
 
@@ -502,14 +511,19 @@ export const ManageRolesPage = () => {
                 <SelectValue placeholder="Choose a role..." />
               </SelectTrigger>
               <SelectContent className="bg-popover border border-border shadow-lg z-50">
-                {availableRoles.map((r) => (
-                  <SelectItem key={r} value={r}>{r}</SelectItem>
+                {availableRoles.map((role) => (
+                  <SelectItem
+                    key={role.id}
+                    value={role.name}
+                  >
+                    {role.name}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          {selectedAppToAdd && selectedRole && (
+          {selectedAppToAdd && selectedRole && selectedBlueprintId && (
             <div className="flex justify-end pt-2">
               <Button
                 onClick={handleAddApp}
@@ -525,79 +539,79 @@ export const ManageRolesPage = () => {
 
       {/* My Current Applications */}
       {(hasAddedApp || blueprintApps.length > 0) && (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <FolderOpen className="h-5 w-5 text-muted-foreground" />
-          <h2 className="text-lg font-semibold">My Current Applications</h2>
-        </div>
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <FolderOpen className="h-5 w-5 text-muted-foreground" />
+            <h2 className="text-lg font-semibold">My Current Applications</h2>
+          </div>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {blueprintApps.length === 0 ? (
-            <div className="col-span-full text-center text-muted-foreground py-10">
-              No applications available for selected blueprint
-            </div>
-          ) : (
-            blueprintApps.map((app) => (
-              <div
-                key={app.id}
-                className="relative rounded-xl border border-border bg-card p-5 space-y-3 transition-shadow hover:shadow-md"
-              >
-                {/* Remove / Essential icon */}
-                <div className="absolute top-3 right-3">
-                  {app.essential ? (
-                    <ShieldAlert className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <button
-                      onClick={() => handleRemoveApp(app.id)}
-                      className="text-muted-foreground hover:text-destructive transition-colors"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-
-                {/* App info */}
-                <div className="flex items-center gap-3">
-                  <div className="text-2xl">{app.icon}</div>
-                  <div>
-                    <p className="font-semibold text-sm">{app.name}</p>
-                    <p className="text-xs text-muted-foreground">{app.category}</p>
-                  </div>
-                </div>
-
-                {/* Details */}
-                <div className="space-y-1.5 text-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Access Level:</span>
-                    <Badge variant="outline" className="text-xs font-medium">
-                      {app.accessLevel}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Granted:</span>
-                    <span className="text-xs">{app.grantedDate}</span>
-                  </div>
-                </div>
-
-                {/* Status */}
-                <div className="pt-1">
-                  {app.essential ? (
-                    <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground border border-border rounded-full py-1.5 px-3">
-                      <ShieldAlert className="h-3.5 w-3.5" />
-                      Essential — Cannot Remove
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center gap-1.5 text-xs text-green-600 border border-green-200 bg-green-50 rounded-full py-1.5 px-3">
-                      <CheckCircle2 className="h-3.5 w-3.5" />
-                      Active Access
-                    </div>
-                  )}
-                </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {blueprintApps.length === 0 ? (
+              <div className="col-span-full text-center text-muted-foreground py-10">
+                No applications available for selected blueprint
               </div>
-            ))
-          )}
+            ) : (
+              blueprintApps.map((app) => (
+                <div
+                  key={app.id}
+                  className="relative rounded-xl border border-border bg-card p-5 space-y-3 transition-shadow hover:shadow-md"
+                >
+                  {/* Remove / Essential icon */}
+                  <div className="absolute top-3 right-3">
+                    {app.essential ? (
+                      <ShieldAlert className="h-4 w-4 text-muted-foreground" />
+                    ) : (
+                      <button
+                        onClick={() => handleRemoveApp(app.id)}
+                        className="text-muted-foreground hover:text-destructive transition-colors"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* App info */}
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">{app.icon}</div>
+                    <div>
+                      <p className="font-semibold text-sm">{app.name}</p>
+                      <p className="text-xs text-muted-foreground">{app.category}</p>
+                    </div>
+                  </div>
+
+                  {/* Details */}
+                  <div className="space-y-1.5 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Access Level:</span>
+                      <Badge variant="outline" className="text-xs font-medium">
+                        {app.accessLevel}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Granted:</span>
+                      <span className="text-xs">{app.grantedDate}</span>
+                    </div>
+                  </div>
+
+                  {/* Status */}
+                  <div className="pt-1">
+                    {app.essential ? (
+                      <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground border border-border rounded-full py-1.5 px-3">
+                        <ShieldAlert className="h-3.5 w-3.5" />
+                        Essential — Cannot Remove
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center gap-1.5 text-xs text-green-600 border border-green-200 bg-green-50 rounded-full py-1.5 px-3">
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        Active Access
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
-      </div>
       )}
 
       {/* Update Blueprint Button */}
