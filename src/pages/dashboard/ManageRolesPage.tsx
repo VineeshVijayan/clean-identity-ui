@@ -598,6 +598,7 @@ export const ManageRolesPage = () => {
           )}
         </div>
       </div>
+      )}
 
       {/* Update Blueprint Button */}
       <div className="flex justify-end">
