@@ -287,7 +287,7 @@ export const ManageRolesPage = () => {
   };
 
   const handleAddApp = () => {
-    if (!selectedAppToAdd || !selectedRole) return;
+    if (!selectedAppToAdd || !selectedRole || !selectedBlueprintId) return;
     const app = availableAppsToAdd.find((a) => a.id === selectedAppToAdd);
     if (!app) {
       setHasAddedApp(true);
@@ -305,6 +305,7 @@ export const ManageRolesPage = () => {
       ]);
     }
     setSelectedAppToAdd("");
+    // keep selected blueprint
     setSelectedRole("");
     setHasAddedApp(true);
   };
@@ -434,6 +435,7 @@ export const ManageRolesPage = () => {
                     setSelectedBlueprintId("");
                     setBlueprintSearch("");
                     setBlueprintApps([]);
+                    setHasAddedApp(false);
                   }}
                   className="absolute right-10 top-1/2 -translate-y-1/2"
                 >
@@ -458,8 +460,9 @@ export const ManageRolesPage = () => {
                           (r) => String(r.id) === String(role.id)
                         );
 
-                        if (!selected || !selected.applications.length) {
+                        if (!selected || !selected.applications?.length) {
                           setBlueprintApps([]);
+                          setHasAddedApp(false);
                           return;
                         }
 
@@ -476,6 +479,9 @@ export const ManageRolesPage = () => {
                         }));
 
                         setBlueprintApps(mappedApps);
+
+                        // Automatically show current applications section
+                        setHasAddedApp(true);
                       }}
                       className="w-full text-left px-4 py-3 hover:bg-muted border-b last:border-0"
                     >
@@ -550,22 +556,24 @@ export const ManageRolesPage = () => {
             </Select>
           </div>
 
-          {selectedAppToAdd && selectedRole && (
-            <div className="flex justify-end pt-2">
-              <Button
-                onClick={handleAddApp}
-                className="gap-2 bg-amber-600 text-white hover:bg-amber-700"
-              >
-                <Plus className="h-4 w-4" />
-                Add Application
-              </Button>
-            </div>
-          )}
+          {selectedBlueprintId &&
+            selectedAppToAdd &&
+            selectedRole && (
+              <div className="flex justify-end pt-2">
+                <Button
+                  onClick={handleAddApp}
+                  className="gap-2 bg-amber-600 text-white hover:bg-amber-700"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Application
+                </Button>
+              </div>
+            )}
         </div>
       </div>
 
       {/* My Current Applications */}
-      {(hasAddedApp || blueprintApps.length > 0) && (
+      {hasAddedApp && blueprintApps.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <FolderOpen className="h-5 w-5 text-muted-foreground" />
