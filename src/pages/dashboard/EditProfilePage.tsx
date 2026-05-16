@@ -532,6 +532,7 @@ export const EditProfilePage = () => {
                 <Input
                   value={form.employeeId}
                   onChange={(e) => set("employeeId", e.target.value)}
+                  disabled={employeeIdDisabled}
                 />
               </div>
 
