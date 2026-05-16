@@ -198,6 +198,28 @@ export const ManageRolesPage = () => {
     fetchApplications();
   }, [toast]);
 
+  /* FETCH ROLES (reuses Manage Team Access endpoint) */
+  useEffect(() => {
+    const fetchRolesList = async () => {
+      try {
+        const token = localStorage.getItem("auth-token");
+        const res = await fetch(`${API_BASE_URL}/roles`, {
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: token ? `Bearer ${token}` : "",
+          },
+        });
+        if (!res.ok) throw new Error("Failed to fetch roles");
+        const data = await res.json();
+        setAvailableRoles(data.data || []);
+      } catch {
+        // silently ignore
+      }
+    };
+    fetchRolesList();
+  }, []);
+
   /* ================= DELETE ================= */
   const handleDeleteRole = async () => {
     if (!deleteRoleId) return;
