@@ -254,19 +254,26 @@ export const ManageRolesPage = () => {
   };
 
   const handleAddApp = () => {
-    if (!selectedAppToAdd) return;
+    if (!selectedAppToAdd || !selectedRole) return;
     const app = availableAppsToAdd.find((a) => a.id === selectedAppToAdd);
-    if (!app || blueprintApps.find((a) => a.id === app.id)) return;
-    setBlueprintApps((prev) => [
-      ...prev,
-      {
-        ...app,
-        accessLevel: "Standard",
-        grantedDate: new Date().toISOString().split("T")[0],
-        essential: false,
-      },
-    ]);
+    if (!app) {
+      setHasAddedApp(true);
+      return;
+    }
+    if (!blueprintApps.find((a) => a.id === app.id)) {
+      setBlueprintApps((prev) => [
+        ...prev,
+        {
+          ...app,
+          accessLevel: selectedRole,
+          grantedDate: new Date().toISOString().split("T")[0],
+          essential: false,
+        },
+      ]);
+    }
     setSelectedAppToAdd("");
+    setSelectedRole("");
+    setHasAddedApp(true);
   };
 
   const handleRemoveApp = (id: string) => {
