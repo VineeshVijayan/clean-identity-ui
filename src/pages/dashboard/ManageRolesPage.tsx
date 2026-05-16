@@ -70,6 +70,7 @@ export const ManageRolesPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [availableAppsToAdd, setAvailableAppsToAdd] = useState<any[]>([]);
+  const [availableRoles, setAvailableRoles] = useState<string[]>([]);
 
   const [roles, setRoles] = useState<Role[]>([]);
   const [selectedBlueprintId, setSelectedBlueprintId] = useState("");
@@ -77,6 +78,8 @@ export const ManageRolesPage = () => {
   const [blueprintDropdownOpen, setBlueprintDropdownOpen] = useState(false);
   const blueprintDropdownRef = useRef<HTMLDivElement>(null);
   const [selectedAppToAdd, setSelectedAppToAdd] = useState("");
+  const [selectedRole, setSelectedRole] = useState("");
+  const [hasAddedApp, setHasAddedApp] = useState(false);
   const [blueprintApps, setBlueprintApps] = useState<BlueprintApp[]>([]);
   const [deleteRoleId, setDeleteRoleId] = useState<number | null>(null);
 
@@ -195,6 +198,28 @@ export const ManageRolesPage = () => {
     fetchApplications();
   }, [toast]);
 
+  /* FETCH ROLES (reuses Manage Team Access endpoint) */
+  useEffect(() => {
+    const fetchRolesList = async () => {
+      try {
+        const token = localStorage.getItem("auth-token");
+        const res = await fetch(`${API_BASE_URL}/roles`, {
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            Authorization: token ? `Bearer ${token}` : "",
+          },
+        });
+        if (!res.ok) throw new Error("Failed to fetch roles");
+        const data = await res.json();
+        setAvailableRoles(data.data || []);
+      } catch {
+        // silently ignore
+      }
+    };
+    fetchRolesList();
+  }, []);
+
   /* ================= DELETE ================= */
   const handleDeleteRole = async () => {
     if (!deleteRoleId) return;
@@ -229,19 +254,26 @@ export const ManageRolesPage = () => {
   };
 
   const handleAddApp = () => {
-    if (!selectedAppToAdd) return;
+    if (!selectedAppToAdd || !selectedRole) return;
     const app = availableAppsToAdd.find((a) => a.id === selectedAppToAdd);
-    if (!app || blueprintApps.find((a) => a.id === app.id)) return;
-    setBlueprintApps((prev) => [
-      ...prev,
-      {
-        ...app,
-        accessLevel: "Standard",
-        grantedDate: new Date().toISOString().split("T")[0],
-        essential: false,
-      },
-    ]);
+    if (!app) {
+      setHasAddedApp(true);
+      return;
+    }
+    if (!blueprintApps.find((a) => a.id === app.id)) {
+      setBlueprintApps((prev) => [
+        ...prev,
+        {
+          ...app,
+          accessLevel: selectedRole,
+          grantedDate: new Date().toISOString().split("T")[0],
+          essential: false,
+        },
+      ]);
+    }
     setSelectedAppToAdd("");
+    setSelectedRole("");
+    setHasAddedApp(true);
   };
 
   const handleRemoveApp = (id: string) => {
@@ -438,47 +470,61 @@ export const ManageRolesPage = () => {
             </span>
             <h3 className="text-lg font-semibold">Add Application(s)</h3>
           </div>
-          <div className="relative">
-            <Select value={selectedAppToAdd} onValueChange={(val) => {
-              setSelectedAppToAdd(val);
-              // Auto-add on select
-              const app = availableAppsToAdd.find((a) => a.id === val);
-              if (app && !blueprintApps.find((a) => a.id === app.id)) {
-                setBlueprintApps((prev) => [
-                  ...prev,
-                  {
-                    ...app,
-                    accessLevel: "Standard",
-                    grantedDate: new Date().toISOString().split("T")[0],
-                    essential: false,
-                  },
-                ]);
-                setSelectedAppToAdd("");
-              }
-            }}>
-              <SelectTrigger className="w-full h-12 pl-10">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <SelectValue placeholder="Choose an application(s) to add to Blueprint..." />
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Select Application</label>
+            <div className="relative">
+              <Select value={selectedAppToAdd} onValueChange={setSelectedAppToAdd}>
+                <SelectTrigger className="w-full h-12 pl-10">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <SelectValue placeholder="Choose an application to add to Blueprint..." />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                  {availableAppsToAdd
+                    .filter((app) => !blueprintApps.find((a) => a.id === app.id))
+                    .map((app) => (
+                      <SelectItem key={app.id} value={app.id}>
+                        <span className="flex items-center gap-2">
+                          <span>{app.icon}</span>
+                          <span>{app.name}</span>
+                          <span className="text-muted-foreground text-xs">— {app.category}</span>
+                        </span>
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Select Role</label>
+            <Select value={selectedRole} onValueChange={setSelectedRole}>
+              <SelectTrigger className="w-full h-12">
+                <SelectValue placeholder="Choose a role..." />
               </SelectTrigger>
-              <SelectContent>
-                {availableAppsToAdd
-                  .filter((app) => !blueprintApps.find((a) => a.id === app.id))
-                  .map((app) => (
-                    <SelectItem key={app.id} value={app.id}>
-                      <span className="flex items-center gap-2">
-                        <span>{app.icon}</span>
-                        <span>{app.name}</span>
-                        <span className="text-muted-foreground text-xs">— {app.category}</span>
-                      </span>
-                    </SelectItem>
-                  ))}
+              <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                {availableRoles.map((r) => (
+                  <SelectItem key={r} value={r}>{r}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
+
+          {selectedAppToAdd && selectedRole && (
+            <div className="flex justify-end pt-2">
+              <Button
+                onClick={handleAddApp}
+                className="gap-2 bg-amber-600 text-white hover:bg-amber-700"
+              >
+                <Plus className="h-4 w-4" />
+                Add Application
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
       {/* My Current Applications */}
+      {(hasAddedApp || blueprintApps.length > 0) && (
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <FolderOpen className="h-5 w-5 text-muted-foreground" />
@@ -552,6 +598,7 @@ export const ManageRolesPage = () => {
           )}
         </div>
       </div>
+      )}
 
       {/* Update Blueprint Button */}
       <div className="flex justify-end">
