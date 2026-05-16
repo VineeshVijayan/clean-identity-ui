@@ -8,10 +8,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useSettings } from "@/context/SettingsContext";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  AppWindow,
   Building2,
   ChevronDown,
   ChevronUp,
@@ -34,7 +34,6 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useSettings } from "@/context/SettingsContext";
 
 interface SidebarProps {
   open: boolean;
@@ -57,22 +56,22 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
 
   useEffect(() => {
     const updatedMenus: Record<string, boolean> = {};
-  
+
     menuItems.forEach((item) => {
       if (item.submenu) {
         const isAnySubActive = item.submenu.some((sub) =>
           location.pathname.startsWith(sub.href)
         );
-  
+
         if (isAnySubActive) {
           updatedMenus[item.label] = true;
         }
       }
     });
-  
+
     setOpenMenus(updatedMenus);
   }, [location.pathname]);
-  
+
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [customLogo, setCustomLogo] = useState<string | null>(null);
   const { settings } = useSettings();
@@ -178,14 +177,14 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     ],
   };
 
-  const applications: MenuItem = {
-    label: "Applications",
-    icon: AppWindow,
-    submenu: [
-      { label: "New Application", href: "/applications/new", icon: Plus },
-      { label: "Update Application", href: "/applications/update", icon: Settings },
-    ],
-  };
+  // const applications: MenuItem = {
+  //   label: "Applications",
+  //   icon: AppWindow,
+  //   submenu: [
+  //     { label: "New Application", href: "/applications/new", icon: Plus },
+  //     { label: "Update Application", href: "/applications/update", icon: Settings },
+  //   ],
+  // };
 
   // Build menu based on roles
   let menuItems: MenuItem[] = [];
@@ -196,7 +195,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
       accessRequests,
       userManagementItem,
       roleBasedAccess,
-      applications,
+      // applications,
       ...(settings.SHOW_COMPANY_MENU ? [company] : []),
       idfAdministration,
       reporting,
@@ -207,7 +206,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
       accessRequests,
       userManagementBasic,
       roleBasedAccess,
-      applications,
+      // applications,
       ...(settings.SHOW_COMPANY_MENU ? [company] : []),
       reporting,
       // checkout,
@@ -233,13 +232,13 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
 
   const isActiveRoute = (href?: string) => {
     if (!href) return false;
-  
+
     // exact match
     if (location.pathname === href) return true;
-  
+
     // avoid '/users' matching '/users/create'
     if (href === "/users") return location.pathname === "/users";
-  
+
     return location.pathname.startsWith(href + "/");
   };
 
