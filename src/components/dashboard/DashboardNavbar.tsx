@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Bell, Key, LogOut, Menu, ShoppingCart, User } from "lucide-react";
+import { Key, LogOut, Menu, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface DashboardNavbarProps {
@@ -54,10 +54,10 @@ export const DashboardNavbar = ({ user, onMenuClick, onLogout }: DashboardNavbar
         </Button> */}
 
         {/* Notifications */}
-        <button className="relative p-2 text-muted-foreground hover:text-foreground transition-colors">
+        {/* <button className="relative p-2 text-muted-foreground hover:text-foreground transition-colors">
           <Bell className="h-5 w-5" />
           <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
-        </button>
+        </button> */}
 
         {/* User Menu */}
         <DropdownMenu>
