@@ -82,7 +82,7 @@ export const DashboardNavbar = ({ user, onMenuClick, onLogout }: DashboardNavbar
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate("/edit-profile")}>
+            <DropdownMenuItem onClick={() => navigate("/edit-profile", { state: { source: "navbar" } })}>
               <User className="mr-2 h-4 w-4" />
               Edit Profile
             </DropdownMenuItem>
