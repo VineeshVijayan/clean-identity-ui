@@ -123,6 +123,7 @@ export const EditProfilePage = () => {
         const data = await res.json();
         const user = data?.data || data;
         setSelectedRoles(user.roles || []);
+        setSelectedBluePrints(user.blueprints || []);
 
         setForm({
           employeeId: user.id || "",
@@ -296,6 +297,10 @@ export const EditProfilePage = () => {
     }
     if (selectedRoles.length === 0) newErrors.role = "At least one role is required.";
 
+    if (selectedBluePrints.length === 0) {
+      newErrors.blueprint = "At least one blueprint is required.";
+    }
+
     setErrors(newErrors);
 
     return Object.keys(newErrors).length === 0;
@@ -321,15 +326,17 @@ export const EditProfilePage = () => {
     const token = localStorage.getItem("auth-token");
 
     const payload = {
-      username: userEmail,
-      email: userEmail,
+      employeeId: form.employeeId,
+      username: form.email,
+      email: form.email,
       firstName: form.firstName,
       lastName: form.lastName,
 
-      phoneNumber: form.phoneNumber,
+      phoneNumber: `${countryCode.split(":")[1]}${form.phoneNumber}`,
       ssn: form.ssn,
       dob: form.dob ? new Date(form.dob).toISOString() : null,
       roles: selectedRoles,
+      blueprints: selectedBluePrints,
     };
 
     try {
@@ -572,7 +579,7 @@ export const EditProfilePage = () => {
               <div className="space-y-1.5">
                 <Label>Email</Label>
                 <Input
-                  value={userEmail || ""}
+                  value={form.email}
                   disabled
                 />
               </div>
@@ -688,7 +695,7 @@ export const EditProfilePage = () => {
                     </SelectContent>
                   </Select>
 
-                  {/* Selected Role Chips */}
+                  {/* Selected Blueprints Chips */}
                   <div className="flex flex-wrap gap-2">
                     {selectedBluePrints.map((role) => (
                       <div
@@ -712,8 +719,10 @@ export const EditProfilePage = () => {
                     ))}
                   </div>
 
-                  {errors.role && (
-                    <p className="text-sm text-destructive">{errors.role}</p>
+                  {errors.blueprint && (
+                    <p className="text-sm text-destructive">
+                      {errors.blueprint}
+                    </p>
                   )}
                 </div>
 

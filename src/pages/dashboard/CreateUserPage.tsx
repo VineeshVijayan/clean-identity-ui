@@ -25,6 +25,23 @@ export const CreateUserPage = () => {
   const [roles, setRoles] = useState<string[]>([]);
   const [idfRoles, setIDFRoles] = useState<string[]>([]);
   const [countryCode, setCountryCode] = useState("US:+1");
+  const [companies, setCompanies] = useState<{ id: number; name: string }[]>([]);
+
+  const getUserFromToken = () => {
+
+    const token = localStorage.getItem("auth-token");
+
+    if (!token) return null;
+
+    try {
+      return JSON.parse(atob(token.split(".")[1]));
+    } catch {
+      return null;
+    }
+  };
+
+
+  const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -35,7 +52,64 @@ export const CreateUserPage = () => {
     dob: "",
     role: [] as string[],
     idfRoles: [] as string[],
+    companyId: "",
   });
+
+  useEffect(() => {
+
+    const tokenUser = getUserFromToken();
+  
+    const userRoles: string[] = tokenUser?.roles || [];
+  
+    const isSuperAdmin =
+      userRoles.includes("super_admin");
+  
+    const hasAccess =
+      isSuperAdmin ||
+      userRoles.includes("Company");
+  
+    setShowCompanyDropdown(hasAccess);
+  
+    if (!hasAccess) return;
+  
+    const token = localStorage.getItem("auth-token");
+  
+    const companyApi = isSuperAdmin
+      ? `${API_BASE_URL}/companies`
+      : `${API_BASE_URL}/companies/my`;
+  
+    fetch(companyApi, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: token ? `Bearer ${token}` : "",
+      },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
+      .then((data) => {
+  
+        const list = Array.isArray(data)
+          ? data
+          : data?.data || [];
+  
+        setCompanies(
+          list.map((company: any) => ({
+            id: company.id,
+            name: company.name,
+          }))
+        );
+      })
+      .catch(() => {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load companies",
+        });
+      });
+  
+  }, []);
 
   /* ---------------- FETCH ROLES ---------------- */
 
@@ -130,7 +204,12 @@ export const CreateUserPage = () => {
       phone: formData.phone,
       ssn: formData.ssn,
       dob: formData.dob ? new Date(formData.dob).toISOString() : null,
-      roles: formData.role,
+      blueprints: formData.role,
+      roles: formData.idfRoles,
+      ...(showCompanyDropdown &&
+        formData.companyId && {
+        companyId: Number(formData.companyId),
+      }),
     };
 
     try {
@@ -365,6 +444,33 @@ export const CreateUserPage = () => {
                 </div>
               </div>
 
+              {showCompanyDropdown && (
+                <div className="space-y-1.5">
+
+                  <Label>Company</Label>
+
+                  <select
+                    value={formData.companyId}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        companyId: e.target.value,
+                      })
+                    }
+                    className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="">Select Company</option>
+
+                    {companies.map((company) => (
+                      <option key={company.id} value={company.id}>
+                        {company.name}
+                      </option>
+                    ))}
+                  </select>
+
+                </div>
+              )}
+
               {/* Roles */}
 
               <div className="space-y-1.5">
@@ -435,7 +541,7 @@ export const CreateUserPage = () => {
 
                     {idfRoles.map((role) => {
 
-                      const checked = formData.role.includes(role);
+                      const checked = formData.idfRoles.includes(role);
 
                       return (
                         <div
@@ -444,9 +550,9 @@ export const CreateUserPage = () => {
                           onClick={() =>
                             setFormData((prev) => ({
                               ...prev,
-                              role: checked
-                                ? prev.role.filter((r) => r !== role)
-                                : [...prev.role, role],
+                              idfRoles: checked
+                                ? prev.idfRoles.filter((r) => r !== role)
+                                : [...prev.idfRoles, role],
                             }))
                           }
                         >
