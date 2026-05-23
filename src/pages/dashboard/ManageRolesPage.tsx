@@ -42,7 +42,11 @@ type Role = {
   type: "system" | "custom";
   createdDate: string;
   lastModified: string;
-  applications: any[];
+  applications: {
+    applicationId: number;
+    applicationName: string;
+    roles: string[];
+  }[];
   jobTitles: any[];
 };
 
@@ -57,7 +61,7 @@ type BlueprintApp = {
   name: string;
   category: string;
   icon: string;
-  accessLevel: string;
+  roles: string[];
   grantedDate: string;
   essential: boolean;
 };
@@ -287,25 +291,58 @@ export const ManageRolesPage = () => {
   };
 
   const handleAddApp = () => {
-    if (!selectedAppToAdd || !selectedRole || !selectedBlueprintId) return;
-    const app = availableAppsToAdd.find((a) => a.id === selectedAppToAdd);
+
+    if (
+      !selectedAppToAdd ||
+      !selectedRole ||
+      !selectedBlueprintId
+    ) return;
+
+    const app = availableAppsToAdd.find(
+      (a) => a.id === selectedAppToAdd
+    );
+
     if (!app) {
       setHasAddedApp(true);
       return;
     }
-    if (!blueprintApps.find((a) => a.id === app.id)) {
-      setBlueprintApps((prev) => [
+
+    setBlueprintApps((prev) => {
+
+      const existing = prev.find(
+        (a) => a.id === app.id
+      );
+
+      // EXISTING APP → ADD ROLE
+      if (existing) {
+
+        return prev.map((a) => {
+
+          if (a.id !== app.id) return a;
+
+          return {
+            ...a,
+            roles: a.roles.includes(selectedRole)
+              ? a.roles
+              : [...a.roles, selectedRole],
+          };
+        });
+      }
+
+      // NEW APP
+      return [
         ...prev,
         {
           ...app,
-          accessLevel: selectedRole,
-          grantedDate: new Date().toISOString().split("T")[0],
+          roles: [selectedRole],
+          grantedDate:
+            new Date().toISOString().split("T")[0],
           essential: false,
         },
-      ]);
-    }
+      ];
+    });
+
     setSelectedAppToAdd("");
-    // keep selected blueprint
     setSelectedRole("");
     setHasAddedApp(true);
   };
@@ -343,9 +380,15 @@ export const ManageRolesPage = () => {
       );
 
       const payload = {
-        name: selected?.name || "", // existing name
-        jobTitleIds: selected?.jobTitles?.map((jt: any) => jt.id) || [],
-        applicationIds: blueprintApps.map((app) => Number(app.id)), // ✅ updated apps
+        name: selected?.name || "",
+        jobTitleIds:
+          selected?.jobTitles?.map(
+            (jt: any) => jt.id
+          ) || [],
+        applicationIds:
+          blueprintApps.map(
+            (app) => Number(app.id)
+          ),
       };
 
       const res = await fetch(
@@ -466,17 +509,30 @@ export const ManageRolesPage = () => {
                           return;
                         }
 
-                        const mappedApps = selected.applications.map((app: any) => ({
-                          id: app.id || app.appId,
-                          name: app.name || app.appName,
-                          category: app.category || "General",
-                          icon: app.icon || "📦",
-                          accessLevel: app.accessLevel || "Standard",
-                          grantedDate:
-                            app.grantedDate ||
-                            new Date().toISOString().split("T")[0],
-                          essential: app.essential || false,
-                        }));
+                        const mappedApps = selected.applications.map(
+                          (app: any) => {
+
+                            const existingApp =
+                              applications.find(
+                                (a) =>
+                                  String(a.id) ===
+                                  String(app.applicationId)
+                              );
+
+                            return {
+                              id: String(app.applicationId),
+                              name: app.applicationName,
+                              category:
+                                existingApp?.category || "General",
+                              icon:
+                                existingApp?.icon || "📦",
+                              roles: app.roles || [],
+                              grantedDate:
+                                new Date().toISOString().split("T")[0],
+                              essential: false,
+                            };
+                          }
+                        );
 
                         setBlueprintApps(mappedApps);
 
@@ -616,16 +672,35 @@ export const ManageRolesPage = () => {
 
                   {/* Details */}
                   <div className="space-y-1.5 text-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Access Level:</span>
-                      <Badge variant="outline" className="text-xs font-medium">
-                        {app.accessLevel}
-                      </Badge>
+
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-muted-foreground">
+                        Roles:
+                      </span>
+
+                      <div className="flex flex-wrap gap-1 justify-end">
+                        {app.roles.map((role) => (
+                          <Badge
+                            key={role}
+                            variant="outline"
+                            className="text-xs font-medium"
+                          >
+                            {role}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
+
                     <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Granted:</span>
-                      <span className="text-xs">{app.grantedDate}</span>
+                      <span className="text-muted-foreground">
+                        Granted:
+                      </span>
+
+                      <span className="text-xs">
+                        {app.grantedDate}
+                      </span>
                     </div>
+
                   </div>
 
                   {/* Status */}

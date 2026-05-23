@@ -14,15 +14,21 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 // Mock applications data
 const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
+const CONNECTOR_API_BASE_URL = "https://idf-connector.ndashdigital.com/api";
 
 type BlueprintApp = {
   id: string;
   name: string;
   category: string;
   icon: string;
-  accessLevel: string;
+  roles: string[];
   grantedDate: string;
   essential: boolean;
+};
+type IntegrationRole = {
+  id: string;
+  name: string;
+  description?: string;
 };
 
 export const NewRolePage = () => {
@@ -31,22 +37,76 @@ export const NewRolePage = () => {
   const [roleName, setRoleName] = useState("");
   const [roleDescription, setRoleDescription] = useState("");
   const [selectedAppId, setSelectedAppId] = useState("");
+  const [selectedRole, setSelectedRole] = useState("");
+
+  const [availableRoles, setAvailableRoles] =
+    useState<IntegrationRole[]>([]);
+
+  const [applications, setApplications] =
+    useState<any[]>([]);
   const [jobOptions, setJobOptions] = useState<{ label: string; value: string }[]>([]);
   const [blueprintApps, setBlueprintApps] = useState<BlueprintApp[]>([]);
 
+
   const handleAddApp = () => {
-    if (!selectedAppId) return;
-    const app = availableApplications.find((a) => a.id === selectedAppId);
-    if (!app || blueprintApps.find((a) => a.id === app.id)) return;
-    setBlueprintApps((prev) => [
-      ...prev,
-      {
-        ...app,
-        accessLevel: "Standard",
-        grantedDate: new Date().toISOString().split("T")[0],
-        essential: false,
-      },
-    ]);
+
+    if (!selectedAppId || !selectedRole) {
+      return;
+    }
+
+    const app =
+      availableApplications.find(
+        (a) => a.id === selectedAppId
+      );
+
+    if (!app) return;
+
+    setBlueprintApps((prev) => {
+
+      const existing =
+        prev.find(
+          (a) => a.id === app.id
+        );
+
+      // APP EXISTS
+      if (existing) {
+
+        return prev.map((a) => {
+
+          if (a.id !== app.id) {
+            return a;
+          }
+
+          return {
+            ...a,
+            roles: a.roles.includes(
+              selectedRole
+            )
+              ? a.roles
+              : [
+                ...a.roles,
+                selectedRole
+              ],
+          };
+        });
+      }
+
+      // NEW APP
+      return [
+        ...prev,
+        {
+          ...app,
+          roles: [selectedRole],
+          grantedDate:
+            new Date()
+              .toISOString()
+              .split("T")[0],
+          essential: false,
+        },
+      ];
+    });
+
+    setSelectedRole("");
     setSelectedAppId("");
   };
 
@@ -91,7 +151,13 @@ export const NewRolePage = () => {
       const payload = {
         name: roleName,
         jobTitleIds: selectedJobs.map((id) => Number(id)), // ✅ convert to Long
-        applicationIds: blueprintApps.map((app) => Number(app.id)), // ✅ convert to Long
+        applications:
+          blueprintApps.map((app) => ({
+            applicationId:
+              Number(app.id),
+
+            roles: app.roles,
+          })),
       };
 
       const res = await fetch(`${API_BASE_URL}/blueprints`, {
@@ -118,6 +184,24 @@ export const NewRolePage = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const getIntegrationApiBase = (
+    applicationId: string
+  ) => {
+
+    const selectedApp = applications.find(
+      (app) =>
+        String(app.id || app.appId)
+        === String(applicationId)
+    );
+
+    if (!selectedApp?.integrationName) {
+      return null;
+    }
+
+    return `${CONNECTOR_API_BASE_URL}/integrations/${selectedApp.integrationName.toLowerCase()
+      }`;
   };
 
   useEffect(() => {
@@ -172,6 +256,7 @@ export const NewRolePage = () => {
         const appsArray = Array.isArray(response)
           ? response
           : response.data.content || [];
+        setApplications(appsArray);
 
         const mappedApps = appsArray.map((app: any) => ({
           id: app.id || app.appId,
@@ -192,6 +277,76 @@ export const NewRolePage = () => {
 
     fetchApplications();
   }, [toast]);
+
+  useEffect(() => {
+
+    if (!selectedAppId) {
+      setAvailableRoles([]);
+      return;
+    }
+
+    const integrationBase =
+      getIntegrationApiBase(selectedAppId);
+
+    if (!integrationBase) {
+      setAvailableRoles([]);
+      return;
+    }
+
+    const fetchIntegrationRoles =
+      async () => {
+
+        try {
+
+          const token =
+            localStorage.getItem(
+              "auth-token"
+            );
+
+          const res = await fetch(
+            `${integrationBase}/roles`,
+            {
+              headers: {
+                Accept:
+                  "application/json",
+                "Content-Type":
+                  "application/json",
+                Authorization:
+                  token
+                    ? `Bearer ${token}`
+                    : "",
+              },
+            }
+          );
+
+          if (!res.ok) {
+            throw new Error(
+              "Failed to fetch integration roles"
+            );
+          }
+
+          const data = await res.json();
+
+          setAvailableRoles(
+            Array.isArray(data)
+              ? data
+              : data.data || []
+          );
+
+        } catch (error) {
+
+          console.error(
+            "Failed to fetch integration roles",
+            error
+          );
+
+          setAvailableRoles([]);
+        }
+      };
+
+    fetchIntegrationRoles();
+
+  }, [selectedAppId, applications]);
 
   return (
     <motion.div
@@ -320,28 +475,92 @@ export const NewRolePage = () => {
         <CardContent>
           <div className="space-y-2">
             <Label>Select Application</Label>
-            <div className="flex gap-2">
-              <Select value={selectedAppId} onValueChange={setSelectedAppId}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Choose an application..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableApplications
-                    .filter((app) => !blueprintApps.find((a) => a.id === app.id))
-                    .map((app) => (
-                      <SelectItem key={app.id} value={app.id}>
-                        <span className="flex items-center gap-2">
-                          <span>{app.icon}</span>
-                          <span>{app.name}</span>
-                          <span className="text-muted-foreground text-xs">— {app.category}</span>
-                        </span>
+            <div className="space-y-3">
+
+              {/* Application */}
+              <div className="flex gap-2">
+
+                <Select
+                  value={selectedAppId}
+                  onValueChange={(value) => {
+                    setSelectedAppId(value);
+                    setSelectedRole("");
+                  }}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Choose an application..." />
+                  </SelectTrigger>
+
+                  <SelectContent>
+
+                    {availableApplications
+                      .map((app) => (
+
+                        <SelectItem
+                          key={app.id}
+                          value={app.id}
+                        >
+
+                          <span className="flex items-center gap-2">
+                            <span>{app.icon}</span>
+
+                            <span>{app.name}</span>
+
+                            <span className="text-muted-foreground text-xs">
+                              — {app.category}
+                            </span>
+                          </span>
+
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+
+              </div>
+
+              {/* Roles */}
+              <div>
+
+                <Select
+                  value={selectedRole}
+                  onValueChange={setSelectedRole}
+                >
+
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Choose role..." />
+                  </SelectTrigger>
+
+                  <SelectContent>
+
+                    {availableRoles.map((r) => (
+
+                      <SelectItem
+                        key={r.id}
+                        value={r.name}
+                      >
+                        {r.name}
                       </SelectItem>
+
                     ))}
-                </SelectContent>
-              </Select>
-              <Button onClick={handleAddApp} disabled={!selectedAppId}>
-                Add
-              </Button>
+                  </SelectContent>
+
+                </Select>
+              </div>
+
+              {/* Add */}
+              <div className="flex justify-end">
+
+                <Button
+                  onClick={handleAddApp}
+                  disabled={
+                    !selectedAppId ||
+                    !selectedRole
+                  }
+                >
+                  Add
+                </Button>
+
+              </div>
             </div>
           </div>
         </CardContent>
@@ -392,16 +611,42 @@ export const NewRolePage = () => {
 
                   {/* Details */}
                   <div className="space-y-1.5 text-sm">
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Access Level:</span>
-                      <Badge variant="outline" className="text-xs font-medium">
-                        {app.accessLevel}
-                      </Badge>
+
+                    <div className="flex items-start justify-between gap-2">
+
+                      <span className="text-muted-foreground">
+                        Roles:
+                      </span>
+
+                      <div className="flex flex-wrap gap-1 justify-end">
+
+                        {app.roles.map((role) => (
+
+                          <Badge
+                            key={role}
+                            variant="outline"
+                            className="text-xs font-medium"
+                          >
+                            {role}
+                          </Badge>
+
+                        ))}
+
+                      </div>
                     </div>
+
                     <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Granted:</span>
-                      <span className="text-xs">{app.grantedDate}</span>
+
+                      <span className="text-muted-foreground">
+                        Granted:
+                      </span>
+
+                      <span className="text-xs">
+                        {app.grantedDate}
+                      </span>
+
                     </div>
+
                   </div>
 
                   {/* Status */}
