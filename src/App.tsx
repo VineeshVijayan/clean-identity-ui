@@ -88,6 +88,7 @@ const App = () => (
             <Route path="auth-sources" element={<AuthSourcesPage />} />
             <Route path="connectors" element={<ConnectorsPage />} />
             <Route path="idf-administration" element={<IDFAdministrationPage />} />
+            <Route path="manage-application" element={<ManageApplicationPage />} />
             <Route path="settings" element={<IDFSettingsPage />} />
             <Route path="user-administration" element={<UserAdministrationPage />} />
           </Route>
