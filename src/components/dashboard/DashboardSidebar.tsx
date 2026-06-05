@@ -12,6 +12,7 @@ import { useSettings } from "@/context/SettingsContext";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  AppWindow,
   Building2,
   ChevronDown,
   ChevronUp,
