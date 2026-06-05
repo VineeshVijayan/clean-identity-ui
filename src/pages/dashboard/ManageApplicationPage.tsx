@@ -1,9 +1,9 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
 import { AppWindow, Globe, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Input } from "@/components/ui/input";
 
 interface Application {
   id: number;
@@ -20,13 +20,17 @@ export const ManageApplicationPage = () => {
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
+    if (!Array.isArray(applications)) return [];
+
     const q = search.toLowerCase().trim();
+
     if (!q) return applications;
+
     return applications.filter(
       (a) =>
-        a.name.toLowerCase().includes(q) ||
-        a.description.toLowerCase().includes(q) ||
-        a.integrationName.toLowerCase().includes(q)
+        a.name?.toLowerCase().includes(q) ||
+        a.description?.toLowerCase().includes(q) ||
+        a.integrationName?.toLowerCase().includes(q)
     );
   }, [applications, search]);
 
@@ -47,7 +51,11 @@ export const ManageApplicationPage = () => {
         if (!res.ok) throw new Error("Failed to fetch applications");
 
         const data = await res.json();
-        const list = data.data || data;
+        const list =
+          data?.data?.content ||
+          data?.data?.applications ||
+          data?.data ||
+          [];
         setApplications(list);
       } catch (err) {
         console.error("Failed to load applications", err);
@@ -147,7 +155,7 @@ export const ManageApplicationPage = () => {
                       {app.description}
                     </p>
 
-                    {app.appUrl && (
+                    {/* {app.appUrl && (
                       <a
                         href={app.appUrl}
                         target="_blank"
@@ -157,7 +165,7 @@ export const ManageApplicationPage = () => {
                         <Globe className="h-3 w-3" />
                         Visit Application
                       </a>
-                    )}
+                    )} */}
                   </CardContent>
                 </Card>
               ))}
