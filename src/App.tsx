@@ -19,6 +19,7 @@ import { DetailedReportPage } from "./pages/dashboard/DetailedReportPage";
 import { EditProfilePage } from "./pages/dashboard/EditProfilePage";
 import { IDFAdministrationPage } from "./pages/dashboard/IDFAdministrationPage";
 import { IDFSettingsPage } from "./pages/dashboard/IDFSettingsPage";
+import { ManageApplicationPage } from "./pages/dashboard/ManageApplicationPage";
 import { ManageRolesPage } from "./pages/dashboard/ManageRolesPage";
 import { NewRolePage } from "./pages/dashboard/NewRolePage";
 import { MyApprovalPage } from "./pages/dashboard/MyApprovalPage";
@@ -87,6 +88,7 @@ const App = () => (
             <Route path="auth-sources" element={<AuthSourcesPage />} />
             <Route path="connectors" element={<ConnectorsPage />} />
             <Route path="idf-administration" element={<IDFAdministrationPage />} />
+            <Route path="manage-application" element={<ManageApplicationPage />} />
             <Route path="settings" element={<IDFSettingsPage />} />
             <Route path="user-administration" element={<UserAdministrationPage />} />
           </Route>

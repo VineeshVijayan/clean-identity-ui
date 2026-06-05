@@ -12,6 +12,7 @@ import { useSettings } from "@/context/SettingsContext";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  AppWindow,
   Building2,
   ChevronDown,
   ChevronUp,
@@ -148,6 +149,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     submenu: [
       { label: "User Administration", href: "/admin/user-administration", icon: ShieldCheck },
       { label: "Connectors", href: "/admin/idf-administration", icon: LinkIcon },
+      { label: "Manage Application", href: "/admin/manage-application", icon: AppWindow },
       { label: "Settings", href: "/admin/settings", icon: Cog },
     ],
   };
