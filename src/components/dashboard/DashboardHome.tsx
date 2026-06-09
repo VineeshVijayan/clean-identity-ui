@@ -107,7 +107,7 @@ export const DashboardHome = () => {
         </button>
 
         <button
-          onClick={() => navigate("/users/appManage")}
+          onClick={() => navigate("/access-requests")}
           className="glass-card p-6 flex items-center gap-4 hover:shadow-lg transition-shadow"
           style={{ ...btnStyles.btn2, color: "#fff" }}
         >
@@ -118,7 +118,11 @@ export const DashboardHome = () => {
         </button>
 
         <button
-          onClick={() => navigate("/approvals")}
+          onClick={() =>
+            navigate("/access-requests", {
+              state: { activeTab: "approvals" },
+            })
+          }
           className="glass-card p-6 flex items-center gap-4 hover:shadow-lg transition-shadow"
           style={{ ...btnStyles.btn3, color: "#fff" }}
         >

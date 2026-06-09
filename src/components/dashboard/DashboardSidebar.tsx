@@ -189,6 +189,14 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
   // };
 
   // Build menu based on roles
+
+  const canViewCompanyMenu =
+  settings.SHOW_COMPANY_MENU &&
+  (
+    hasRole("super_admin") ||
+    hasRole("administration") ||
+    hasRole("company")
+  );
   let menuItems: MenuItem[] = [];
 
   if (hasAllRoles(["super_admin", "user"])) {
@@ -198,7 +206,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
       userManagementItem,
       roleBasedAccess,
       // applications,
-      ...(settings.SHOW_COMPANY_MENU ? [company] : []),
+      ...(canViewCompanyMenu ? [company] : []),
       idfAdministration,
       reporting,
       // checkout,
@@ -209,7 +217,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
       userManagementBasic,
       roleBasedAccess,
       // applications,
-      ...(settings.SHOW_COMPANY_MENU ? [company] : []),
+      ...(canViewCompanyMenu ? [company] : []),
       reporting,
       // checkout,
     ];
@@ -217,7 +225,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     menuItems = [
       accessRequests,
       userManagementBasic,
-      ...(settings.SHOW_COMPANY_MENU ? [company] : []),
+      ...(canViewCompanyMenu ? [company] : []),
       reporting,
       // checkout,
     ];
@@ -225,7 +233,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     menuItems = [
       dashboardItem,
       accessRequests,
-      ...(settings.SHOW_COMPANY_MENU ? [company] : []),
+      ...(canViewCompanyMenu ? [company] : []),
       // checkout,
     ];
   } else {

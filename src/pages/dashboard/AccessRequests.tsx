@@ -15,6 +15,7 @@ import {
   X
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 
 const authHeaders = () => {
   const token = localStorage.getItem("auth-token");
@@ -44,9 +45,14 @@ type AccessRequestEntry = {
 };
 
 export const AccessRequestsPage = () => {
+
   const { toast } = useToast();
 
-  const [activeTab, setActiveTab] = useState("requests");
+  const location = useLocation();
+
+  const [activeTab, setActiveTab] = useState(
+    location.state?.activeTab || "requests"
+  );
 
   // ✅ EXISTING STATE (KEPT SAME)
   const [requestAccessEntries, setRequestAccessEntries] = useState<AccessRequestEntry[]>([]);

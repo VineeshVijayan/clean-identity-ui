@@ -36,6 +36,7 @@ import {
   Zap,
   X,
 } from "lucide-react";
+import { useSettings } from "@/context/SettingsContext";
 
 /* ---------- Available Icons ---------- */
 const availableIcons: { name: string; icon: LucideIcon }[] = [
@@ -70,6 +71,30 @@ const sidebarItems = [
 ];
 
 export const ChangeSidebarIconSettings = () => {
+
+  const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
+  const { settings, setSettings } = useSettings();
+  const [activeTab, setActiveTab] = useState("sidebar-icons");
+
+
+  const handleSaveAll = async () => {
+    const token = localStorage.getItem("auth-token");
+    await fetch(`${API_BASE_URL}/settings`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: token ? `Bearer ${token}` : "",
+      },
+      body: JSON.stringify({
+        SHOW_COMPANY_MENU: String(settings.SHOW_COMPANY_MENU),
+      }),
+    });
+
+    toast({
+      title: "Settings Saved",
+      description: "All IDF settings have been saved successfully.",
+    });
+  };
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -175,6 +200,7 @@ export const ChangeSidebarIconSettings = () => {
       description: "Sidebar icons restored to default.",
     });
   };
+  
 
   const displayLogo = previewLogo || customLogo;
 
@@ -402,7 +428,7 @@ export const ChangeSidebarIconSettings = () => {
 
       {/* Actions */}
       <div className="flex gap-3">
-        <Button onClick={handleSave}>
+        <Button onClick={handleSaveAll}>
           Save Changes
         </Button>
         <Button variant="outline" onClick={handleReset}>
