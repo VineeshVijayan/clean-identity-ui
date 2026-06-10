@@ -564,7 +564,8 @@ export const EditProfilePage = () => {
               </div>
 
               <div className="space-y-1.5">
-                <Label>Phone Number</Label>
+                <Label>Phone Number <span className="text-red-500">*</span></Label>
+
                 <div className="flex gap-2">
                   <CountryCodeSelect value={countryCode} onChange={setCountryCode} />
                   <Input
@@ -575,6 +576,10 @@ export const EditProfilePage = () => {
                     className="flex-1"
                   />
                 </div>
+
+                {errors.phoneNumber && (
+                  <p className="text-sm text-red-500">{errors.phoneNumber}</p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label>Email</Label>
@@ -586,22 +591,33 @@ export const EditProfilePage = () => {
               <div className="grid sm:grid-cols-2 gap-4">
 
                 <div className="space-y-1.5">
-                  <Label>Date of Birth</Label>
+                  <Label>Date of Birth <span className="text-red-500">*</span></Label>
+
                   <Input
                     type="date"
                     value={form.dob}
+                    max={new Date().toISOString().split("T")[0]}
                     onChange={(e) => set("dob", e.target.value)}
                   />
+
+                  {errors.dob && (
+                    <p className="text-sm text-red-500">{errors.dob}</p>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label>Last 4 SSN</Label>
+                  <Label>Last 4 SSN <span className="text-red-500">*</span></Label>
+
                   <Input
                     value={form.ssn}
                     onChange={(e) =>
                       set("ssn", e.target.value.replace(/\D/g, "").slice(0, 4))
                     }
                   />
+
+                  {errors.ssn && (
+                    <p className="text-sm text-red-500">{errors.ssn}</p>
+                  )}
                 </div>
 
                 <div className="space-y-3">

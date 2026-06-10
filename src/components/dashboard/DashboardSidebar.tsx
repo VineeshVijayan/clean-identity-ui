@@ -19,7 +19,6 @@ import {
   ClipboardList,
   Cog,
   Database,
-  FileText,
   Home,
   Key,
   LayoutDashboard,
@@ -120,7 +119,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     submenu: [
       { label: "My Team", href: "/users", icon: Users },
       { label: "New Team Member", href: "/users/create", icon: UserPlus },
-      { label: "Manage Team Access", href: "/users/appManage", icon: FileText },
+      // { label: "Manage Team Access", href: "/users/appManage", icon: FileText },
 
     ],
   };
@@ -191,12 +190,12 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
   // Build menu based on roles
 
   const canViewCompanyMenu =
-  settings.SHOW_COMPANY_MENU &&
-  (
-    hasRole("super_admin") ||
-    hasRole("administration") ||
-    hasRole("company")
-  );
+    settings.SHOW_COMPANY_MENU &&
+    (
+      hasRole("super_admin") ||
+      hasRole("administration") ||
+      hasRole("company")
+    );
   let menuItems: MenuItem[] = [];
 
   if (hasAllRoles(["super_admin", "user"])) {
@@ -223,6 +222,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     ];
   } else if (hasRole("manager") && hasRole("user") && !hasRole("super_admin") && !hasRole("administration")) {
     menuItems = [
+      dashboardItem,
       accessRequests,
       userManagementBasic,
       ...(canViewCompanyMenu ? [company] : []),
