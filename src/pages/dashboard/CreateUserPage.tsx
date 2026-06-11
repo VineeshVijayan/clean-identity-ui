@@ -55,29 +55,37 @@ export const CreateUserPage = () => {
     companyId: "",
   });
 
+  const [errors, setErrors] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    dob: "",
+  });
+
   useEffect(() => {
 
     const tokenUser = getUserFromToken();
-  
+
     const userRoles: string[] = tokenUser?.roles || [];
-  
+
     const isSuperAdmin =
       userRoles.includes("super_admin");
-  
+
     const hasAccess =
       isSuperAdmin ||
       userRoles.includes("Company");
-  
+
     setShowCompanyDropdown(hasAccess);
-  
+
     if (!hasAccess) return;
-  
+
     const token = localStorage.getItem("auth-token");
-  
+
     const companyApi = isSuperAdmin
       ? `${API_BASE_URL}/companies`
       : `${API_BASE_URL}/companies/my`;
-  
+
     fetch(companyApi, {
       headers: {
         "Content-Type": "application/json",
@@ -89,11 +97,11 @@ export const CreateUserPage = () => {
         return res.json();
       })
       .then((data) => {
-  
+
         const list = Array.isArray(data)
           ? data
           : data?.data || [];
-  
+
         setCompanies(
           list.map((company: any) => ({
             id: company.id,
@@ -108,7 +116,7 @@ export const CreateUserPage = () => {
           description: "Failed to load companies",
         });
       });
-  
+
   }, []);
 
   /* ---------------- FETCH ROLES ---------------- */
@@ -187,11 +195,74 @@ export const CreateUserPage = () => {
 
   };
 
+  //-----------Validation----------
+
+  const validateForm = () => {
+    const newErrors = {
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      dob: "",
+    };
+
+    const nameRegex = /^[A-Za-z\s]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^[0-9]{10,15}$/;
+
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = "First name is required";
+    } else if (!nameRegex.test(formData.firstName)) {
+      newErrors.firstName = "First name cannot contain numbers";
+    }
+
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = "Last name is required";
+    } else if (!nameRegex.test(formData.lastName)) {
+      newErrors.lastName = "Last name cannot contain numbers";
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!emailRegex.test(formData.email)) {
+      newErrors.email = "Enter a valid email address";
+    }
+
+    if (!formData.phone.trim()) {
+      newErrors.phone = "Phone number is required";
+    } else if (!phoneRegex.test(formData.phone)) {
+      newErrors.phone = "Enter a valid phone number";
+    }
+
+    if (formData.dob) {
+      const selectedDate = new Date(formData.dob);
+      const today = new Date();
+
+      selectedDate.setHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
+
+      if (selectedDate > today) {
+        newErrors.dob = "Future date is not allowed";
+      }
+    }
+
+    setErrors(newErrors);
+
+    return !Object.values(newErrors).some((error) => error);
+  };
+
+  //----------------------Validation end 
+
   /* ---------------- SUBMIT ---------------- */
 
   const handleSubmit = async (e: React.FormEvent) => {
 
     e.preventDefault();
+
+    if (!validateForm()) {
+      return;
+    }
+
     setIsLoading(true);
 
     const token = localStorage.getItem("auth-token");
@@ -384,17 +455,24 @@ export const CreateUserPage = () => {
                   label="First Name"
                   value={formData.firstName}
                   onChange={(v: string) =>
-                    setFormData({ ...formData, firstName: v })
+                    setFormData({ ...formData, firstName: v.replace(/[^A-Za-z\s]/g, "") })
                   }
                 />
+
+                {errors.firstName && (
+                  <p className="text-sm text-red-500">{errors.firstName}</p>
+                )}
 
                 <InputField
                   label="Last Name"
                   value={formData.lastName}
                   onChange={(v: string) =>
-                    setFormData({ ...formData, lastName: v })
+                    setFormData({ ...formData, lastName: v.replace(/[^A-Za-z\s]/g, "") })
                   }
                 />
+                {errors.lastName && (
+                  <p className="text-sm text-red-500">{errors.lastName}</p>
+                )}
 
               </div>
 
@@ -406,6 +484,9 @@ export const CreateUserPage = () => {
                   setFormData({ ...formData, email: v })
                 }
               />
+              {errors.email && (
+                <p className="text-sm text-red-500">{errors.email}</p>
+              )}
 
               <div className="grid sm:grid-cols-2 gap-4">
 
@@ -421,11 +502,15 @@ export const CreateUserPage = () => {
                   <Label>Date of Birth</Label>
                   <Input
                     type="date"
+                    max={new Date().toISOString().split("T")[0]}
                     value={formData.dob}
                     onChange={(e) =>
                       setFormData({ ...formData, dob: e.target.value })
                     }
                   />
+                  {errors.dob && (
+                    <p className="text-sm text-red-500">{errors.dob}</p>
+                  )}
                 </div>
 
               </div>
@@ -441,6 +526,9 @@ export const CreateUserPage = () => {
                     placeholder="(555) 000-0000"
                     className="flex-1"
                   />
+                  {errors.phone && (
+                    <p className="text-sm text-red-500">{errors.phone}</p>
+                  )}
                 </div>
               </div>
 
