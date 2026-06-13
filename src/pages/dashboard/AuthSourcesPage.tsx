@@ -83,7 +83,11 @@ export const AuthSourcesPage = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [authSources] = useState(mockAuthSources);
+  const [sourceName, setSourceName] = useState("");
 
+  const [errors, setErrors] = useState({
+    sourceName: "",
+  });
   const filteredSources = authSources.filter(
     (s) =>
       s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -129,7 +133,26 @@ export const AuthSourcesPage = () => {
             <div className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label>Source Name</Label>
-                <Input placeholder="Corporate LDAP" />
+                <Input
+                  placeholder="Corporate LDAP"
+                  value={sourceName}
+                  onChange={(e) => {
+                    setSourceName(e.target.value);
+
+                    setErrors((prev) => ({
+                      ...prev,
+                      sourceName: e.target.value.trim()
+                        ? ""
+                        : "Source Name is required",
+                    }));
+                  }}
+                />
+
+                {errors.sourceName && (
+                  <p className="text-sm text-red-500">
+                    {errors.sourceName}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -160,7 +183,18 @@ export const AuthSourcesPage = () => {
               </Button>
               <Button
                 onClick={() => {
+                  if (!sourceName.trim()) {
+                    setErrors((prev) => ({
+                      ...prev,
+                      sourceName: "Source Name is required",
+                    }));
+                    return;
+                  }
+
                   toast({ title: "Source Added" });
+
+                  setSourceName("");
+                  setErrors({ sourceName: "" });
                   setIsDialogOpen(false);
                 }}
               >
