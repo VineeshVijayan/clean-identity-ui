@@ -47,7 +47,7 @@ export const CreateUserPage = () => {
     firstName: "",
     lastName: "",
     email: "",
-    phone: "",
+    phoneNumber: "",
     ssn: "",
     dob: "",
     role: [] as string[],
@@ -59,7 +59,7 @@ export const CreateUserPage = () => {
     firstName: "",
     lastName: "",
     email: "",
-    phone: "",
+    phoneNumber: "",
     dob: "",
   });
 
@@ -202,7 +202,7 @@ export const CreateUserPage = () => {
       firstName: "",
       lastName: "",
       email: "",
-      phone: "",
+      phoneNumber: "",
       dob: "",
     };
 
@@ -228,10 +228,10 @@ export const CreateUserPage = () => {
       newErrors.email = "Enter a valid email address";
     }
 
-    if (!formData.phone.trim()) {
-      newErrors.phone = "Phone number is required";
-    } else if (!phoneRegex.test(formData.phone)) {
-      newErrors.phone = "Enter a valid phone number";
+    if (!formData.phoneNumber.trim()) {
+      newErrors.phoneNumber = "Phone number is required";
+    } else if (!phoneRegex.test(formData.phoneNumber)) {
+      newErrors.phoneNumber = "Enter a valid phone number";
     }
 
     if (formData.dob) {
@@ -272,7 +272,7 @@ export const CreateUserPage = () => {
       firstName: formData.firstName,
       lastName: formData.lastName,
       email: formData.email,
-      phone: formData.phone,
+      phoneNumber: formData.phoneNumber,
       ssn: formData.ssn,
       dob: formData.dob ? new Date(formData.dob).toISOString() : null,
       blueprints: formData.role,
@@ -520,14 +520,14 @@ export const CreateUserPage = () => {
                 <div className="flex gap-2">
                   <CountryCodeSelect value={countryCode} onChange={setCountryCode} />
                   <Input
-                    value={formData.phone}
+                    value={formData.phoneNumber}
                     type="tel"
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
                     placeholder="(555) 000-0000"
                     className="flex-1"
                   />
-                  {errors.phone && (
-                    <p className="text-sm text-red-500">{errors.phone}</p>
+                  {errors.phoneNumber && (
+                    <p className="text-sm text-red-500">{errors.phoneNumber}</p>
                   )}
                 </div>
               </div>
