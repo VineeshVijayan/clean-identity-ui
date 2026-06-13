@@ -220,7 +220,12 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
       reporting,
       // checkout,
     ];
-  } else if (hasRole("manager") && hasRole("user") && !hasRole("super_admin") && !hasRole("administration")) {
+  } else if (
+    hasRole("manager") &&
+    hasRole("user") &&
+    !hasRole("super_admin") &&
+    !hasRole("administration")
+  ) {
     menuItems = [
       dashboardItem,
       accessRequests,
@@ -228,6 +233,17 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
       ...(canViewCompanyMenu ? [company] : []),
       reporting,
       // checkout,
+      {
+        label: "Toolbox",
+        icon: Database,
+        submenu: [
+          {
+            label: "Settings",
+            href: "/admin/settings",
+            icon: Cog,
+          },
+        ],
+      },
     ];
   } else if (hasRole("user")) {
     menuItems = [
