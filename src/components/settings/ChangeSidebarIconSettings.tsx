@@ -1,4 +1,3 @@
-import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -9,6 +8,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/hooks/use-toast";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -33,10 +33,10 @@ import {
   Upload,
   UserCog,
   Users,
-  Zap,
   X,
+  Zap,
 } from "lucide-react";
-import { useSettings } from "@/context/SettingsContext";
+import { useRef, useState } from "react";
 
 /* ---------- Available Icons ---------- */
 const availableIcons: { name: string; icon: LucideIcon }[] = [
@@ -64,7 +64,7 @@ const availableIcons: { name: string; icon: LucideIcon }[] = [
 /* ---------- Sidebar Items ---------- */
 const sidebarItems = [
   { id: "dashboard", label: "Dashboard", defaultIcon: "Home" },
-  { id: "users", label: "User Management", defaultIcon: "Users" },
+  { id: "users", label: "Team Management", defaultIcon: "Users" },
   { id: "roles", label: "Role Management", defaultIcon: "Shield" },
   { id: "admin", label: "Admin Settings", defaultIcon: "Settings" },
   { id: "reports", label: "Reports", defaultIcon: "BarChart3" },
@@ -105,7 +105,7 @@ export const ChangeSidebarIconSettings = () => {
         sidebarItems.map((item) => [item.id, item.defaultIcon])
       )
   );
-  
+
   // Custom logo state
   const [customLogo, setCustomLogo] = useState<string | null>(() => {
     return localStorage.getItem("sidebarLogo");
@@ -200,7 +200,7 @@ export const ChangeSidebarIconSettings = () => {
       description: "Sidebar icons restored to default.",
     });
   };
-  
+
 
   const displayLogo = previewLogo || customLogo;
 

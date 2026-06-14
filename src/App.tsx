@@ -9,21 +9,26 @@ import AboutPage from "./pages/AboutPage";
 import BlogPage from "./pages/BlogPage";
 import CareersPage from "./pages/CareersPage";
 import ContactPage from "./pages/ContactPage";
+import { AccessRequestsPage } from "./pages/dashboard/AccessRequests";
 import { ApplicationManagementPage } from "./pages/dashboard/ApplicationManagementPage";
 import { AuthSourcesPage } from "./pages/dashboard/AuthSourcesPage";
 import { ChangePasswordPage } from "./pages/dashboard/ChangePasswordPage";
 import { CheckoutPage } from "./pages/dashboard/CheckoutPage";
 import { ConnectorsPage } from "./pages/dashboard/ConnectorsPage";
+import { CreateCompanyPage } from "./pages/dashboard/CreateCompanyPage";
 import { CreateUserPage } from "./pages/dashboard/CreateUserPage";
 import { DetailedReportPage } from "./pages/dashboard/DetailedReportPage";
 import { EditProfilePage } from "./pages/dashboard/EditProfilePage";
 import { IDFAdministrationPage } from "./pages/dashboard/IDFAdministrationPage";
 import { IDFSettingsPage } from "./pages/dashboard/IDFSettingsPage";
 import { ManageApplicationPage } from "./pages/dashboard/ManageApplicationPage";
+import { ManageCompanyPage } from "./pages/dashboard/ManageCompanyPage";
 import { ManageRolesPage } from "./pages/dashboard/ManageRolesPage";
-import { NewRolePage } from "./pages/dashboard/NewRolePage";
 import { MyApprovalPage } from "./pages/dashboard/MyApprovalPage";
+import { NewApplicationPage } from "./pages/dashboard/NewApplicationPage";
+import { NewRolePage } from "./pages/dashboard/NewRolePage";
 import { ReportsPage } from "./pages/dashboard/ReportsPage";
+import { UpdateApplicationPage } from "./pages/dashboard/UpdateApplicationPage";
 import { UserAdministrationPage } from "./pages/dashboard/UserAdministrationPage";
 import { UsersListPage } from "./pages/dashboard/UsersListPage";
 import DocsPage from "./pages/DocsPage";
@@ -35,11 +40,6 @@ import PrivacyPage from "./pages/PrivacyPage";
 import Register from "./pages/Register";
 import SecurityPage from "./pages/SecurityPage";
 import TermsPage from "./pages/TermsPage";
-import { AccessRequestsPage } from "./pages/dashboard/AccessRequests";
-import { CreateCompanyPage } from "./pages/dashboard/CreateCompanyPage";
-import { ManageCompanyPage } from "./pages/dashboard/ManageCompanyPage";
-import { NewApplicationPage } from "./pages/dashboard/NewApplicationPage";
-import { UpdateApplicationPage } from "./pages/dashboard/UpdateApplicationPage";
 
 const queryClient = new QueryClient();
 
@@ -124,7 +124,7 @@ const App = () => (
           <Route path="/approvals" element={<DashboardLayout />}>
             <Route index element={<MyApprovalPage />} />
           </Route>
-          
+
           <Route path="/access-requests" element={<DashboardLayout />}>
             <Route index element={<AccessRequestsPage />} />
           </Route>

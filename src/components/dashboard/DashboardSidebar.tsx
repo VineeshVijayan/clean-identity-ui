@@ -125,7 +125,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
   };
 
   const userManagementBasic: MenuItem = {
-    label: "User Management",
+    label: "Team Management",
     icon: Home,
     submenu: [
       { label: "My Team", href: "/users", icon: Users },
