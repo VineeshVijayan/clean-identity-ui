@@ -149,9 +149,43 @@ export const hasAllRoles = (requiredRoles: string[]): boolean => {
 };
 
 /**
- * Logout user - clears localStorage
+ * Logout user - clears all client-side cached data (localStorage,
+ * sessionStorage, and Cache Storage) so the next user starts fresh.
  */
 export const logout = (): void => {
-  localStorage.clear();
+  try {
+    localStorage.clear();
+  } catch (e) {
+    console.warn("Failed clearing localStorage", e);
+  }
+
+  try {
+    sessionStorage.clear();
+  } catch (e) {
+    console.warn("Failed clearing sessionStorage", e);
+  }
+
+  // Clear Cache Storage (service worker / fetch caches) if available
+  try {
+    if (typeof caches !== "undefined" && caches?.keys) {
+      caches.keys().then((keys) => {
+        keys.forEach((key) => caches.delete(key));
+      }).catch(() => { /* noop */ });
+    }
+  } catch (e) {
+    console.warn("Failed clearing caches", e);
+  }
+
+  // Best-effort cookie clear for non-HttpOnly cookies on current path
+  try {
+    document.cookie.split(";").forEach((c) => {
+      const name = c.split("=")[0].trim();
+      if (!name) return;
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+    });
+  } catch (e) {
+    /* noop */
+  }
+
   window.dispatchEvent(new Event("auth-change"));
 };

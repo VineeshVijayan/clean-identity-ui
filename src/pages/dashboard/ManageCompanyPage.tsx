@@ -24,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
 import { motion } from "framer-motion";
 import { Building2, Edit, Plus, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -55,6 +56,11 @@ export const ManageCompanyPage = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [editing, setEditing] = useState<Company | null>(null);
   const [approvers, setApprovers] = useState<Approver[]>([]);
+  const [statusMap, setStatusMap] = useState<Record<string, boolean>>({});
+
+  const toggleStatus = (id: string) => {
+    setStatusMap((prev) => ({ ...prev, [id]: !(prev[id] ?? true) }));
+  };
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -211,35 +217,54 @@ export const ManageCompanyPage = () => {
                   <TableHead>Location</TableHead>
                   <TableHead>Phone Number</TableHead>
                   <TableHead>Primary Contact</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                       No companies found
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filtered.map((company) => (
-                    <TableRow key={company.id}>
-                      <TableCell className="font-medium">{company.name}</TableCell>
-                      <TableCell>{company.location}</TableCell>
-                      <TableCell>{company.phoneNumber}</TableCell>
-                      <TableCell>{company.primaryContact}</TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(company)}
-                        >
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  filtered.map((company) => {
+                    const isActive = statusMap[company.id] ?? true;
+                    return (
+                      <TableRow
+                        key={company.id}
+                        className={`transition-opacity duration-300 ${isActive ? "opacity-100" : "opacity-50"}`}
+                      >
+                        <TableCell className="font-medium">{company.name}</TableCell>
+                        <TableCell>{company.location}</TableCell>
+                        <TableCell>{company.phoneNumber}</TableCell>
+                        <TableCell>{company.primaryContact}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={isActive}
+                              onCheckedChange={() => toggleStatus(company.id)}
+                              aria-label={`Toggle status for ${company.name}`}
+                            />
+                            <span className="text-xs text-muted-foreground">
+                              {isActive ? "Active" : "Inactive"}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEdit(company)}
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
