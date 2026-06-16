@@ -24,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
 import { motion } from "framer-motion";
 import { Building2, Edit, Plus, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
