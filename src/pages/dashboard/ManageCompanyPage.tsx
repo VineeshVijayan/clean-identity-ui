@@ -56,6 +56,11 @@ export const ManageCompanyPage = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [editing, setEditing] = useState<Company | null>(null);
   const [approvers, setApprovers] = useState<Approver[]>([]);
+  const [statusMap, setStatusMap] = useState<Record<string, boolean>>({});
+
+  const toggleStatus = (id: string) => {
+    setStatusMap((prev) => ({ ...prev, [id]: !(prev[id] ?? true) }));
+  };
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
