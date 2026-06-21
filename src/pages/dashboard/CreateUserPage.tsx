@@ -42,6 +42,7 @@ export const CreateUserPage = () => {
 
 
   const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
+  const [showIDFRoles, setShowIDFRoles] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: "",
