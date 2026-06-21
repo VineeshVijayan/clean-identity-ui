@@ -79,6 +79,13 @@ export const CreateUserPage = () => {
 
     setShowCompanyDropdown(hasAccess);
 
+    const canViewIDFRoles =
+      isSuperAdmin ||
+      userRoles.includes("Company") ||
+      userRoles.includes("Manager");
+
+    setShowIDFRoles(canViewIDFRoles);
+
     if (!hasAccess) return;
 
     const token = localStorage.getItem("auth-token");
