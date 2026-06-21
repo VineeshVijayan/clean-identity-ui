@@ -42,6 +42,7 @@ export const CreateUserPage = () => {
 
 
   const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
+  const [showIDFRoles, setShowIDFRoles] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -77,6 +78,13 @@ export const CreateUserPage = () => {
       userRoles.includes("Company");
 
     setShowCompanyDropdown(hasAccess);
+
+    const canViewIDFRoles =
+      isSuperAdmin ||
+      userRoles.includes("Company") ||
+      userRoles.includes("Manager");
+
+    setShowIDFRoles(canViewIDFRoles);
 
     if (!hasAccess) return;
 
@@ -609,52 +617,54 @@ export const CreateUserPage = () => {
               </div>
 
 
-              <div className="space-y-1.5">
+              {showIDFRoles && (
+                <div className="space-y-1.5">
 
-                <Label>IDF Role</Label>
+                  <Label>IDF Role</Label>
 
-                <Popover>
+                  <Popover>
 
-                  <PopoverTrigger asChild>
+                    <PopoverTrigger asChild>
 
-                    <Button variant="outline" className="w-full justify-between">
-                      {formData.idfRoles.length
-                        ? formData.idfRoles.join(", ")
-                        : "Select role"}
-                    </Button>
+                      <Button variant="outline" className="w-full justify-between">
+                        {formData.idfRoles.length
+                          ? formData.idfRoles.join(", ")
+                          : "Select role"}
+                      </Button>
 
-                  </PopoverTrigger>
+                    </PopoverTrigger>
 
-                  <PopoverContent className="w-[--radix-popover-trigger-width] p-2">
+                    <PopoverContent className="w-[--radix-popover-trigger-width] p-2">
 
-                    {idfRoles.map((role) => {
+                      {idfRoles.map((role) => {
 
-                      const checked = formData.idfRoles.includes(role);
+                        const checked = formData.idfRoles.includes(role);
 
-                      return (
-                        <div
-                          key={role}
-                          className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted cursor-pointer"
-                          onClick={() =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              idfRoles: checked
-                                ? prev.idfRoles.filter((r) => r !== role)
-                                : [...prev.idfRoles, role],
-                            }))
-                          }
-                        >
-                          <Checkbox checked={checked} />
-                          <span className="text-sm">{role}</span>
-                        </div>
-                      );
-                    })}
+                        return (
+                          <div
+                            key={role}
+                            className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted cursor-pointer"
+                            onClick={() =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                idfRoles: checked
+                                  ? prev.idfRoles.filter((r) => r !== role)
+                                  : [...prev.idfRoles, role],
+                              }))
+                            }
+                          >
+                            <Checkbox checked={checked} />
+                            <span className="text-sm">{role}</span>
+                          </div>
+                        );
+                      })}
 
-                  </PopoverContent>
+                    </PopoverContent>
 
-                </Popover>
+                  </Popover>
 
-              </div>
+                </div>
+              )}
 
             </CardContent>
 
