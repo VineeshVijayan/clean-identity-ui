@@ -96,8 +96,10 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     setOpenMenus((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const hasRole = (role: string) => roles.includes(role);
-  const hasAllRoles = (required: string[]) => required.every((r) => roles.includes(r));
+  const hasRole = (role: string) =>
+    roles.some((r) => r?.toLowerCase() === role.toLowerCase());
+  const hasAllRoles = (required: string[]) =>
+    required.every((r) => hasRole(r));
 
   // Base menu items
   const dashboardItem: MenuItem = {
