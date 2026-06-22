@@ -79,10 +79,11 @@ export const CreateUserPage = () => {
 
     setShowCompanyDropdown(hasAccess);
 
+    const isManager = userRoles.includes("Manager");
+
     const canViewIDFRoles =
-      isSuperAdmin ||
-      userRoles.includes("Company") ||
-      userRoles.includes("Manager");
+      !isManager &&
+      (isSuperAdmin || userRoles.includes("Company"));
 
     setShowIDFRoles(canViewIDFRoles);
 
