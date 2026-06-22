@@ -69,21 +69,25 @@ export const CreateUserPage = () => {
     const tokenUser = getUserFromToken();
 
     const userRoles: string[] = tokenUser?.roles || [];
+    const normalizedRoles = userRoles.map((role) => String(role).toLowerCase());
+    const hasRole = (role: string) =>
+      normalizedRoles.includes(role.toLowerCase());
+    const hasRoleContaining = (role: string) =>
+      normalizedRoles.some((userRole) => userRole.includes(role.toLowerCase()));
 
-    const isSuperAdmin =
-      userRoles.includes("super_admin");
+    const isSuperAdmin = hasRole("super_admin");
 
     const hasAccess =
       isSuperAdmin ||
-      userRoles.includes("Company");
+      hasRole("Company");
 
     setShowCompanyDropdown(hasAccess);
 
-    const isManager = userRoles.includes("Manager");
+    const isManager = hasRoleContaining("Manager");
 
     const canViewIDFRoles =
       !isManager &&
-      (isSuperAdmin || userRoles.includes("Company"));
+      (isSuperAdmin || hasRole("Company"));
 
     setShowIDFRoles(canViewIDFRoles);
 
