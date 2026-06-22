@@ -98,6 +98,8 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
 
   const hasRole = (role: string) =>
     roles.some((r) => r?.toLowerCase() === role.toLowerCase());
+  const roleIncludes = (role: string) =>
+    roles.some((r) => r?.toLowerCase().includes(role.toLowerCase()));
   const hasAllRoles = (required: string[]) =>
     required.every((r) => hasRole(r));
 
@@ -256,6 +258,10 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     ];
   } else {
     menuItems = [dashboardItem];
+  }
+
+  if (roleIncludes("manager") && !menuItems.some((item) => item.href === dashboardItem.href)) {
+    menuItems = [dashboardItem, ...menuItems];
   }
 
   const isActiveRoute = (href?: string) => {
