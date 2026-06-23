@@ -131,7 +131,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     icon: Home,
     submenu: [
       { label: "My Team", href: "/users", icon: Users },
-      { label: "Create New User", href: "/users/create", icon: UserPlus },
+      { label: "Create New Team Member", href: "/users/create", icon: UserPlus },
     ],
   };
 
