@@ -423,7 +423,7 @@ export const EditProfilePage = () => {
           </div>
 
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Edit Profile</h1>
+            <h1 className="text-2xl font-bold text-foreground">Edit Team Member</h1>
             <p className="text-muted-foreground text-sm">
               Update your personal information
             </p>
