@@ -362,7 +362,7 @@ export const CreateUserPage = () => {
 
           <div>
             <h1 className="text-2xl font-bold text-foreground">
-              Create New Team Member
+              New Team Member
             </h1>
             <p className="text-muted-foreground text-sm">
               Add a new member to your team
