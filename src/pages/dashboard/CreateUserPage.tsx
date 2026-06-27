@@ -51,7 +51,7 @@ export const CreateUserPage = () => {
     phoneNumber: "",
     ssn: "",
     dob: "",
-    role: [] as string[],
+    role: "",
     idfRoles: [] as string[],
     companyId: "",
   });
@@ -62,8 +62,9 @@ export const CreateUserPage = () => {
     email: "",
     phoneNumber: "",
     dob: "",
+    ssn: "",
+    address: "",
   });
-
   useEffect(() => {
 
     const tokenUser = getUserFromToken();
@@ -79,14 +80,11 @@ export const CreateUserPage = () => {
 
     setShowCompanyDropdown(hasAccess);
 
-    const isManager = userRoles.includes("Manager");
-
-    const canViewIDFRoles =
-      !isManager &&
-      (isSuperAdmin || userRoles.includes("Company"));
+    // Show IDF Role only if the user has ONLY the Super Admin role
+    // Show IDF Role only if the logged-in user has the Super Admin role
+    const canViewIDFRoles = userRoles.includes("super_admin");
 
     setShowIDFRoles(canViewIDFRoles);
-
     if (!hasAccess) return;
 
     const token = localStorage.getItem("auth-token");
@@ -213,8 +211,9 @@ export const CreateUserPage = () => {
       email: "",
       phoneNumber: "",
       dob: "",
+      ssn: "",
+      address: "",
     };
-
     const nameRegex = /^[A-Za-z\s]+$/;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const phoneRegex = /^[0-9]{10,15}$/;
@@ -284,7 +283,7 @@ export const CreateUserPage = () => {
       phoneNumber: formData.phoneNumber,
       ssn: formData.ssn,
       dob: formData.dob ? new Date(formData.dob).toISOString() : null,
-      blueprints: formData.role,
+      blueprints: formData.role ? [formData.role] : [],
       roles: formData.idfRoles,
       ...(showCompanyDropdown &&
         formData.companyId && {
@@ -293,7 +292,6 @@ export const CreateUserPage = () => {
     };
 
     try {
-
       const res = await fetch(`${API_BASE_URL}/users`, {
         method: "POST",
         headers: {
@@ -303,7 +301,35 @@ export const CreateUserPage = () => {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error();
+      const response = await res.json();
+
+      if (!res.ok) {
+        if (typeof response.error === "string") {
+          const errorMessage = response.error.toLowerCase();
+
+          setErrors((prev) => ({
+            ...prev,
+            email: errorMessage.includes("email") ? response.error : "",
+            ssn: errorMessage.includes("ssn") ? response.error : "",
+          }));
+
+          toast({
+            variant: "destructive",
+            title: "Validation Error",
+            description: response.error,
+          });
+
+          return;
+        }
+
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: response.statusMessage || "Failed to create user",
+        });
+
+        return;
+      }
 
       toast({
         title: "User Created",
@@ -313,13 +339,11 @@ export const CreateUserPage = () => {
       navigate("/users");
 
     } catch {
-
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to create user",
+        description: "Something went wrong. Please try again.",
       });
-
     } finally {
       setIsLoading(false);
     }
@@ -503,9 +527,13 @@ export const CreateUserPage = () => {
                   label="Last 4 SSN"
                   value={formData.ssn}
                   onChange={(v: string) =>
-                    setFormData({ ...formData, ssn: v })
+                    setFormData({ ...formData, ssn: v.replace(/\D/g, "") })
                   }
                 />
+
+                {errors.ssn && (
+                  <p className="text-sm text-red-500">{errors.ssn}</p>
+                )}
 
                 <div className="space-y-1.5">
                   <Label>Date of Birth</Label>
@@ -531,8 +559,14 @@ export const CreateUserPage = () => {
                   <Input
                     value={formData.phoneNumber}
                     type="tel"
-                    onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
-                    placeholder="(555) 000-0000"
+                    maxLength={10}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        phoneNumber: e.target.value.replace(/\D/g, "").slice(0, 10),
+                      })
+                    }
+                    placeholder="Enter 10-digit phone number"
                     className="flex-1"
                   />
                   {errors.phoneNumber && (
@@ -568,53 +602,29 @@ export const CreateUserPage = () => {
                 </div>
               )}
 
-              {/* Roles */}
+              {/* Blue Prints */}
 
               <div className="space-y-1.5">
-
                 <Label>Blueprint</Label>
 
-                <Popover>
+                <select
+                  value={formData.role}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      role: e.target.value,
+                    }))
+                  }
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">Select Blueprint</option>
 
-                  <PopoverTrigger asChild>
-
-                    <Button variant="outline" className="w-full justify-between">
-                      {formData.role.length
-                        ? formData.role.join(", ")
-                        : "Select role"}
-                    </Button>
-
-                  </PopoverTrigger>
-
-                  <PopoverContent className="w-[--radix-popover-trigger-width] p-2">
-
-                    {roles.map((role) => {
-
-                      const checked = formData.role.includes(role);
-
-                      return (
-                        <div
-                          key={role}
-                          className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted cursor-pointer"
-                          onClick={() =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              role: checked
-                                ? prev.role.filter((r) => r !== role)
-                                : [...prev.role, role],
-                            }))
-                          }
-                        >
-                          <Checkbox checked={checked} />
-                          <span className="text-sm">{role}</span>
-                        </div>
-                      );
-                    })}
-
-                  </PopoverContent>
-
-                </Popover>
-
+                  {roles.map((role) => (
+                    <option key={role} value={role}>
+                      {role}
+                    </option>
+                  ))}
+                </select>
               </div>
 
 
