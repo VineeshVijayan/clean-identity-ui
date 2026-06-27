@@ -8,6 +8,7 @@ import { jwtDecode } from "jwt-decode";
 import { ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useSettings } from "@/context/SettingsContext";
 
 const API_BASE_URL = "https://idf-session-api.ndashdigital.com/api";
 // If using CRA replace with:
@@ -18,6 +19,7 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { fetchSettings } = useSettings();
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -65,6 +67,9 @@ const Login = () => {
       };
 
       localStorage.setItem("user", JSON.stringify(userInfo));
+
+      // Load settings for logged-in user
+      await fetchSettings();
 
       // ✅ Notify layout
       window.dispatchEvent(new Event("auth-change"));

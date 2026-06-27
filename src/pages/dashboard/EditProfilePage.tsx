@@ -64,8 +64,7 @@ export const EditProfilePage = () => {
   >([]);
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [roleToAdd, setRoleToAdd] = useState("");
-  const [blueprintsToAdd, setBluePrintsToAdd] = useState("");
-  const [selectedBluePrints, setSelectedBluePrints] = useState<string[]>([]);
+  const [selectedBlueprint, setSelectedBlueprint] = useState("");
 
   /* ---------------- GET USER FROM LOCAL STORAGE ---------------- */
 
@@ -125,8 +124,9 @@ export const EditProfilePage = () => {
 
         const data = await res.json();
         const user = data?.data || data;
+        setCountryCode(user.countryCode || "US:+1");
         setSelectedRoles(user.roles || []);
-        setSelectedBluePrints(user.blueprints || []);
+        setSelectedBlueprint(user.blueprints?.[0] || "");
 
         setForm({
           employeeId: user.id || "",
@@ -136,7 +136,7 @@ export const EditProfilePage = () => {
           countryCode: user.countryCode || "US:+1",
           email: user.email || "",
           dob: user.dob ? user.dob.substring(0, 10) : "",
-          ssn: user.maskedSsn ? user.maskedSsn.slice(-4) : "", // ✅ FIX
+          ssn: user.maskedSsn ? user.maskedSsn : "", // ✅ FIX
 
         });
 
@@ -165,21 +165,16 @@ export const EditProfilePage = () => {
     setRoleToAdd("");
   };
 
-  const handleBluePrintSelect = (roleName: string) => {
-    if (!selectedBluePrints.includes(roleName)) {
-      setSelectedBluePrints([...selectedBluePrints, roleName]);
-    }
-
-    // Reset dropdown placeholder after selection
-    setBluePrintsToAdd("");
+  const handleBluePrintSelect = (blueprint: string) => {
+    setSelectedBlueprint(blueprint);
   };
 
   const removeRole = (roleName: string) => {
     setSelectedRoles(selectedRoles.filter((role) => role !== roleName));
   };
 
-  const removeBluePrint = (roleName: string) => {
-    setSelectedBluePrints(selectedBluePrints.filter((role) => role !== roleName));
+  const removeBluePrint = () => {
+    setSelectedBlueprint("");
   };
 
   useEffect(() => {
@@ -294,15 +289,10 @@ export const EditProfilePage = () => {
 
     if (!form.dob) newErrors.dob = "Date of Birth is required.";
 
-    if (!form.ssn.trim()) {
-      newErrors.ssn = "Last 4 SSN is required.";
-    } else if (!/^\d{4}$/.test(form.ssn)) {
-      newErrors.ssn = "SSN must be exactly 4 digits.";
-    }
     if (selectedRoles.length === 0) newErrors.role = "At least one role is required.";
 
-    if (selectedBluePrints.length === 0) {
-      newErrors.blueprint = "At least one blueprint is required.";
+    if (!selectedBlueprint) {
+      newErrors.blueprint = "Blueprint is required.";
     }
 
     setErrors(newErrors);
@@ -341,7 +331,7 @@ export const EditProfilePage = () => {
       ssn: form.ssn,
       dob: form.dob ? new Date(form.dob).toISOString() : null,
       roles: selectedRoles,
-      blueprints: selectedBluePrints,
+      blueprints: selectedBlueprint ? [selectedBlueprint] : [],
     };
 
     try {
@@ -576,11 +566,13 @@ export const EditProfilePage = () => {
                 <div className="flex items-center gap-2">
                   <div className="w-32">
                     <CountryCodeSelect
-                      value={countryCode}
-                      onChange={(value) => {
-                        setCountryCode(value);
-                        setForm({ ...form, countryCode: value });
-                      }}
+                      value={form.countryCode}
+                      onChange={(value) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          countryCode: value,
+                        }))
+                      }
                     />
                   </div>
 
@@ -629,13 +621,11 @@ export const EditProfilePage = () => {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label>Last 4 SSN <span className="text-red-500">*</span></Label>
+                  <Label>SSN <span className="text-red-500">*</span></Label>
 
                   <Input
                     value={form.ssn}
-                    onChange={(e) =>
-                      set("ssn", e.target.value.replace(/\D/g, "").slice(0, 4))
-                    }
+                    disabled
                   />
 
                   {errors.ssn && (
@@ -711,51 +701,42 @@ export const EditProfilePage = () => {
                   <Label>Blueprints</Label>
 
                   <Select
-                    value={blueprintsToAdd}
-                    onValueChange={(value) => {
-                      setBluePrintsToAdd(value);
-                      handleBluePrintSelect(value);
-                    }}
+                    value=""
+                    onValueChange={handleBluePrintSelect}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Add Blueprints" />
+                      <SelectValue placeholder="Select Blueprint" />
                     </SelectTrigger>
 
                     <SelectContent>
-                      {availableBlueprints
-                        .filter((role) => !selectedBluePrints.includes(role.name))
-                        .map((role) => (
-                          <SelectItem key={role.id} value={role.name}>
-                            {role.name
-                              .replace(/_/g, " ")
-                              .replace(/\b\w/g, (char) => char.toUpperCase())}
-                          </SelectItem>
-                        ))}
+                      {availableBlueprints.map((bp) => (
+                        <SelectItem
+                          key={bp.id}
+                          value={bp.name}
+                        >
+                          {bp.name
+                            .replace(/_/g, " ")
+                            .replace(/\b\w/g, c => c.toUpperCase())}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
 
                   {/* Selected Blueprints Chips */}
                   <div className="flex flex-wrap gap-2">
-                    {selectedBluePrints.map((role) => (
-                      <div
-                        key={role}
-                        className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm"
-                      >
-                        <span>
-                          {role
-                            .replace(/_/g, " ")
-                            .replace(/\b\w/g, (char) => char.toUpperCase())}
-                        </span>
+                    {selectedBlueprint && (
+                      <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">
+                        <span>{selectedBlueprint}</span>
 
                         <button
                           type="button"
-                          onClick={() => removeBluePrint(role)}
+                          onClick={removeBluePrint}
                           className="hover:text-destructive"
                         >
                           <X className="h-3.5 w-3.5" />
                         </button>
                       </div>
-                    ))}
+                    )}
                   </div>
 
                   {errors.blueprint && (

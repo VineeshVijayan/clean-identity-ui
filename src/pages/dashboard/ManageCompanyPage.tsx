@@ -39,6 +39,7 @@ interface Company {
   phoneNumber: string;
   primaryContact: string;
   approverId: number;
+  isEnabled: boolean;
 }
 
 interface Approver {
@@ -49,7 +50,7 @@ interface Approver {
 }
 
 export const ManageCompanyPage = () => {
-  const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
+  const API_BASE_URL = "http://identity-api.ndashdigital.com/api";
   const navigate = useNavigate();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [search, setSearch] = useState("");
@@ -57,10 +58,6 @@ export const ManageCompanyPage = () => {
   const [editing, setEditing] = useState<Company | null>(null);
   const [approvers, setApprovers] = useState<Approver[]>([]);
   const [statusMap, setStatusMap] = useState<Record<string, boolean>>({});
-
-  const toggleStatus = (id: string) => {
-    setStatusMap((prev) => ({ ...prev, [id]: !(prev[id] ?? true) }));
-  };
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -137,10 +134,16 @@ export const ManageCompanyPage = () => {
           location: c.location,
           phoneNumber: c.phoneNumber,
           primaryContact: c.contactName || "",
-          approverId: c.approverId
+          approverId: c.approverId,
+          isEnabled: c.enabled,
         }));
 
         setCompanies(mapped);
+        setStatusMap(
+          Object.fromEntries(
+            mapped.map((c) => [c.id, c.enabled])
+          )
+        );
 
       } catch (err) {
         console.error("Failed to load companies", err);
@@ -174,6 +177,59 @@ export const ManageCompanyPage = () => {
 
     fetchApprovers();
   }, []);
+
+  const toggleStatus = async (company: Company) => {
+
+    const newStatus = !(statusMap[company.id] ?? company.isEnabled);
+  
+    try {
+  
+      const token = localStorage.getItem("auth-token");
+  
+      const response = await fetch(
+        `${API_BASE_URL}/companies/${company.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: token ? `Bearer ${token}` : "",
+          },
+          body: JSON.stringify({
+            name: company.name,
+            location: company.location,
+            phoneNumber: company.phoneNumber,
+            approverId: company.approverId,
+            isEnabled: newStatus,
+          }),
+        }
+      );
+  
+      if (!response.ok) {
+        throw new Error();
+      }
+  
+      setStatusMap((prev) => ({
+        ...prev,
+        [company.id]: newStatus,
+      }));
+  
+      setCompanies((prev) =>
+        prev.map((c) =>
+          c.id === company.id
+            ? { ...c, isEnabled: newStatus }
+            : c
+        )
+      );
+  
+      toast.success(
+        `Company ${newStatus ? "activated" : "deactivated"} successfully`
+      );
+  
+    } catch {
+  
+      toast.error("Failed to update company status");
+    }
+  };
 
   return (
     <motion.div
@@ -230,7 +286,7 @@ export const ManageCompanyPage = () => {
                   </TableRow>
                 ) : (
                   filtered.map((company) => {
-                    const isActive = statusMap[company.id] ?? true;
+                    const isActive = statusMap[company.id] ?? company.isEnabled;
                     return (
                       <TableRow
                         key={company.id}
@@ -244,7 +300,7 @@ export const ManageCompanyPage = () => {
                           <div className="flex items-center gap-2">
                             <Switch
                               checked={isActive}
-                              onCheckedChange={() => toggleStatus(company.id)}
+                              onCheckedChange={() => toggleStatus(company)}
                               aria-label={`Toggle status for ${company.name}`}
                             />
                             <span className="text-xs text-muted-foreground">

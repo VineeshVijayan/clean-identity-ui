@@ -18,14 +18,25 @@ export const SettingsProvider = ({ children }: any) => {
       },
     });
 
-    return res.json();
+    const data = await res.json();
+
+    setSettings(data);
+
+    return data;
   };
 
   useEffect(() => {
+
+    const token = localStorage.getItem("auth-token");
+
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
     const loadSettings = async () => {
       try {
-        const data = await fetchSettings();
-        setSettings(data);      // ✅ important
+        await fetchSettings();
       } catch (err) {
         console.error("Failed to load settings", err);
       } finally {
@@ -34,10 +45,18 @@ export const SettingsProvider = ({ children }: any) => {
     };
 
     loadSettings();
+
   }, []);
 
   return (
-    <SettingsContext.Provider value={{ settings, setSettings, loading }}>
+    <SettingsContext.Provider
+      value={{
+        settings,
+        setSettings,
+        loading,
+        fetchSettings,
+      }}
+    >
       {children}
     </SettingsContext.Provider>
   );
