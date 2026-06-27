@@ -30,7 +30,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
+const API_BASE_URL = "http://localhost:8080/api";
 const CONNECTOR_API_BASE_URL = "https://idf-connector.ndashdigital.com/api";
 
 type Role = {
@@ -337,7 +337,7 @@ export const ManageRolesPage = () => {
           roles: [selectedRole],
           grantedDate:
             new Date().toISOString().split("T")[0],
-          essential: false,
+          essential: app.essential ?? false,
         },
       ];
     });
@@ -529,7 +529,7 @@ export const ManageRolesPage = () => {
                               roles: app.roles || [],
                               grantedDate:
                                 new Date().toISOString().split("T")[0],
-                              essential: false,
+                                essential: app.essential ?? false,
                             };
                           }
                         );
@@ -666,6 +666,9 @@ export const ManageRolesPage = () => {
                     <div className="text-2xl">{app.icon}</div>
                     <div>
                       <p className="font-semibold text-sm">{app.name}</p>
+                      {app.essential && (
+                        <Badge variant="destructive">Essential</Badge>
+                      )}
                       <p className="text-xs text-muted-foreground">{app.category}</p>
                     </div>
                   </div>
