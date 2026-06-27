@@ -24,7 +24,6 @@ export const CreateUserPage = () => {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
   const [idfRoles, setIDFRoles] = useState<string[]>([]);
-  const [countryCode, setCountryCode] = useState("US:+1");
   const [companies, setCompanies] = useState<{ id: number; name: string }[]>([]);
 
   const getUserFromToken = () => {
@@ -49,6 +48,7 @@ export const CreateUserPage = () => {
     lastName: "",
     email: "",
     phoneNumber: "",
+    countryCode: "US:+1",
     ssn: "",
     dob: "",
     role: "",
@@ -61,6 +61,7 @@ export const CreateUserPage = () => {
     lastName: "",
     email: "",
     phoneNumber: "",
+    countryCode: "",
     dob: "",
     ssn: "",
     address: "",
@@ -210,6 +211,7 @@ export const CreateUserPage = () => {
       lastName: "",
       email: "",
       phoneNumber: "",
+      countryCode: "",
       dob: "",
       ssn: "",
       address: "",
@@ -241,6 +243,10 @@ export const CreateUserPage = () => {
     } else if (!phoneRegex.test(formData.phoneNumber)) {
       newErrors.phoneNumber = "Enter a valid phone number";
     }
+
+
+
+
 
     if (formData.dob) {
       const selectedDate = new Date(formData.dob);
@@ -281,6 +287,7 @@ export const CreateUserPage = () => {
       lastName: formData.lastName,
       email: formData.email,
       phoneNumber: formData.phoneNumber,
+      countryCode: formData.countryCode,
       ssn: formData.ssn,
       dob: formData.dob ? new Date(formData.dob).toISOString() : null,
       blueprints: formData.role ? [formData.role] : [],
@@ -555,7 +562,15 @@ export const CreateUserPage = () => {
               <div className="space-y-1.5">
                 <Label>Phone Number</Label>
                 <div className="flex gap-2">
-                  <CountryCodeSelect value={countryCode} onChange={setCountryCode} />
+                  <CountryCodeSelect
+                    value={formData.countryCode}
+                    onChange={(value) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        countryCode: value,
+                      }))
+                    }
+                  />
                   <Input
                     value={formData.phoneNumber}
                     type="tel"
@@ -567,7 +582,7 @@ export const CreateUserPage = () => {
                       })
                     }
                     placeholder="Enter 10-digit phone number"
-                    className="flex-1"
+                    className="flex-2"
                   />
                   {errors.phoneNumber && (
                     <p className="text-sm text-red-500">{errors.phoneNumber}</p>

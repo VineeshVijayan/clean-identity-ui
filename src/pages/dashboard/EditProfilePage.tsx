@@ -42,6 +42,7 @@ export const EditProfilePage = () => {
   const passedUser = location.state?.user;
   const [countryCode, setCountryCode] = useState("US:+1");
 
+
   // Field-level edit permissions based on source
   const employeeIdDisabled = true; // Non-editable across all three sources
   const rolesDisabled = source === "myteam" || source === "navbar";
@@ -78,6 +79,7 @@ export const EditProfilePage = () => {
     firstName: "",
     lastName: "",
     phoneNumber: "",
+    countryCode: "",
     email: "",
     dob: "",
     ssn: "",
@@ -92,6 +94,7 @@ export const EditProfilePage = () => {
         firstName: passedUser.firstName || "",
         lastName: passedUser.lastName || "",
         phoneNumber: "",
+        countryCode: passedUser.countryCode || "US:+1",
         email: passedUser.email || "",
         dob: "",
         ssn: "",
@@ -130,6 +133,7 @@ export const EditProfilePage = () => {
           firstName: user.firstName || "",
           lastName: user.lastName || "",
           phoneNumber: user.phoneNumber || "",
+          countryCode: user.countryCode || "US:+1",
           email: user.email || "",
           dob: user.dob ? user.dob.substring(0, 10) : "",
           ssn: user.maskedSsn ? user.maskedSsn.slice(-4) : "", // ✅ FIX
@@ -332,7 +336,8 @@ export const EditProfilePage = () => {
       firstName: form.firstName,
       lastName: form.lastName,
 
-      phoneNumber: `${countryCode.split(":")[1]}${form.phoneNumber}`,
+      phoneNumber: form.phoneNumber,
+      countryCode: countryCode,
       ssn: form.ssn,
       dob: form.dob ? new Date(form.dob).toISOString() : null,
       roles: selectedRoles,
@@ -380,10 +385,12 @@ export const EditProfilePage = () => {
       firstName: "",
       lastName: "",
       phoneNumber: "",
+      countryCode: "",
       email: "",
       dob: "",
       ssn: "",
     });
+    setCountryCode("US:+1"); // Reset country code selector
     setPhotoPreview(null);
     setErrors({});
   };
@@ -566,16 +573,32 @@ export const EditProfilePage = () => {
               <div className="space-y-1.5">
                 <Label>Phone Number <span className="text-red-500">*</span></Label>
 
-                <div className="flex gap-2">
-                  <CountryCodeSelect value={countryCode} onChange={setCountryCode} />
+                <div className="flex items-center gap-2">
+                  <div className="w-32">
+                    <CountryCodeSelect
+                      value={countryCode}
+                      onChange={(value) => {
+                        setCountryCode(value);
+                        setForm({ ...form, countryCode: value });
+                      }}
+                    />
+                  </div>
+
                   <Input
                     value={form.phoneNumber}
                     type="tel"
-                    onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })}
-                    placeholder="(555) 000-0000"
+                    maxLength={10}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        phoneNumber: e.target.value.replace(/\D/g, "").slice(0, 10),
+                      })
+                    }
+                    placeholder="Enter 10-digit phone number"
                     className="flex-1"
                   />
                 </div>
+
 
                 {errors.phoneNumber && (
                   <p className="text-sm text-red-500">{errors.phoneNumber}</p>
