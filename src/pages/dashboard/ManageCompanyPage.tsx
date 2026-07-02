@@ -50,7 +50,7 @@ interface Approver {
 }
 
 export const ManageCompanyPage = () => {
-  const API_BASE_URL = "http://identity-api.ndashdigital.com/api";
+  const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
   const navigate = useNavigate();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [search, setSearch] = useState("");
