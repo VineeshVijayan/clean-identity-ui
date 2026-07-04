@@ -31,6 +31,7 @@ import { ReportsPage } from "./pages/dashboard/ReportsPage";
 import { UpdateApplicationPage } from "./pages/dashboard/UpdateApplicationPage";
 import { UserAdministrationPage } from "./pages/dashboard/UserAdministrationPage";
 import { UsersListPage } from "./pages/dashboard/UsersListPage";
+import { UserLandingPage } from "./pages/dashboard/UserLandingPage";
 import DocsPage from "./pages/DocsPage";
 import FeaturesPage from "./pages/FeaturesPage";
 import Index from "./pages/Index";
@@ -67,6 +68,10 @@ const App = () => (
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<DashboardHome />} />
             <Route path="users" element={<UsersListPage />} />
+          </Route>
+
+          <Route path="/welcome" element={<DashboardLayout />}>
+            <Route index element={<UserLandingPage />} />
           </Route>
 
           {/* User Management Routes */}
