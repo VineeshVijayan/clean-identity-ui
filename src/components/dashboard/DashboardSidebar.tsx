@@ -100,7 +100,12 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     roles.some((r) => r?.toLowerCase() === role.toLowerCase());
   const hasAllRoles = (required: string[]) =>
     required.every((r) => hasRole(r));
-
+  // Only show for user
+  const isUserOnly =
+    hasRole("user") &&
+    !hasRole("manager") &&
+    !hasRole("administration") &&
+    !hasRole("super_admin");
   // Base menu items
   const dashboardItem: MenuItem = {
     label: "Dashboard",
@@ -247,13 +252,8 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
         ],
       },
     ];
-  } else if (hasRole("user")) {
-    menuItems = [
-      dashboardItem,
-      accessRequests,
-      ...(canViewCompanyMenu ? [company] : []),
-      // checkout,
-    ];
+  } else if (isUserOnly) {
+    menuItems = [];
   } else {
     menuItems = [dashboardItem];
   }
