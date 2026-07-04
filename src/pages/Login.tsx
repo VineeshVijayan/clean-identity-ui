@@ -79,7 +79,19 @@ const Login = () => {
         description: "You have successfully signed in.",
       });
 
-      navigate("/dashboard");
+      // Redirect user-only roles to landing page; others to dashboard
+      const rolesList: string[] = Array.isArray(decoded.roles)
+        ? decoded.roles
+        : decoded.roles
+          ? [decoded.roles]
+          : [];
+      const normalized = rolesList.map((r: string) => (r || "").toLowerCase());
+      const isUserOnly =
+        normalized.includes("user") &&
+        !normalized.some((r) =>
+          ["manager", "administration", "super_admin"].includes(r)
+        );
+      navigate(isUserOnly ? "/welcome" : "/dashboard");
 
     } catch (err: any) {
       toast({
