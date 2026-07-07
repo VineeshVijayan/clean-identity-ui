@@ -97,6 +97,17 @@ export const EditProfilePage = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  type AssignedApp = {
+    id: number;
+    name: string;
+    description: string;
+    accessLevel: string;
+    grantedDate: string;
+    essential: boolean;
+  };
+  const [assignedApps, setAssignedApps] = useState<AssignedApp[]>([]);
+  const [appToRemove, setAppToRemove] = useState<AssignedApp | null>(null);
+
   useEffect(() => {
     if (passedUser) {
       setForm({
