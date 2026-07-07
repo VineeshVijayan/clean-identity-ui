@@ -177,6 +177,47 @@ export const EditProfilePage = () => {
 
   }, [userId, toast]);
 
+  /* ---------------- FETCH ASSIGNED APPLICATIONS ---------------- */
+  useEffect(() => {
+    if (!userId) return;
+    const token = localStorage.getItem("auth-token");
+    fetch(`${API_BASE_URL}/applications/users/${userId}`, {
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        Authorization: token ? `Bearer ${token}` : "",
+      },
+    })
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((res) => {
+        const list = res?.data || res || [];
+        const mapped: AssignedApp[] = list
+          .filter((app: any) => app.active)
+          .map((app: any) => ({
+            id: app.id,
+            name: app.name,
+            description: app.description || "",
+            accessLevel: app.accessLevel || "Standard",
+            grantedDate: app.grantedDate
+              ? new Date(app.grantedDate).toLocaleDateString()
+              : "",
+            essential: app.essential || false,
+          }));
+        setAssignedApps(mapped);
+      })
+      .catch(() => setAssignedApps([]));
+  }, [userId]);
+
+  const confirmRemoveApp = () => {
+    if (!appToRemove) return;
+    setAssignedApps((prev) => prev.filter((a) => a.id !== appToRemove.id));
+    toast({
+      title: "Application Removed",
+      description: `${appToRemove.name} was removed from the user's assignments.`,
+    });
+    setAppToRemove(null);
+  };
+
 
   const handleRoleSelect = (roleName: string) => {
     if (!selectedRoles.includes(roleName)) {
