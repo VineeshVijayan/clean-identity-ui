@@ -44,6 +44,10 @@ export const CreateUserPage = () => {
 
   const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
   const [showIDFRoles, setShowIDFRoles] = useState(false);
+  const [showRequestDialog, setShowRequestDialog] = useState(false);
+  const [requestedApps, setRequestedApps] = useState<
+    { applicationId: string; applicationName: string; projectKey: string; roleId: string; roleName: string }[]
+  >([]);
 
   const [formData, setFormData] = useState({
     firstName: "",
