@@ -817,7 +817,97 @@ export const EditProfilePage = () => {
 
         </motion.div>
 
+        {/* Requested / Assigned Applications */}
+        <motion.div variants={itemVariants}>
+          <Card>
+            <CardHeader className="pb-4">
+              <CardTitle className="text-base flex items-center gap-2">
+                <div className="p-1.5 rounded-md bg-primary/10">
+                  <AppWindow className="h-4 w-4 text-primary" />
+                </div>
+                Requested Application
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {assignedApps.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No applications assigned to this user.
+                </p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {assignedApps.map((app) => (
+                    <div
+                      key={app.id}
+                      className="flex items-start justify-between gap-3 p-3 rounded-md border border-border bg-muted/30"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="font-medium text-sm text-foreground truncate">
+                            {app.name}
+                          </span>
+                          {app.essential && (
+                            <Shield className="h-3.5 w-3.5 text-warning shrink-0" />
+                          )}
+                        </div>
+                        {app.description && (
+                          <p className="text-xs text-muted-foreground truncate">
+                            {app.description}
+                          </p>
+                        )}
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          <Badge variant="secondary" className="text-xs">
+                            {app.accessLevel}
+                          </Badge>
+                          {app.grantedDate && (
+                            <Badge variant="outline" className="text-xs">
+                              Granted: {app.grantedDate}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      {!app.essential && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setAppToRemove(app)}
+                          className="text-muted-foreground hover:text-destructive shrink-0"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <AlertDialog open={!!appToRemove} onOpenChange={(v) => !v && setAppToRemove(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remove Application</AlertDialogTitle>
+              <AlertDialogDescription>
+                Remove <strong>{appToRemove?.name}</strong> from this user's
+                assigned applications?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmRemoveApp}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Remove
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
         {/* Actions */}
+
+
 
         <motion.div variants={itemVariants} className="flex justify-end gap-3">
 
