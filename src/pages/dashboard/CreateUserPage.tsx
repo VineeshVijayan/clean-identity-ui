@@ -8,8 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { ArrowLeft, Camera, Save, Upload, User } from "lucide-react";
+import { AppWindow, ArrowLeft, Camera, Plus, Save, Trash2, Upload, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { RequestedApplicationDialog } from "@/components/dashboard/RequestedApplicationDialog";
+import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 
 const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
