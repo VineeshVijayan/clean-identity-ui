@@ -34,7 +34,6 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-
 interface SidebarProps {
   open: boolean;
   onClose: () => void;
@@ -106,6 +105,12 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     !hasRole("manager") &&
     !hasRole("administration") &&
     !hasRole("super_admin");
+
+
+  const isSuperAdmin = hasRole("super_admin");
+  const isAdministration = hasRole("administration");
+  const isManager = hasRole("manager");
+  const isCompany = hasRole("company");
   // Base menu items
   const dashboardItem: MenuItem = {
     label: "Dashboard",
@@ -194,8 +199,9 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
   //   ],
   // };
 
-  // Build menu based on roles
+  // Build menu based on roles - Roles Access Start
 
+  // Build menu based on role priority
   const canViewCompanyMenu =
     settings.SHOW_COMPANY_MENU &&
     (
@@ -205,34 +211,33 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     );
   let menuItems: MenuItem[] = [];
 
-  if (hasAllRoles(["super_admin", "user"])) {
+  if (isSuperAdmin) {
+    // Super Admin -> Everything
     menuItems = [
       dashboardItem,
       accessRequests,
       userManagementItem,
       roleBasedAccess,
-      // applications,
       ...(canViewCompanyMenu ? [company] : []),
       idfAdministration,
       reporting,
       // checkout,
     ];
-  } else if (hasRole("administration") && hasRole("user") && !hasRole("super_admin")) {
+  }
+  else if (isAdministration) {
+    // Administration -> Everything except Toolbox
     menuItems = [
+      dashboardItem,
       accessRequests,
-      userManagementBasic,
+      userManagementItem,
       roleBasedAccess,
-      // applications,
       ...(canViewCompanyMenu ? [company] : []),
       reporting,
       // checkout,
     ];
-  } else if (
-    hasRole("manager") &&
-    hasRole("user") &&
-    !hasRole("super_admin") &&
-    !hasRole("administration")
-  ) {
+  }
+  else if (isManager) {
+    // Manager -> Hide Position Blueprints & Toolbox
     menuItems = [
       dashboardItem,
       accessRequests,
@@ -240,6 +245,35 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
       ...(canViewCompanyMenu ? [company] : []),
       reporting,
       // checkout,
+    ];
+  }
+  else if (isCompany) {
+    // Company Only
+
+    menuItems = [
+      {
+        label: "",
+        icon: LayoutDashboard,
+        href: "/user-landing",
+      },
+
+      {
+        label: "Company",
+        icon: Building2,
+        submenu: [
+          {
+            label: "Create Company",
+            href: "/company/create",
+            icon: Plus,
+          },
+          {
+            label: "Manage Company",
+            href: "/company/manage",
+            icon: Settings,
+          },
+        ],
+      },
+
       {
         label: "Toolbox",
         icon: Database,
@@ -252,11 +286,17 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
         ],
       },
     ];
-  } else if (isUserOnly) {
+  }
+  else if (isUserOnly) {
     menuItems = [];
-  } else {
+  }
+  else {
     menuItems = [dashboardItem];
   }
+
+
+  //Role access END
+
 
   const isActiveRoute = (href?: string) => {
     if (!href) return false;

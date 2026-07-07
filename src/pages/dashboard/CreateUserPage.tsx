@@ -531,7 +531,7 @@ export const CreateUserPage = () => {
               <div className="grid sm:grid-cols-2 gap-4">
 
                 <InputField
-                  label="Last 4 SSN"
+                  label="SSN"
                   value={formData.ssn}
                   onChange={(v: string) =>
                     setFormData({ ...formData, ssn: v.replace(/\D/g, "") })

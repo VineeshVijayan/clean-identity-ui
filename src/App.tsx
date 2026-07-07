@@ -30,8 +30,8 @@ import { NewRolePage } from "./pages/dashboard/NewRolePage";
 import { ReportsPage } from "./pages/dashboard/ReportsPage";
 import { UpdateApplicationPage } from "./pages/dashboard/UpdateApplicationPage";
 import { UserAdministrationPage } from "./pages/dashboard/UserAdministrationPage";
-import { UsersListPage } from "./pages/dashboard/UsersListPage";
 import { UserLandingPage } from "./pages/dashboard/UserLandingPage";
+import { UsersListPage } from "./pages/dashboard/UsersListPage";
 import DocsPage from "./pages/DocsPage";
 import FeaturesPage from "./pages/FeaturesPage";
 import Index from "./pages/Index";
@@ -145,6 +145,14 @@ const App = () => (
             <Route path="new" element={<NewApplicationPage />} />
             <Route path="update" element={<UpdateApplicationPage />} />
           </Route>
+
+          {/* User Landing page */}
+
+
+          <Route
+            path="/user-landing"
+            element={<UserLandingPage />}
+          />
 
           {/* Catch-all */}
           <Route path="*" element={<NotFound />} />
