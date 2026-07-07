@@ -248,42 +248,32 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     ];
   }
   else if (isCompany) {
-    // Company Only
-
+    // Company Only -> Landing Page + Company + Toolbox + Settings
     menuItems = [
       {
-        label: "",
+        label: "Landing Page",
         icon: LayoutDashboard,
-        href: "/user-landing",
+        href: "/welcome",
       },
-
       {
         label: "Company",
         icon: Building2,
         submenu: [
-          {
-            label: "Create Company",
-            href: "/company/create",
-            icon: Plus,
-          },
-          {
-            label: "Manage Company",
-            href: "/company/manage",
-            icon: Settings,
-          },
+          { label: "Create Company", href: "/company/create", icon: Plus },
+          { label: "Manage Company", href: "/company/manage", icon: Settings },
         ],
       },
-
       {
         label: "Toolbox",
         icon: Database,
         submenu: [
-          {
-            label: "Settings",
-            href: "/admin/settings",
-            icon: Cog,
-          },
+          { label: "Manage Application", href: "/admin/manage-application", icon: AppWindow },
         ],
+      },
+      {
+        label: "Settings",
+        icon: Cog,
+        href: "/admin/settings",
       },
     ];
   }
