@@ -8,8 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { ArrowLeft, Camera, Save, Upload, User } from "lucide-react";
+import { AppWindow, ArrowLeft, Camera, Plus, Save, Trash2, Upload, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { RequestedApplicationDialog } from "@/components/dashboard/RequestedApplicationDialog";
+import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 
 const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
@@ -42,6 +44,10 @@ export const CreateUserPage = () => {
 
   const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
   const [showIDFRoles, setShowIDFRoles] = useState(false);
+  const [showRequestDialog, setShowRequestDialog] = useState(false);
+  const [requestedApps, setRequestedApps] = useState<
+    { applicationId: string; applicationName: string; projectKey: string; roleId: string; roleName: string }[]
+  >([]);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -698,7 +704,79 @@ export const CreateUserPage = () => {
 
         </motion.div>
 
+        {/* Requested Applications */}
+        <motion.div variants={itemVariants}>
+          <Card>
+            <CardHeader className="pb-4 flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-base flex items-center gap-2">
+                <div className="p-1.5 rounded-md bg-primary/10">
+                  <AppWindow className="h-4 w-4 text-primary" />
+                </div>
+                Requested Application
+              </CardTitle>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setShowRequestDialog(true)}
+                className="bg-green-600 text-white hover:bg-green-700"
+              >
+                <Plus className="h-4 w-4 mr-1.5" />
+                Requested Application
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {requestedApps.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No applications requested yet. Click "Requested Application" to add one.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {requestedApps.map((r, idx) => (
+                    <div
+                      key={`${r.applicationId}-${r.projectKey}-${r.roleId}-${idx}`}
+                      className="flex items-center justify-between p-3 rounded-md border border-border bg-muted/30"
+                    >
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-medium text-sm text-foreground">
+                          {r.applicationName}
+                        </span>
+                        <Badge variant="secondary" className="text-xs">
+                          Project: {r.projectKey}
+                        </Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          Role: {r.roleName}
+                        </Badge>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() =>
+                          setRequestedApps((prev) => prev.filter((_, i) => i !== idx))
+                        }
+                        className="text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <RequestedApplicationDialog
+          open={showRequestDialog}
+          onOpenChange={setShowRequestDialog}
+          onSubmitted={(entry) =>
+            setRequestedApps((prev) => [...prev, entry])
+          }
+        />
+
         {/* Actions */}
+
+
 
         <motion.div variants={itemVariants} className="flex justify-end gap-3">
 

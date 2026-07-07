@@ -86,12 +86,12 @@ const Login = () => {
           ? [decoded.roles]
           : [];
       const normalized = rolesList.map((r: string) => (r || "").toLowerCase());
-      const isUserOnly =
-        normalized.includes("user") &&
-        !normalized.some((r) =>
-          ["manager", "administration", "super_admin"].includes(r)
-        );
-      navigate(isUserOnly ? "/welcome" : "/dashboard");
+      const isPrivileged = normalized.some((r) =>
+        ["manager", "administration", "super_admin"].includes(r)
+      );
+      const isUserOnly = normalized.includes("user") && !isPrivileged;
+      const isCompanyOnly = normalized.includes("company") && !isPrivileged;
+      navigate(isUserOnly || isCompanyOnly ? "/welcome" : "/dashboard");
 
     } catch (err: any) {
       toast({
