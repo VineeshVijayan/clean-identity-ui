@@ -134,14 +134,18 @@ export const NewRolePage = () => {
   };
 
   const handleSaveRole = async () => {
-    if (!roleName.trim()) {
+    const nameErr = validateRoleName(roleName);
+    if (nameErr) {
+      setRoleNameError(nameErr);
+      document.getElementById("roleName")?.focus();
       toast({
         title: "Error",
-        description: "Blueprint name is required",
+        description: nameErr,
         variant: "destructive",
       });
       return;
     }
+
 
     if (blueprintApps.length === 0) {
       toast({
