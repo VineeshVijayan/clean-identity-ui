@@ -516,11 +516,13 @@ export const CreateUserPage = () => {
               <div className="grid sm:grid-cols-2 gap-4">
 
                 <InputField
+                  id="user-firstName"
                   label="First Name"
                   value={formData.firstName}
                   onChange={(v: string) =>
                     setFormData({ ...formData, firstName: v.replace(/[^A-Za-z\s]/g, "") })
                   }
+                  onBlur={() => handleBlur("firstName", formData.firstName)}
                 />
 
                 {errors.firstName && (
@@ -528,11 +530,13 @@ export const CreateUserPage = () => {
                 )}
 
                 <InputField
+                  id="user-lastName"
                   label="Last Name"
                   value={formData.lastName}
                   onChange={(v: string) =>
                     setFormData({ ...formData, lastName: v.replace(/[^A-Za-z\s]/g, "") })
                   }
+                  onBlur={() => handleBlur("lastName", formData.lastName)}
                 />
                 {errors.lastName && (
                   <p className="text-sm text-red-500">{errors.lastName}</p>
@@ -541,12 +545,14 @@ export const CreateUserPage = () => {
               </div>
 
               <InputField
+                id="user-email"
                 label="Email Address"
                 type="email"
                 value={formData.email}
                 onChange={(v: string) =>
                   setFormData({ ...formData, email: v })
                 }
+                onBlur={() => handleBlur("email", formData.email)}
               />
               {errors.email && (
                 <p className="text-sm text-red-500">{errors.email}</p>
@@ -555,11 +561,13 @@ export const CreateUserPage = () => {
               <div className="grid sm:grid-cols-2 gap-4">
 
                 <InputField
+                  id="user-ssn"
                   label="SSN"
                   value={formData.ssn}
                   onChange={(v: string) =>
-                    setFormData({ ...formData, ssn: v.replace(/\D/g, "") })
+                    setFormData({ ...formData, ssn: v.replace(/\D/g, "").slice(0, 9) })
                   }
+                  onBlur={() => handleBlur("ssn", formData.ssn)}
                 />
 
                 {errors.ssn && (
@@ -569,12 +577,14 @@ export const CreateUserPage = () => {
                 <div className="space-y-1.5">
                   <Label>Date of Birth</Label>
                   <Input
+                    id="user-dob"
                     type="date"
                     max={new Date().toISOString().split("T")[0]}
                     value={formData.dob}
                     onChange={(e) =>
                       setFormData({ ...formData, dob: e.target.value })
                     }
+                    onBlur={() => handleBlur("dob", formData.dob)}
                   />
                   {errors.dob && (
                     <p className="text-sm text-red-500">{errors.dob}</p>
@@ -596,6 +606,7 @@ export const CreateUserPage = () => {
                     }
                   />
                   <Input
+                    id="user-phoneNumber"
                     value={formData.phoneNumber}
                     type="tel"
                     maxLength={10}
@@ -605,14 +616,16 @@ export const CreateUserPage = () => {
                         phoneNumber: e.target.value.replace(/\D/g, "").slice(0, 10),
                       })
                     }
+                    onBlur={() => handleBlur("phoneNumber", formData.phoneNumber)}
                     placeholder="Enter 10-digit phone number"
                     className="flex-2"
                   />
-                  {errors.phoneNumber && (
-                    <p className="text-sm text-red-500">{errors.phoneNumber}</p>
-                  )}
                 </div>
+                {errors.phoneNumber && (
+                  <p className="text-sm text-red-500">{errors.phoneNumber}</p>
+                )}
               </div>
+
 
               {showCompanyDropdown && (
                 <div className="space-y-1.5">
