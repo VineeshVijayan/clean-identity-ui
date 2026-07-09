@@ -72,6 +72,49 @@ export const CreateUserPage = () => {
     ssn: "",
     address: "",
   });
+
+  const nameRegex = /^[A-Za-z\s]+$/;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const phoneRegex = /^[0-9]{10,15}$/;
+
+  const validateField = (field: string, value: string): string => {
+    switch (field) {
+      case "firstName":
+        if (!value.trim()) return "First name is required";
+        if (!nameRegex.test(value)) return "First name cannot contain numbers";
+        return "";
+      case "lastName":
+        if (!value.trim()) return "Last name is required";
+        if (!nameRegex.test(value)) return "Last name cannot contain numbers";
+        return "";
+      case "email":
+        if (!value.trim()) return "Email is required";
+        if (!emailRegex.test(value)) return "Enter a valid email address";
+        return "";
+      case "phoneNumber":
+        if (!value.trim()) return "Phone number is required";
+        if (!phoneRegex.test(value)) return "Enter a valid phone number";
+        return "";
+      case "ssn":
+        if (value && !/^\d{9}$/.test(value)) return "SSN must be 9 digits";
+        return "";
+      case "dob":
+        if (value) {
+          const d = new Date(value);
+          const today = new Date();
+          d.setHours(0, 0, 0, 0);
+          today.setHours(0, 0, 0, 0);
+          if (d > today) return "Future date is not allowed";
+        }
+        return "";
+      default:
+        return "";
+    }
+  };
+
+  const handleBlur = (field: string, value: string) => {
+    setErrors((prev) => ({ ...prev, [field]: validateField(field, value) }));
+  };
   useEffect(() => {
 
     const tokenUser = getUserFromToken();
