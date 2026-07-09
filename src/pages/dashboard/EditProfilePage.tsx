@@ -646,19 +646,29 @@ export const EditProfilePage = () => {
               <div className="grid sm:grid-cols-2 gap-4">
 
                 <div className="space-y-1.5">
-                  <Label>First Name</Label>
+                  <Label htmlFor="edit-firstName">First Name</Label>
                   <Input
+                    id="edit-firstName"
                     value={form.firstName}
-                    onChange={(e) => set("firstName", e.target.value)}
+                    onChange={(e) => set("firstName", e.target.value.replace(/[^A-Za-z\s]/g, ""))}
+                    onBlur={(e) => handleBlur("firstName", e.target.value)}
                   />
+                  {errors.firstName && (
+                    <p className="text-sm text-red-500">{errors.firstName}</p>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label>Last Name</Label>
+                  <Label htmlFor="edit-lastName">Last Name</Label>
                   <Input
+                    id="edit-lastName"
                     value={form.lastName}
-                    onChange={(e) => set("lastName", e.target.value)}
+                    onChange={(e) => set("lastName", e.target.value.replace(/[^A-Za-z\s]/g, ""))}
+                    onBlur={(e) => handleBlur("lastName", e.target.value)}
                   />
+                  {errors.lastName && (
+                    <p className="text-sm text-red-500">{errors.lastName}</p>
+                  )}
                 </div>
 
               </div>
@@ -680,6 +690,7 @@ export const EditProfilePage = () => {
                   </div>
 
                   <Input
+                    id="edit-phoneNumber"
                     value={form.phoneNumber}
                     type="tel"
                     maxLength={10}
@@ -689,6 +700,7 @@ export const EditProfilePage = () => {
                         phoneNumber: e.target.value.replace(/\D/g, "").slice(0, 10),
                       })
                     }
+                    onBlur={(e) => handleBlur("phoneNumber", e.target.value)}
                     placeholder="Enter 10-digit phone number"
                     className="flex-1"
                   />
@@ -709,19 +721,22 @@ export const EditProfilePage = () => {
               <div className="grid sm:grid-cols-2 gap-4">
 
                 <div className="space-y-1.5">
-                  <Label>Date of Birth <span className="text-red-500">*</span></Label>
+                  <Label htmlFor="edit-dob">Date of Birth <span className="text-red-500">*</span></Label>
 
                   <Input
+                    id="edit-dob"
                     type="date"
                     value={form.dob}
                     max={new Date().toISOString().split("T")[0]}
                     onChange={(e) => set("dob", e.target.value)}
+                    onBlur={(e) => handleBlur("dob", e.target.value)}
                   />
 
                   {errors.dob && (
                     <p className="text-sm text-red-500">{errors.dob}</p>
                   )}
                 </div>
+
 
                 <div className="space-y-1.5">
                   <Label>SSN <span className="text-red-500">*</span></Label>
