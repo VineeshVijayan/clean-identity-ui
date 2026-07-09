@@ -301,7 +301,7 @@ export const ManageCompanyPage = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filtered.map((company) => {
+                  paginated.map((company) => {
                     const isActive = statusMap[company.id] ?? company.isEnabled;
                     return (
                       <TableRow
