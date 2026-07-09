@@ -99,6 +99,8 @@ const getStatusColor = (status: string) => {
 };
 
 /* ─── Shared User Table ─── */
+const PAGE_SIZE = 20;
+
 const UserTable = ({
   users,
   searchQuery,
@@ -111,6 +113,16 @@ const UserTable = ({
   totalCount: number;
 }) => {
   const navigate = useNavigate();
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(users.length / PAGE_SIZE));
+  const paginated = useMemo(
+    () => users.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [users, currentPage]
+  );
+  useEffect(() => setCurrentPage(1), [searchQuery]);
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [totalPages, currentPage]);
 
   return (
     <div className="space-y-4">
