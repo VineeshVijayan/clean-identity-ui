@@ -254,67 +254,31 @@ export const CreateUserPage = () => {
 
   //-----------Validation----------
 
+  const fieldOrder = ["firstName", "lastName", "email", "ssn", "dob", "phoneNumber"];
+
   const validateForm = () => {
     const newErrors = {
-      firstName: "",
-      lastName: "",
-      email: "",
-      phoneNumber: "",
+      firstName: validateField("firstName", formData.firstName),
+      lastName: validateField("lastName", formData.lastName),
+      email: validateField("email", formData.email),
+      phoneNumber: validateField("phoneNumber", formData.phoneNumber),
       countryCode: "",
-      dob: "",
-      ssn: "",
+      dob: validateField("dob", formData.dob),
+      ssn: validateField("ssn", formData.ssn),
       address: "",
     };
-    const nameRegex = /^[A-Za-z\s]+$/;
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phoneRegex = /^[0-9]{10,15}$/;
-
-    if (!formData.firstName.trim()) {
-      newErrors.firstName = "First name is required";
-    } else if (!nameRegex.test(formData.firstName)) {
-      newErrors.firstName = "First name cannot contain numbers";
-    }
-
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = "Last name is required";
-    } else if (!nameRegex.test(formData.lastName)) {
-      newErrors.lastName = "Last name cannot contain numbers";
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!emailRegex.test(formData.email)) {
-      newErrors.email = "Enter a valid email address";
-    }
-
-    if (!formData.phoneNumber.trim()) {
-      newErrors.phoneNumber = "Phone number is required";
-    } else if (!phoneRegex.test(formData.phoneNumber)) {
-      newErrors.phoneNumber = "Enter a valid phone number";
-    }
-
-
-
-
-
-    if (formData.dob) {
-      const selectedDate = new Date(formData.dob);
-      const today = new Date();
-
-      selectedDate.setHours(0, 0, 0, 0);
-      today.setHours(0, 0, 0, 0);
-
-      if (selectedDate > today) {
-        newErrors.dob = "Future date is not allowed";
-      }
-    }
-
     setErrors(newErrors);
-
     return !Object.values(newErrors).some((error) => error);
   };
 
-  //----------------------Validation end 
+  const focusFirstInvalid = (errs: Record<string, string>) => {
+    for (const f of fieldOrder) {
+      if (errs[f]) {
+        document.getElementById(`user-${f}`)?.focus();
+        return;
+      }
+    }
+  };
 
   /* ---------------- SUBMIT ---------------- */
 
@@ -323,8 +287,19 @@ export const CreateUserPage = () => {
     e.preventDefault();
 
     if (!validateForm()) {
+      // Compute errors again for focus (state is async)
+      const errs = {
+        firstName: validateField("firstName", formData.firstName),
+        lastName: validateField("lastName", formData.lastName),
+        email: validateField("email", formData.email),
+        phoneNumber: validateField("phoneNumber", formData.phoneNumber),
+        dob: validateField("dob", formData.dob),
+        ssn: validateField("ssn", formData.ssn),
+      };
+      focusFirstInvalid(errs);
       return;
     }
+
 
     setIsLoading(true);
 
