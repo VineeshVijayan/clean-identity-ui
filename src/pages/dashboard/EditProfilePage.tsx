@@ -336,29 +336,69 @@ export const EditProfilePage = () => {
 
   /* ---------------- VALIDATION ---------------- */
 
+  const nameRegex = /^[A-Za-z\s]+$/;
+  const phoneRegex = /^[0-9]{10,15}$/;
+
+  const validateField = (field: string, value: string): string => {
+    switch (field) {
+      case "firstName":
+        if (!value.trim()) return "First Name is required.";
+        if (!nameRegex.test(value)) return "First name cannot contain numbers.";
+        return "";
+      case "lastName":
+        if (!value.trim()) return "Last Name is required.";
+        if (!nameRegex.test(value)) return "Last name cannot contain numbers.";
+        return "";
+      case "phoneNumber":
+        if (!value.trim()) return "Phone number is required.";
+        if (!phoneRegex.test(value)) return "Enter a valid phone number.";
+        return "";
+      case "dob":
+        if (!value) return "Date of Birth is required.";
+        {
+          const d = new Date(value);
+          const today = new Date();
+          d.setHours(0, 0, 0, 0);
+          today.setHours(0, 0, 0, 0);
+          if (d > today) return "Future date is not allowed.";
+        }
+        return "";
+      default:
+        return "";
+    }
+  };
+
+  const handleBlur = (field: string, value: string) => {
+    setErrors((prev) => ({ ...prev, [field]: validateField(field, value) }));
+  };
+
   const validate = () => {
-
-    const newErrors: Record<string, string> = {};
-
-    if (!form.employeeId) newErrors.employeeId = "Employee ID is required.";
-    if (!form.firstName.trim()) newErrors.firstName = "First Name is required.";
-    if (!form.lastName.trim()) newErrors.lastName = "Last Name is required.";
-
-    if (!form.phoneNumber.trim()) {
-      newErrors.phoneNumber = "phoneNumber Number is required.";
-    } else if (!/^\+?[\d\s\-()]{7,15}$/.test(form.phoneNumber)) {
-      newErrors.phoneNumber = "Enter a valid phoneNumber number.";
-    }
-
-    if (!form.dob) newErrors.dob = "Date of Birth is required.";
-
+    const newErrors: Record<string, string> = {
+      employeeId: form.employeeId ? "" : "Employee ID is required.",
+      firstName: validateField("firstName", form.firstName),
+      lastName: validateField("lastName", form.lastName),
+      phoneNumber: validateField("phoneNumber", form.phoneNumber),
+      dob: validateField("dob", form.dob),
+    };
     if (selectedRoles.length === 0) newErrors.role = "At least one role is required.";
+    if (!selectedBlueprint) newErrors.blueprint = "Blueprint is required.";
 
-    if (!selectedBlueprint) {
-      newErrors.blueprint = "Blueprint is required.";
-    }
+    // Remove empty
+    Object.keys(newErrors).forEach((k) => {
+      if (!newErrors[k]) delete newErrors[k];
+    });
 
     setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      const focusOrder = ["firstName", "lastName", "dob", "phoneNumber"];
+      for (const f of focusOrder) {
+        if (newErrors[f]) {
+          document.getElementById(`edit-${f}`)?.focus();
+          break;
+        }
+      }
+    }
 
     return Object.keys(newErrors).length === 0;
   };
