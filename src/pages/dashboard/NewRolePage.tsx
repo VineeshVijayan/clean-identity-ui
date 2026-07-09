@@ -35,6 +35,13 @@ export const NewRolePage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [roleName, setRoleName] = useState("");
+  const [roleNameError, setRoleNameError] = useState("");
+  const validateRoleName = (value: string) => {
+    if (!value.trim()) return "Blueprint name is required";
+    if (!/^[A-Za-z0-9][A-Za-z0-9\s_-]*$/.test(value.trim()))
+      return "Enter a valid blueprint name";
+    return "";
+  };
   const [roleDescription, setRoleDescription] = useState("");
   const [selectedAppId, setSelectedAppId] = useState("");
   const [selectedRole, setSelectedRole] = useState("");
