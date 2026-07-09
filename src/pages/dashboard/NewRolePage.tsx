@@ -398,8 +398,16 @@ export const NewRolePage = () => {
                 id="roleName"
                 placeholder="e.g., Content Manager"
                 value={roleName}
-                onChange={(e) => setRoleName(e.target.value)}
+                onChange={(e) => {
+                  setRoleName(e.target.value);
+                  if (roleNameError) setRoleNameError(validateRoleName(e.target.value));
+                }}
+                onBlur={() => setRoleNameError(validateRoleName(roleName))}
+                aria-invalid={!!roleNameError}
               />
+              {roleNameError && (
+                <p className="text-sm text-red-500">{roleNameError}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Job Titles</Label>
