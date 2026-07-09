@@ -58,6 +58,8 @@ export const ManageCompanyPage = () => {
   const [editing, setEditing] = useState<Company | null>(null);
   const [approvers, setApprovers] = useState<Approver[]>([]);
   const [statusMap, setStatusMap] = useState<Record<string, boolean>>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 20;
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -70,6 +72,20 @@ export const ManageCompanyPage = () => {
         c.phoneNumber.toLowerCase().includes(q)
     );
   }, [companies, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = useMemo(
+    () => filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [filtered, currentPage]
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [totalPages, currentPage]);
 
   const handleEdit = (company: Company) => {
     setEditing({ ...company });
