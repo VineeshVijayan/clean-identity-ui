@@ -1,4 +1,6 @@
+import { RequestedApplicationDialog } from "@/components/dashboard/RequestedApplicationDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -10,8 +12,6 @@ import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { AppWindow, ArrowLeft, Camera, Plus, Save, Trash2, Upload, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { RequestedApplicationDialog } from "@/components/dashboard/RequestedApplicationDialog";
-import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 
 const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
@@ -72,49 +72,6 @@ export const CreateUserPage = () => {
     ssn: "",
     address: "",
   });
-
-  const nameRegex = /^[A-Za-z\s]+$/;
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const phoneRegex = /^[0-9]{10,15}$/;
-
-  const validateField = (field: string, value: string): string => {
-    switch (field) {
-      case "firstName":
-        if (!value.trim()) return "First name is required";
-        if (!nameRegex.test(value)) return "First name cannot contain numbers";
-        return "";
-      case "lastName":
-        if (!value.trim()) return "Last name is required";
-        if (!nameRegex.test(value)) return "Last name cannot contain numbers";
-        return "";
-      case "email":
-        if (!value.trim()) return "Email is required";
-        if (!emailRegex.test(value)) return "Enter a valid email address";
-        return "";
-      case "phoneNumber":
-        if (!value.trim()) return "Phone number is required";
-        if (!phoneRegex.test(value)) return "Enter a valid phone number";
-        return "";
-      case "ssn":
-        if (value && !/^\d{9}$/.test(value)) return "SSN must be 9 digits";
-        return "";
-      case "dob":
-        if (value) {
-          const d = new Date(value);
-          const today = new Date();
-          d.setHours(0, 0, 0, 0);
-          today.setHours(0, 0, 0, 0);
-          if (d > today) return "Future date is not allowed";
-        }
-        return "";
-      default:
-        return "";
-    }
-  };
-
-  const handleBlur = (field: string, value: string) => {
-    setErrors((prev) => ({ ...prev, [field]: validateField(field, value) }));
-  };
   useEffect(() => {
 
     const tokenUser = getUserFromToken();
@@ -254,31 +211,67 @@ export const CreateUserPage = () => {
 
   //-----------Validation----------
 
-  const fieldOrder = ["firstName", "lastName", "email", "ssn", "dob", "phoneNumber"];
-
   const validateForm = () => {
     const newErrors = {
-      firstName: validateField("firstName", formData.firstName),
-      lastName: validateField("lastName", formData.lastName),
-      email: validateField("email", formData.email),
-      phoneNumber: validateField("phoneNumber", formData.phoneNumber),
+      firstName: "",
+      lastName: "",
+      email: "",
+      phoneNumber: "",
       countryCode: "",
-      dob: validateField("dob", formData.dob),
-      ssn: validateField("ssn", formData.ssn),
+      dob: "",
+      ssn: "",
       address: "",
     };
+    const nameRegex = /^[A-Za-z\s]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^[0-9]{10,15}$/;
+
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = "First name is required";
+    } else if (!nameRegex.test(formData.firstName)) {
+      newErrors.firstName = "First name cannot contain numbers";
+    }
+
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = "Last name is required";
+    } else if (!nameRegex.test(formData.lastName)) {
+      newErrors.lastName = "Last name cannot contain numbers";
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!emailRegex.test(formData.email)) {
+      newErrors.email = "Enter a valid email address";
+    }
+
+    if (!formData.phoneNumber.trim()) {
+      newErrors.phoneNumber = "Phone number is required";
+    } else if (!phoneRegex.test(formData.phoneNumber)) {
+      newErrors.phoneNumber = "Enter a valid phone number";
+    }
+
+
+
+
+
+    if (formData.dob) {
+      const selectedDate = new Date(formData.dob);
+      const today = new Date();
+
+      selectedDate.setHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
+
+      if (selectedDate > today) {
+        newErrors.dob = "Future date is not allowed";
+      }
+    }
+
     setErrors(newErrors);
+
     return !Object.values(newErrors).some((error) => error);
   };
 
-  const focusFirstInvalid = (errs: Record<string, string>) => {
-    for (const f of fieldOrder) {
-      if (errs[f]) {
-        document.getElementById(`user-${f}`)?.focus();
-        return;
-      }
-    }
-  };
+  //----------------------Validation end 
 
   /* ---------------- SUBMIT ---------------- */
 
@@ -287,19 +280,8 @@ export const CreateUserPage = () => {
     e.preventDefault();
 
     if (!validateForm()) {
-      // Compute errors again for focus (state is async)
-      const errs = {
-        firstName: validateField("firstName", formData.firstName),
-        lastName: validateField("lastName", formData.lastName),
-        email: validateField("email", formData.email),
-        phoneNumber: validateField("phoneNumber", formData.phoneNumber),
-        dob: validateField("dob", formData.dob),
-        ssn: validateField("ssn", formData.ssn),
-      };
-      focusFirstInvalid(errs);
       return;
     }
-
 
     setIsLoading(true);
 
@@ -516,13 +498,11 @@ export const CreateUserPage = () => {
               <div className="grid sm:grid-cols-2 gap-4">
 
                 <InputField
-                  id="user-firstName"
                   label="First Name"
                   value={formData.firstName}
                   onChange={(v: string) =>
                     setFormData({ ...formData, firstName: v.replace(/[^A-Za-z\s]/g, "") })
                   }
-                  onBlur={() => handleBlur("firstName", formData.firstName)}
                 />
 
                 {errors.firstName && (
@@ -530,13 +510,11 @@ export const CreateUserPage = () => {
                 )}
 
                 <InputField
-                  id="user-lastName"
                   label="Last Name"
                   value={formData.lastName}
                   onChange={(v: string) =>
                     setFormData({ ...formData, lastName: v.replace(/[^A-Za-z\s]/g, "") })
                   }
-                  onBlur={() => handleBlur("lastName", formData.lastName)}
                 />
                 {errors.lastName && (
                   <p className="text-sm text-red-500">{errors.lastName}</p>
@@ -545,14 +523,12 @@ export const CreateUserPage = () => {
               </div>
 
               <InputField
-                id="user-email"
                 label="Email Address"
                 type="email"
                 value={formData.email}
                 onChange={(v: string) =>
                   setFormData({ ...formData, email: v })
                 }
-                onBlur={() => handleBlur("email", formData.email)}
               />
               {errors.email && (
                 <p className="text-sm text-red-500">{errors.email}</p>
@@ -561,13 +537,11 @@ export const CreateUserPage = () => {
               <div className="grid sm:grid-cols-2 gap-4">
 
                 <InputField
-                  id="user-ssn"
                   label="SSN"
                   value={formData.ssn}
                   onChange={(v: string) =>
-                    setFormData({ ...formData, ssn: v.replace(/\D/g, "").slice(0, 9) })
+                    setFormData({ ...formData, ssn: v.replace(/\D/g, "") })
                   }
-                  onBlur={() => handleBlur("ssn", formData.ssn)}
                 />
 
                 {errors.ssn && (
@@ -577,14 +551,12 @@ export const CreateUserPage = () => {
                 <div className="space-y-1.5">
                   <Label>Date of Birth</Label>
                   <Input
-                    id="user-dob"
                     type="date"
                     max={new Date().toISOString().split("T")[0]}
                     value={formData.dob}
                     onChange={(e) =>
                       setFormData({ ...formData, dob: e.target.value })
                     }
-                    onBlur={() => handleBlur("dob", formData.dob)}
                   />
                   {errors.dob && (
                     <p className="text-sm text-red-500">{errors.dob}</p>
@@ -606,7 +578,6 @@ export const CreateUserPage = () => {
                     }
                   />
                   <Input
-                    id="user-phoneNumber"
                     value={formData.phoneNumber}
                     type="tel"
                     maxLength={10}
@@ -616,16 +587,14 @@ export const CreateUserPage = () => {
                         phoneNumber: e.target.value.replace(/\D/g, "").slice(0, 10),
                       })
                     }
-                    onBlur={() => handleBlur("phoneNumber", formData.phoneNumber)}
                     placeholder="Enter 10-digit phone number"
                     className="flex-2"
                   />
+                  {errors.phoneNumber && (
+                    <p className="text-sm text-red-500">{errors.phoneNumber}</p>
+                  )}
                 </div>
-                {errors.phoneNumber && (
-                  <p className="text-sm text-red-500">{errors.phoneNumber}</p>
-                )}
               </div>
-
 
               {showCompanyDropdown && (
                 <div className="space-y-1.5">
@@ -830,15 +799,9 @@ export const CreateUserPage = () => {
 
 /* Helper */
 
-const InputField = ({ label, value, onChange, onBlur, id, type = "text" }: any) => (
+const InputField = ({ label, value, onChange, type = "text" }: any) => (
   <div className="space-y-1.5">
-    <Label htmlFor={id}>{label}</Label>
-    <Input
-      id={id}
-      value={value}
-      type={type}
-      onChange={(e) => onChange(e.target.value)}
-      onBlur={onBlur}
-    />
+    <Label>{label}</Label>
+    <Input value={value} type={type} onChange={(e) => onChange(e.target.value)} />
   </div>
 );
