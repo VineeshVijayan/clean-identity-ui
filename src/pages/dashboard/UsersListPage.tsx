@@ -48,7 +48,7 @@ import {
   UserPlus,
   Users
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -99,6 +99,8 @@ const getStatusColor = (status: string) => {
 };
 
 /* ─── Shared User Table ─── */
+const PAGE_SIZE = 20;
+
 const UserTable = ({
   users,
   searchQuery,
@@ -111,6 +113,16 @@ const UserTable = ({
   totalCount: number;
 }) => {
   const navigate = useNavigate();
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(users.length / PAGE_SIZE));
+  const paginated = useMemo(
+    () => users.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [users, currentPage]
+  );
+  useEffect(() => setCurrentPage(1), [searchQuery]);
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [totalPages, currentPage]);
 
   return (
     <div className="space-y-4">
@@ -153,7 +165,7 @@ const UserTable = ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
+            {paginated.map((user) => (
               <TableRow key={user.id}>
                 <TableCell>
                   <div className="flex items-center gap-3">
@@ -203,13 +215,27 @@ const UserTable = ({
 
         <div className="flex items-center justify-between p-4 border-t border-border">
           <p className="text-sm text-muted-foreground">
-            Showing {users.length} of {totalCount} users
+            Showing {users.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1}
+            -{Math.min(currentPage * PAGE_SIZE, users.length)} of {totalCount} users
           </p>
-          <div className="flex gap-2">
-            <Button variant="outline" size="icon" disabled>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage <= 1}
+            >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="icon">
+            <span className="text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage >= totalPages}
+            >
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
@@ -232,6 +258,16 @@ const DelegateTable = ({
   totalCount: number;
 }) => {
   const navigate = useNavigate();
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(users.length / PAGE_SIZE));
+  const paginated = useMemo(
+    () => users.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [users, currentPage]
+  );
+  useEffect(() => setCurrentPage(1), [searchQuery]);
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [totalPages, currentPage]);
 
   return (
     <div className="space-y-4">
@@ -274,7 +310,7 @@ const DelegateTable = ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
+            {paginated.map((user) => (
               <TableRow key={user.id}>
                 <TableCell>
                   <div className="flex items-center gap-3">
@@ -324,13 +360,27 @@ const DelegateTable = ({
 
         <div className="flex items-center justify-between p-4 border-t border-border">
           <p className="text-sm text-muted-foreground">
-            Showing {users.length} of {totalCount} users
+            Showing {users.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1}
+            -{Math.min(currentPage * PAGE_SIZE, users.length)} of {totalCount} users
           </p>
-          <div className="flex gap-2">
-            <Button variant="outline" size="icon" disabled>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage <= 1}
+            >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="icon">
+            <span className="text-sm text-muted-foreground">
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage >= totalPages}
+            >
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>

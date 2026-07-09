@@ -336,29 +336,69 @@ export const EditProfilePage = () => {
 
   /* ---------------- VALIDATION ---------------- */
 
+  const nameRegex = /^[A-Za-z\s]+$/;
+  const phoneRegex = /^[0-9]{10,15}$/;
+
+  const validateField = (field: string, value: string): string => {
+    switch (field) {
+      case "firstName":
+        if (!value.trim()) return "First Name is required.";
+        if (!nameRegex.test(value)) return "First name cannot contain numbers.";
+        return "";
+      case "lastName":
+        if (!value.trim()) return "Last Name is required.";
+        if (!nameRegex.test(value)) return "Last name cannot contain numbers.";
+        return "";
+      case "phoneNumber":
+        if (!value.trim()) return "Phone number is required.";
+        if (!phoneRegex.test(value)) return "Enter a valid phone number.";
+        return "";
+      case "dob":
+        if (!value) return "Date of Birth is required.";
+        {
+          const d = new Date(value);
+          const today = new Date();
+          d.setHours(0, 0, 0, 0);
+          today.setHours(0, 0, 0, 0);
+          if (d > today) return "Future date is not allowed.";
+        }
+        return "";
+      default:
+        return "";
+    }
+  };
+
+  const handleBlur = (field: string, value: string) => {
+    setErrors((prev) => ({ ...prev, [field]: validateField(field, value) }));
+  };
+
   const validate = () => {
-
-    const newErrors: Record<string, string> = {};
-
-    if (!form.employeeId) newErrors.employeeId = "Employee ID is required.";
-    if (!form.firstName.trim()) newErrors.firstName = "First Name is required.";
-    if (!form.lastName.trim()) newErrors.lastName = "Last Name is required.";
-
-    if (!form.phoneNumber.trim()) {
-      newErrors.phoneNumber = "phoneNumber Number is required.";
-    } else if (!/^\+?[\d\s\-()]{7,15}$/.test(form.phoneNumber)) {
-      newErrors.phoneNumber = "Enter a valid phoneNumber number.";
-    }
-
-    if (!form.dob) newErrors.dob = "Date of Birth is required.";
-
+    const newErrors: Record<string, string> = {
+      employeeId: form.employeeId ? "" : "Employee ID is required.",
+      firstName: validateField("firstName", form.firstName),
+      lastName: validateField("lastName", form.lastName),
+      phoneNumber: validateField("phoneNumber", form.phoneNumber),
+      dob: validateField("dob", form.dob),
+    };
     if (selectedRoles.length === 0) newErrors.role = "At least one role is required.";
+    if (!selectedBlueprint) newErrors.blueprint = "Blueprint is required.";
 
-    if (!selectedBlueprint) {
-      newErrors.blueprint = "Blueprint is required.";
-    }
+    // Remove empty
+    Object.keys(newErrors).forEach((k) => {
+      if (!newErrors[k]) delete newErrors[k];
+    });
 
     setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      const focusOrder = ["firstName", "lastName", "dob", "phoneNumber"];
+      for (const f of focusOrder) {
+        if (newErrors[f]) {
+          document.getElementById(`edit-${f}`)?.focus();
+          break;
+        }
+      }
+    }
 
     return Object.keys(newErrors).length === 0;
   };
@@ -606,19 +646,29 @@ export const EditProfilePage = () => {
               <div className="grid sm:grid-cols-2 gap-4">
 
                 <div className="space-y-1.5">
-                  <Label>First Name</Label>
+                  <Label htmlFor="edit-firstName">First Name</Label>
                   <Input
+                    id="edit-firstName"
                     value={form.firstName}
-                    onChange={(e) => set("firstName", e.target.value)}
+                    onChange={(e) => set("firstName", e.target.value.replace(/[^A-Za-z\s]/g, ""))}
+                    onBlur={(e) => handleBlur("firstName", e.target.value)}
                   />
+                  {errors.firstName && (
+                    <p className="text-sm text-red-500">{errors.firstName}</p>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label>Last Name</Label>
+                  <Label htmlFor="edit-lastName">Last Name</Label>
                   <Input
+                    id="edit-lastName"
                     value={form.lastName}
-                    onChange={(e) => set("lastName", e.target.value)}
+                    onChange={(e) => set("lastName", e.target.value.replace(/[^A-Za-z\s]/g, ""))}
+                    onBlur={(e) => handleBlur("lastName", e.target.value)}
                   />
+                  {errors.lastName && (
+                    <p className="text-sm text-red-500">{errors.lastName}</p>
+                  )}
                 </div>
 
               </div>
@@ -640,6 +690,7 @@ export const EditProfilePage = () => {
                   </div>
 
                   <Input
+                    id="edit-phoneNumber"
                     value={form.phoneNumber}
                     type="tel"
                     maxLength={10}
@@ -649,6 +700,7 @@ export const EditProfilePage = () => {
                         phoneNumber: e.target.value.replace(/\D/g, "").slice(0, 10),
                       })
                     }
+                    onBlur={(e) => handleBlur("phoneNumber", e.target.value)}
                     placeholder="Enter 10-digit phone number"
                     className="flex-1"
                   />
@@ -669,19 +721,22 @@ export const EditProfilePage = () => {
               <div className="grid sm:grid-cols-2 gap-4">
 
                 <div className="space-y-1.5">
-                  <Label>Date of Birth <span className="text-red-500">*</span></Label>
+                  <Label htmlFor="edit-dob">Date of Birth <span className="text-red-500">*</span></Label>
 
                   <Input
+                    id="edit-dob"
                     type="date"
                     value={form.dob}
                     max={new Date().toISOString().split("T")[0]}
                     onChange={(e) => set("dob", e.target.value)}
+                    onBlur={(e) => handleBlur("dob", e.target.value)}
                   />
 
                   {errors.dob && (
                     <p className="text-sm text-red-500">{errors.dob}</p>
                   )}
                 </div>
+
 
                 <div className="space-y-1.5">
                   <Label>SSN <span className="text-red-500">*</span></Label>

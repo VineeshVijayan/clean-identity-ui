@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
 import { motion } from "framer-motion";
-import { Building2, Edit, Plus, Search } from "lucide-react";
+import { Building2, ChevronLeft, ChevronRight, Edit, Plus, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -58,6 +58,8 @@ export const ManageCompanyPage = () => {
   const [editing, setEditing] = useState<Company | null>(null);
   const [approvers, setApprovers] = useState<Approver[]>([]);
   const [statusMap, setStatusMap] = useState<Record<string, boolean>>({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 20;
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -70,6 +72,20 @@ export const ManageCompanyPage = () => {
         c.phoneNumber.toLowerCase().includes(q)
     );
   }, [companies, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paginated = useMemo(
+    () => filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE),
+    [filtered, currentPage]
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) setCurrentPage(totalPages);
+  }, [totalPages, currentPage]);
 
   const handleEdit = (company: Company) => {
     setEditing({ ...company });
@@ -285,7 +301,7 @@ export const ManageCompanyPage = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filtered.map((company) => {
+                  paginated.map((company) => {
                     const isActive = statusMap[company.id] ?? company.isEnabled;
                     return (
                       <TableRow
@@ -324,6 +340,36 @@ export const ManageCompanyPage = () => {
                 )}
               </TableBody>
             </Table>
+          </div>
+
+          <div className="flex items-center justify-between pt-2">
+            <p className="text-sm text-muted-foreground">
+              Showing{" "}
+              {filtered.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1}
+              -{Math.min(currentPage * PAGE_SIZE, filtered.length)} of{" "}
+              {filtered.length} companies
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage <= 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage >= totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

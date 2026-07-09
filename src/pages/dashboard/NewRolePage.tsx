@@ -35,6 +35,13 @@ export const NewRolePage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [roleName, setRoleName] = useState("");
+  const [roleNameError, setRoleNameError] = useState("");
+  const validateRoleName = (value: string) => {
+    if (!value.trim()) return "Blueprint name is required";
+    if (!/^[A-Za-z0-9][A-Za-z0-9\s_-]*$/.test(value.trim()))
+      return "Enter a valid blueprint name";
+    return "";
+  };
   const [roleDescription, setRoleDescription] = useState("");
   const [selectedAppId, setSelectedAppId] = useState("");
   const [selectedRole, setSelectedRole] = useState("");
@@ -127,14 +134,18 @@ export const NewRolePage = () => {
   };
 
   const handleSaveRole = async () => {
-    if (!roleName.trim()) {
+    const nameErr = validateRoleName(roleName);
+    if (nameErr) {
+      setRoleNameError(nameErr);
+      document.getElementById("roleName")?.focus();
       toast({
         title: "Error",
-        description: "Blueprint name is required",
+        description: nameErr,
         variant: "destructive",
       });
       return;
     }
+
 
     if (blueprintApps.length === 0) {
       toast({
@@ -387,8 +398,16 @@ export const NewRolePage = () => {
                 id="roleName"
                 placeholder="e.g., Content Manager"
                 value={roleName}
-                onChange={(e) => setRoleName(e.target.value)}
+                onChange={(e) => {
+                  setRoleName(e.target.value);
+                  if (roleNameError) setRoleNameError(validateRoleName(e.target.value));
+                }}
+                onBlur={() => setRoleNameError(validateRoleName(roleName))}
+                aria-invalid={!!roleNameError}
               />
+              {roleNameError && (
+                <p className="text-sm text-red-500">{roleNameError}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Job Titles</Label>
