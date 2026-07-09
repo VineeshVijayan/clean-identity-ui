@@ -310,7 +310,7 @@ const DelegateTable = ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
+            {paginated.map((user) => (
               <TableRow key={user.id}>
                 <TableCell>
                   <div className="flex items-center gap-3">
