@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
 import { motion } from "framer-motion";
-import { Building2, Edit, Plus, Search } from "lucide-react";
+import { Building2, ChevronLeft, ChevronRight, Edit, Plus, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
