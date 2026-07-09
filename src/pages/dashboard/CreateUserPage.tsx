@@ -830,9 +830,15 @@ export const CreateUserPage = () => {
 
 /* Helper */
 
-const InputField = ({ label, value, onChange, type = "text" }: any) => (
+const InputField = ({ label, value, onChange, onBlur, id, type = "text" }: any) => (
   <div className="space-y-1.5">
-    <Label>{label}</Label>
-    <Input value={value} type={type} onChange={(e) => onChange(e.target.value)} />
+    <Label htmlFor={id}>{label}</Label>
+    <Input
+      id={id}
+      value={value}
+      type={type}
+      onChange={(e) => onChange(e.target.value)}
+      onBlur={onBlur}
+    />
   </div>
 );
