@@ -516,11 +516,8 @@ export const CreateUserPage = () => {
                   onChange={(v: string) =>
                     setFormData({ ...formData, firstName: v.replace(/[^A-Za-z\s]/g, "") })
                   }
+                  error={errors.firstName}
                 />
-
-                {errors.firstName && (
-                  <p className="text-sm text-red-500">{errors.firstName}</p>
-                )}
 
                 <InputField
                   label="Last Name"
@@ -528,10 +525,8 @@ export const CreateUserPage = () => {
                   onChange={(v: string) =>
                     setFormData({ ...formData, lastName: v.replace(/[^A-Za-z\s]/g, "") })
                   }
+                  error={errors.lastName}
                 />
-                {errors.lastName && (
-                  <p className="text-sm text-red-500">{errors.lastName}</p>
-                )}
 
               </div>
 
@@ -542,10 +537,8 @@ export const CreateUserPage = () => {
                 onChange={(v: string) =>
                   setFormData({ ...formData, email: v })
                 }
+                error={errors.email}
               />
-              {errors.email && (
-                <p className="text-sm text-red-500">{errors.email}</p>
-              )}
 
               <div className="grid sm:grid-cols-2 gap-4">
 
@@ -555,11 +548,8 @@ export const CreateUserPage = () => {
                   onChange={(v: string) =>
                     setFormData({ ...formData, ssn: v.replace(/\D/g, "") })
                   }
+                  error={errors.ssn}
                 />
-
-                {errors.ssn && (
-                  <p className="text-sm text-red-500">{errors.ssn}</p>
-                )}
 
                 <div className="space-y-1.5">
                   <Label>Date of Birth</Label>
@@ -570,10 +560,11 @@ export const CreateUserPage = () => {
                     onChange={(e) =>
                       setFormData({ ...formData, dob: e.target.value })
                     }
+                    aria-invalid={!!errors.dob}
                   />
-                  {errors.dob && (
-                    <p className="text-sm text-red-500">{errors.dob}</p>
-                  )}
+                  <p className="text-sm text-red-500 min-h-[1.25rem] leading-5">
+                    {errors.dob || "\u00A0"}
+                  </p>
                 </div>
 
               </div>
@@ -602,11 +593,12 @@ export const CreateUserPage = () => {
                     }
                     placeholder="Enter 10-digit phone number"
                     className="flex-2"
+                    aria-invalid={!!errors.phoneNumber}
                   />
-                  {errors.phoneNumber && (
-                    <p className="text-sm text-red-500">{errors.phoneNumber}</p>
-                  )}
                 </div>
+                <p className="text-sm text-red-500 min-h-[1.25rem] leading-5">
+                  {errors.phoneNumber || "\u00A0"}
+                </p>
               </div>
 
               {showCompanyDropdown && (
@@ -812,9 +804,17 @@ export const CreateUserPage = () => {
 
 /* Helper */
 
-const InputField = ({ label, value, onChange, type = "text" }: any) => (
+const InputField = ({ label, value, onChange, type = "text", error }: any) => (
   <div className="space-y-1.5">
     <Label>{label}</Label>
-    <Input value={value} type={type} onChange={(e) => onChange(e.target.value)} />
+    <Input
+      value={value}
+      type={type}
+      onChange={(e) => onChange(e.target.value)}
+      aria-invalid={!!error}
+    />
+    <p className="text-sm text-red-500 min-h-[1.25rem] leading-5">
+      {error || "\u00A0"}
+    </p>
   </div>
 );
