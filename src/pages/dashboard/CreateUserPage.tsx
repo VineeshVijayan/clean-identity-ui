@@ -804,9 +804,17 @@ export const CreateUserPage = () => {
 
 /* Helper */
 
-const InputField = ({ label, value, onChange, type = "text" }: any) => (
+const InputField = ({ label, value, onChange, type = "text", error }: any) => (
   <div className="space-y-1.5">
     <Label>{label}</Label>
-    <Input value={value} type={type} onChange={(e) => onChange(e.target.value)} />
+    <Input
+      value={value}
+      type={type}
+      onChange={(e) => onChange(e.target.value)}
+      aria-invalid={!!error}
+    />
+    <p className="text-sm text-red-500 min-h-[1.25rem] leading-5">
+      {error || "\u00A0"}
+    </p>
   </div>
 );
