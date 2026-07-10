@@ -167,7 +167,6 @@ export const CreateUserPage = () => {
 
 
   useEffect(() => {
-
     const token = localStorage.getItem("auth-token");
 
     fetch(`${API_BASE_URL}/roles`, {
@@ -184,7 +183,22 @@ export const CreateUserPage = () => {
         const list = Array.isArray(data)
           ? data
           : data?.data || data?.roles || [];
-        setIDFRoles(list.map((r: any) => r.name));
+
+        const roleNames = list.map((r: any) => r.name);
+
+        setIDFRoles(roleNames);
+
+        // Default select "user" if it exists
+        const defaultRole = roleNames.find(
+          (role) => role.toLowerCase() === "user"
+        );
+
+        if (defaultRole) {
+          setFormData((prev) => ({
+            ...prev,
+            idfRoles: [defaultRole],
+          }));
+        }
       })
       .catch(() => {
         toast({
@@ -193,7 +207,6 @@ export const CreateUserPage = () => {
           description: "Failed to load roles",
         });
       });
-
   }, []);
 
   /* ---------------- PHOTO ---------------- */
