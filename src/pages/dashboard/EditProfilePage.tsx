@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { RequestedApplicationDialog } from "@/components/dashboard/RequestedApplicationDialog";
+import { Plus, Trash2 as TrashIcon } from "lucide-react";
 
 import {
   Select,
