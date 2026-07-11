@@ -186,6 +186,9 @@ const UserTable = ({
                 <TableCell className="hidden sm:table-cell text-muted-foreground">
                   {user.email}
                 </TableCell>
+                <TableCell className="hidden md:table-cell text-muted-foreground">
+                  {user.companyName || "—"}
+                </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
