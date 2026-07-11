@@ -190,10 +190,18 @@ const Login = () => {
                     placeholder="you@example.com"
                     className="pl-12"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (emailError) setEmailError("");
+                    }}
+                    onBlur={(e) => setEmailError(validateEmail(e.target.value))}
+                    aria-invalid={!!emailError}
                     required
                   />
                 </div>
+                {emailError && (
+                  <p className="text-sm text-red-500">{emailError}</p>
+                )}
               </div>
 
               <div className="space-y-2">
