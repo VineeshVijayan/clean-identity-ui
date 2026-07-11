@@ -311,6 +311,7 @@ const DelegateTable = ({
               <TableHead>Last Name</TableHead>
               <TableHead>Department</TableHead>
               <TableHead className="hidden sm:table-cell">Email</TableHead>
+              <TableHead className="hidden md:table-cell">Company</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
