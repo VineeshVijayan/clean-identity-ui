@@ -1,13 +1,4 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CountryCodeSelect } from "@/components/ui/country-code-select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
-import { motion } from "framer-motion";
-import { AppWindow, ArrowLeft, Camera, Plus, Save, Shield, Trash2, Upload, User, X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { RequestedApplicationDialog } from "@/components/dashboard/RequestedApplicationDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,9 +9,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CountryCodeSelect } from "@/components/ui/country-code-select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { motion } from "framer-motion";
+import { AppWindow, ArrowLeft, Camera, Plus, Save, Shield, Trash2, Upload, User, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { RequestedApplicationDialog } from "@/components/dashboard/RequestedApplicationDialog";
 
 import {
   Select,
@@ -885,7 +885,7 @@ export const EditProfilePage = () => {
                 <div className="p-1.5 rounded-md bg-primary/10">
                   <AppWindow className="h-4 w-4 text-primary" />
                 </div>
-                Requested Application
+                Application
               </CardTitle>
               <Button
                 type="button"
@@ -894,14 +894,14 @@ export const EditProfilePage = () => {
                 className="bg-green-600 text-white hover:bg-green-700"
               >
                 <Plus className="h-4 w-4 mr-1.5" />
-                Requested Application
+                Add
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Existing assigned applications */}
               {assignedApps.length === 0 && requestedApps.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  No applications requested yet. Click "Requested Application" to add one.
+                  No applications requested yet. Click "Add" to add one.
                 </p>
               ) : (
                 <>

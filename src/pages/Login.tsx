@@ -2,13 +2,13 @@ import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { jwtDecode } from "jwt-decode";
 import { ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useSettings } from "@/context/SettingsContext";
 
 const API_BASE_URL = "https://idf-session-api.ndashdigital.com/api";
 // If using CRA replace with:
@@ -55,7 +55,15 @@ const Login = () => {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      const responseText = await response.text();
+
+      let data: any = {};
+
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch {
+        data = { message: responseText };
+      }
 
       if (!response.ok) {
         const rawMsg = (data?.message || "").toString();

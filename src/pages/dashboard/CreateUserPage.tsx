@@ -717,7 +717,7 @@ export const CreateUserPage = () => {
                 <div className="p-1.5 rounded-md bg-primary/10">
                   <AppWindow className="h-4 w-4 text-primary" />
                 </div>
-                Requested Application
+                Application
               </CardTitle>
               <Button
                 type="button"
@@ -726,13 +726,13 @@ export const CreateUserPage = () => {
                 className="bg-green-600 text-white hover:bg-green-700"
               >
                 <Plus className="h-4 w-4 mr-1.5" />
-                Requested Application
+                Add
               </Button>
             </CardHeader>
             <CardContent>
               {requestedApps.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  No applications requested yet. Click "Requested Application" to add one.
+                  No applications requested yet. Click "Add" to add one.
                 </p>
               ) : (
                 <div className="space-y-2">
