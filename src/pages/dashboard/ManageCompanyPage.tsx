@@ -88,6 +88,10 @@ export const ManageCompanyPage = () => {
   }, [totalPages, currentPage]);
 
   const handleEdit = (company: Company) => {
+    const isActive = statusMap[company.id] ?? company.isEnabled;
+    if(!isActive){
+      return;
+    }
     setEditing({ ...company });
     setEditOpen(true);
   };
@@ -329,6 +333,7 @@ export const ManageCompanyPage = () => {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleEdit(company)}
+                            disabled ={!isActive}
                           >
                             <Edit className="h-4 w-4 mr-2" />
                             Edit
