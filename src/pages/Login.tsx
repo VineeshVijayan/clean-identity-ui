@@ -19,14 +19,32 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [emailError, setEmailError] = useState("");
   const { fetchSettings } = useSettings();
 
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  const validateEmail = (value: string): string => {
+    if (!value.trim()) return "Username is required.";
+    if (!emailRegex.test(value)) return "Please enter a valid username / email.";
+    return "";
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const emailValidation = validateEmail(email);
+    if (emailValidation) {
+      setEmailError(emailValidation);
+      return;
+    }
+    setEmailError("");
+
     setIsLoading(true);
+
 
     try {
       const response = await fetch(`${API_BASE_URL}/authenticate`, {
