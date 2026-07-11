@@ -43,6 +43,7 @@ type User = {
     role: string;
     status: string;
     lastLogin: string;
+    companyName: string;
 };
 
 export const UserAdministrationPage = () => {
