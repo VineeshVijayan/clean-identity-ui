@@ -174,6 +174,7 @@ export const UserAdministrationPage = () => {
                             <TableHead>Role</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead className="hidden sm:table-cell">Email</TableHead>
+                            <TableHead className="hidden md:table-cell">Company</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
