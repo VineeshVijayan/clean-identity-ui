@@ -82,6 +82,7 @@ type User = {
   lastLogin: string;
   departmentId: string;
   departmentName: string;
+  companyName: string;
   subordinates: Subordinate[];
 };
 
