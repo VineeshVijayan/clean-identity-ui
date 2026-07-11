@@ -77,6 +77,12 @@ export const UserAdministrationPage = () => {
                     role: u.roles?.join(", ") || "N/A",
                     status: u.status || "Active",
                     lastLogin: u.lastLogin || "—",
+                    companyName:
+                        u.companyName ||
+                        u.company?.name ||
+                        u.company ||
+                        u.organizationName ||
+                        "—",
                 }));
                 setUsers(mappedUsers);
                 setIsLoading(false);
