@@ -108,6 +108,10 @@ export const EditProfilePage = () => {
   };
   const [assignedApps, setAssignedApps] = useState<AssignedApp[]>([]);
   const [appToRemove, setAppToRemove] = useState<AssignedApp | null>(null);
+  const [showRequestDialog, setShowRequestDialog] = useState(false);
+  const [requestedApps, setRequestedApps] = useState<
+    { applicationId: string; applicationName: string; projectKey: string; roleId: string; roleName: string }[]
+  >([]);
 
   useEffect(() => {
     if (passedUser) {
