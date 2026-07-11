@@ -40,7 +40,29 @@ const Login = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Invalid username or password!");
+        const rawMsg = (data?.message || "").toString();
+        const lower = rawMsg.toLowerCase();
+        let friendly = rawMsg || "Invalid username or password!";
+
+        // Username-related failures → show specific message
+        if (
+          response.status === 404 ||
+          lower.includes("user not found") ||
+          lower.includes("no such user") ||
+          lower.includes("username") ||
+          lower.includes("user does not exist") ||
+          lower.includes("invalid user")
+        ) {
+          friendly = "User is not valid.";
+        } else if (
+          lower.includes("password") ||
+          lower.includes("credentials") ||
+          lower.includes("unauthorized")
+        ) {
+          friendly = "Invalid username or password!";
+        }
+
+        throw new Error(friendly);
       }
 
       // ✅ Save token
