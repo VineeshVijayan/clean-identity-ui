@@ -43,6 +43,7 @@ type User = {
     role: string;
     status: string;
     lastLogin: string;
+    companyName: string;
 };
 
 export const UserAdministrationPage = () => {
@@ -76,6 +77,12 @@ export const UserAdministrationPage = () => {
                     role: u.roles?.join(", ") || "N/A",
                     status: u.status || "Active",
                     lastLogin: u.lastLogin || "—",
+                    companyName:
+                        u.companyName ||
+                        u.company?.name ||
+                        u.company ||
+                        u.organizationName ||
+                        "—",
                 }));
                 setUsers(mappedUsers);
                 setIsLoading(false);
@@ -167,6 +174,7 @@ export const UserAdministrationPage = () => {
                             <TableHead>Role</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead className="hidden sm:table-cell">Email</TableHead>
+                            <TableHead className="hidden md:table-cell">Company</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -174,7 +182,7 @@ export const UserAdministrationPage = () => {
                     <TableBody>
                         {isLoading ? (
                             <TableRow>
-                                <TableCell colSpan={5} className="h-40 text-center">
+                                <TableCell colSpan={6} className="h-40 text-center">
                                     <div className="flex flex-col items-center justify-center gap-3">
                                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                                         <p className="text-sm text-muted-foreground">
@@ -185,7 +193,7 @@ export const UserAdministrationPage = () => {
                             </TableRow>
                         ) : filteredUsers.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                                     No users found.
                                 </TableCell>
                             </TableRow>
@@ -219,6 +227,11 @@ export const UserAdministrationPage = () => {
                                     <TableCell className="hidden sm:table-cell text-muted-foreground">
                                         {user.email}
                                     </TableCell>
+
+                                    <TableCell className="hidden md:table-cell text-muted-foreground">
+                                        {user.companyName || "—"}
+                                    </TableCell>
+
 
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">

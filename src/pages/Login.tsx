@@ -19,14 +19,32 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [emailError, setEmailError] = useState("");
   const { fetchSettings } = useSettings();
 
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  const validateEmail = (value: string): string => {
+    if (!value.trim()) return "Username is required.";
+    if (!emailRegex.test(value)) return "Please enter a valid username / email.";
+    return "";
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const emailValidation = validateEmail(email);
+    if (emailValidation) {
+      setEmailError(emailValidation);
+      return;
+    }
+    setEmailError("");
+
     setIsLoading(true);
+
 
     try {
       const response = await fetch(`${API_BASE_URL}/authenticate`, {
@@ -40,7 +58,29 @@ const Login = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Invalid username or password!");
+        const rawMsg = (data?.message || "").toString();
+        const lower = rawMsg.toLowerCase();
+        let friendly = rawMsg || "Invalid username or password!";
+
+        // Username-related failures → show specific message
+        if (
+          response.status === 404 ||
+          lower.includes("user not found") ||
+          lower.includes("no such user") ||
+          lower.includes("username") ||
+          lower.includes("user does not exist") ||
+          lower.includes("invalid user")
+        ) {
+          friendly = "User is not valid.";
+        } else if (
+          lower.includes("password") ||
+          lower.includes("credentials") ||
+          lower.includes("unauthorized")
+        ) {
+          friendly = "Invalid username or password!";
+        }
+
+        throw new Error(friendly);
       }
 
       // ✅ Save token
@@ -150,10 +190,18 @@ const Login = () => {
                     placeholder="you@example.com"
                     className="pl-12"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (emailError) setEmailError("");
+                    }}
+                    onBlur={(e) => setEmailError(validateEmail(e.target.value))}
+                    aria-invalid={!!emailError}
                     required
                   />
                 </div>
+                {emailError && (
+                  <p className="text-sm text-red-500">{emailError}</p>
+                )}
               </div>
 
               <div className="space-y-2">

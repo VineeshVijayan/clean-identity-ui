@@ -82,6 +82,7 @@ type User = {
   lastLogin: string;
   departmentId: string;
   departmentName: string;
+  companyName: string;
   subordinates: Subordinate[];
 };
 
@@ -161,6 +162,7 @@ const UserTable = ({
               <TableHead>Last Name</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="hidden sm:table-cell">Email</TableHead>
+              <TableHead className="hidden md:table-cell">Company</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -183,6 +185,9 @@ const UserTable = ({
                 </TableCell>
                 <TableCell className="hidden sm:table-cell text-muted-foreground">
                   {user.email}
+                </TableCell>
+                <TableCell className="hidden md:table-cell text-muted-foreground">
+                  {user.companyName || "—"}
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
@@ -306,6 +311,7 @@ const DelegateTable = ({
               <TableHead>Last Name</TableHead>
               <TableHead>Department</TableHead>
               <TableHead className="hidden sm:table-cell">Email</TableHead>
+              <TableHead className="hidden md:table-cell">Company</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -328,6 +334,9 @@ const DelegateTable = ({
                 </TableCell>
                 <TableCell className="hidden sm:table-cell text-muted-foreground">
                   {user.email}
+                </TableCell>
+                <TableCell className="hidden md:table-cell text-muted-foreground">
+                  {user.companyName || "—"}
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
@@ -462,6 +471,12 @@ export const UsersListPage = () => {
       lastLogin: "—",
       departmentId: "",
       departmentName: "",
+      companyName:
+        u.companyName ||
+        u.company?.name ||
+        u.company ||
+        u.organizationName ||
+        "—",
     }));
 
     setUsers(mappedUsers);
@@ -620,6 +635,12 @@ export const UsersListPage = () => {
         lastLogin: "—",
         departmentId: u.departmentId,
         departmentName: u.departmentName,
+        companyName:
+          u.companyName ||
+          u.company?.name ||
+          u.company ||
+          u.organizationName ||
+          "—",
       }));
 
       setDelegateUsers(mapped);
