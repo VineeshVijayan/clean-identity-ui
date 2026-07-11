@@ -635,6 +635,12 @@ export const UsersListPage = () => {
         lastLogin: "—",
         departmentId: u.departmentId,
         departmentName: u.departmentName,
+        companyName:
+          u.companyName ||
+          u.company?.name ||
+          u.company ||
+          u.organizationName ||
+          "—",
       }));
 
       setDelegateUsers(mapped);
