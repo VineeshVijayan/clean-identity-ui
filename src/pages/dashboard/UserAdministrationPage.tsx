@@ -182,7 +182,7 @@ export const UserAdministrationPage = () => {
                     <TableBody>
                         {isLoading ? (
                             <TableRow>
-                                <TableCell colSpan={5} className="h-40 text-center">
+                                <TableCell colSpan={6} className="h-40 text-center">
                                     <div className="flex flex-col items-center justify-center gap-3">
                                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                                         <p className="text-sm text-muted-foreground">
@@ -193,7 +193,7 @@ export const UserAdministrationPage = () => {
                             </TableRow>
                         ) : filteredUsers.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                                     No users found.
                                 </TableCell>
                             </TableRow>
