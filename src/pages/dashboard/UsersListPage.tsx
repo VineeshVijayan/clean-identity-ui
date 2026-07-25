@@ -62,6 +62,7 @@ const authHeaders = () => {
 };
 
 const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
+// const API_BASE_URL = "http://localhost:8082/api";
 
 const CONNECTOR_API_BASE_URL = "https://idf-connector.ndashdigital.com/api";
 
@@ -451,6 +452,11 @@ export const UsersListPage = () => {
     const res = await fetch(`${API_BASE_URL}/users/${userId}`, {
       headers: authHeaders(),
     });
+
+    if (res.status === 401) {
+      localStorage.clear();
+      navigate("/login");
+    }
 
     if (!res.ok) {
       throw new Error("Failed to fetch user");

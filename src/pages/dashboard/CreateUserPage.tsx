@@ -15,6 +15,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
+// const API_BASE_URL = "http://localhost:8082/api";
 
 export const CreateUserPage = () => {
 
@@ -117,7 +118,9 @@ export const CreateUserPage = () => {
           : data?.data || [];
 
         setCompanies(
-          list.map((company: any) => ({
+          list
+          .filter((company: any) => company.enabled === true) 
+          .map((company: any) => ({
             id: company.id,
             name: company.name,
           }))

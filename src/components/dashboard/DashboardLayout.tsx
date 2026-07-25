@@ -7,32 +7,36 @@ import { DashboardSidebar } from "./DashboardSidebar";
 export const DashboardLayout = () => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
 
   useEffect(() => {
     const checkAuth = () => {
       const loggedIn = isUserLoggedIn();
-      const token = localStorage.getItem("auth-token");
-
-      if (!loggedIn && !token) {
-        navigate("/login", { replace: true });
+    
+      if (!loggedIn) {
+        logout();
         return;
       }
-
-      setIsLoggedIn(true);
-
+    
       try {
         const storedUser = localStorage.getItem("user");
+    
         if (storedUser) {
           const parsed = JSON.parse(storedUser);
-          setUser({ name: parsed.name, email: parsed.email });
+    
+          setUser({
+            name: parsed.name,
+            email: parsed.email,
+          });
         }
       } catch {
-        setUser({ name: "User", email: "user@example.com" });
+        setUser({
+          name: "User",
+          email: "user@example.com",
+        });
       }
-      console.log(getUserRoles());
+    
       setRoles(getUserRoles());
     };
 
@@ -45,12 +49,8 @@ export const DashboardLayout = () => {
   }, [navigate]);
 
   const handleLogout = () => {
-    localStorage.clear();
-    sessionStorage.clear();
     logout();
-    window.dispatchEvent(new Event("auth-change"));
-    navigate("/", { replace: true });
-  };
+};
 
   return (
     <div className="min-h-screen bg-background flex">

@@ -15,7 +15,7 @@ interface DecodedToken {
 
 interface UserDetails {
   userName: string;
-  roles: string |string[];
+  roles: string | string[];
   userId: string;
   employeeId: string;
 }
@@ -25,21 +25,16 @@ interface UserDetails {
  */
 export const isUserLoggedIn = (): boolean => {
   const token = localStorage.getItem("auth-token");
-  if (!token) return false;
+
+  if (!token) {
+    return false;
+  }
 
   try {
-    const decodedToken = jwtDecode<DecodedToken>(token);
-    const currentDate = new Date();
+    const decoded = jwtDecode<DecodedToken>(token);
 
-    // JWT exp is in seconds
-    if (decodedToken.exp * 1000 < currentDate.getTime()) {
-      console.warn("Token expired");
-      return false;
-    }
-
-    return true;
-  } catch (error) {
-    console.error("Invalid Token:", error);
+    return decoded.exp * 1000 > Date.now();
+  } catch {
     return false;
   }
 };
@@ -49,24 +44,25 @@ export const isUserLoggedIn = (): boolean => {
  */
 export const getUserDetails = (): UserDetails | null => {
   const token = localStorage.getItem("auth-token");
-  if (!token) return null;
+
+  if (!token) {
+    return null;
+  }
 
   try {
-    const decodedToken = jwtDecode<DecodedToken>(token);
+    const decoded = jwtDecode<DecodedToken>(token);
 
-    if (Date.now() >= decodedToken.exp * 1000) {
-      console.warn("Token expired");
+    if (decoded.exp * 1000 < Date.now()) {
       return null;
     }
 
     return {
-      userName: decodedToken.userName || decodedToken.name || "",
-      roles: decodedToken.roles || "",
-      userId: decodedToken.userId || decodedToken.sub || "",
-      employeeId: decodedToken.employeeId || "",
+      userName: decoded.userName || decoded.name || "",
+      roles: decoded.roles || "",
+      userId: decoded.userId || decoded.sub || "",
+      employeeId: decoded.employeeId || "",
     };
-  } catch (error) {
-    console.error("Invalid token:", error);
+  } catch {
     return null;
   }
 };
@@ -95,7 +91,6 @@ export const isManager = (): boolean => {
       return false;
     }
   } catch (error) {
-    console.error("Invalid token:", error);
     return false;
   }
 };
@@ -111,7 +106,6 @@ export const getLoggedInUserId = (): string | null => {
     const decodedToken = jwtDecode<DecodedToken>(token);
     return decodedToken.userId || decodedToken.sub || null;
   } catch (error) {
-    console.error("Invalid token:", error);
     return null;
   }
 };
@@ -121,12 +115,9 @@ export const getLoggedInUserId = (): string | null => {
  */
 export const getUserRoles = (): string[] => {
   try {
-    
-    const parsed = getUserDetails()?.roles;
-    if (Array.isArray(parsed)) {
-      return parsed;
-    }
-    return [];
+    const roles = localStorage.getItem("roles");
+
+    return roles ? JSON.parse(roles) : [];
   } catch {
     return [];
   }
@@ -153,39 +144,17 @@ export const hasAllRoles = (requiredRoles: string[]): boolean => {
  * sessionStorage, and Cache Storage) so the next user starts fresh.
  */
 export const logout = (): void => {
-  try {
-    localStorage.clear();
-  } catch (e) {
-    console.warn("Failed clearing localStorage", e);
-  }
 
-  try {
-    sessionStorage.clear();
-  } catch (e) {
-    console.warn("Failed clearing sessionStorage", e);
-  }
+  localStorage.clear();
+  sessionStorage.clear();
 
-  // Clear Cache Storage (service worker / fetch caches) if available
-  try {
-    if (typeof caches !== "undefined" && caches?.keys) {
-      caches.keys().then((keys) => {
-        keys.forEach((key) => caches.delete(key));
-      }).catch(() => { /* noop */ });
-    }
-  } catch (e) {
-    console.warn("Failed clearing caches", e);
-  }
-
-  // Best-effort cookie clear for non-HttpOnly cookies on current path
-  try {
-    document.cookie.split(";").forEach((c) => {
-      const name = c.split("=")[0].trim();
-      if (!name) return;
-      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+  if (typeof caches !== "undefined") {
+    caches.keys().then(keys => {
+      keys.forEach(key => caches.delete(key));
     });
-  } catch (e) {
-    /* noop */
   }
 
   window.dispatchEvent(new Event("auth-change"));
+
+  window.location.replace("/login");
 };

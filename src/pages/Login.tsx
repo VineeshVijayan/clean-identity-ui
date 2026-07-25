@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/hooks/use-toast";
+import { logout } from "@/services/jwt-service";
 import { motion } from "framer-motion";
 import { jwtDecode } from "jwt-decode";
 import { ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
@@ -11,6 +12,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 const API_BASE_URL = "https://idf-session-api.ndashdigital.com/api";
+// const API_BASE_URL = "http://localhost:8080/api";
 // If using CRA replace with:
 // const API_BASE_URL = process.env.REACT_APP_SESSION_BASE_URL;
 
@@ -94,8 +96,14 @@ const Login = () => {
       // ✅ Save token
       localStorage.setItem("auth-token", data.token);
 
+
       // ✅ Decode token
       const decoded: any = jwtDecode(data.token);
+      const expiresIn = decoded.exp * 1000 - Date.now();
+
+      setTimeout(() => {
+        logout();
+      }, expiresIn);
 
       // ✅ Save roles
       if (decoded.roles) {

@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/select";
 
 const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
+// const API_BASE_URL = "http://localhost:8082/api";
 const getUserFromToken = () => {
   const token = localStorage.getItem("auth-token");
   if (!token) return null;
@@ -94,6 +95,7 @@ export const EditProfilePage = () => {
     email: "",
     dob: "",
     ssn: "",
+    companyName: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -124,6 +126,7 @@ export const EditProfilePage = () => {
         email: passedUser.email || "",
         dob: "",
         ssn: "",
+        companyName: passedUser.companyName || "Parent Company",
       });
     }
   }, []);
@@ -164,6 +167,7 @@ export const EditProfilePage = () => {
           email: user.email || "",
           dob: user.dob ? user.dob.substring(0, 10) : "",
           ssn: user.maskedSsn ? user.maskedSsn : "", // ✅ FIX
+          companyName: user.companyName ? user.companyName : "Parent Company",
 
         });
 
@@ -487,6 +491,7 @@ export const EditProfilePage = () => {
       email: "",
       dob: "",
       ssn: "",
+      companyName: "",
     });
     setCountryCode("US:+1"); // Reset country code selector
     setPhotoPreview(null);
@@ -716,12 +721,26 @@ export const EditProfilePage = () => {
                   <p className="text-sm text-red-500">{errors.phoneNumber}</p>
                 )}
               </div>
-              <div className="space-y-1.5">
-                <Label>Email</Label>
-                <Input
-                  value={form.email}
-                  disabled
-                />
+              <div className="grid sm:grid-cols-2 gap-4">
+
+                <div className="space-y-1.5">
+                  <Label>Email</Label>
+                  <Input
+                    value={form.email}
+                    disabled
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <Label>Company</Label>
+
+                  <div className="flex flex-wrap gap-2">
+                    <div className="px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">
+                      {form.companyName || "Parent Company"}
+                    </div>
+                  </div>
+                </div>
+
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
 
