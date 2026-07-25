@@ -13,6 +13,7 @@ import { motion } from "framer-motion";
 import { AppWindow, ArrowLeft, Camera, Plus, Save, Trash2, Upload, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { mapApiError, networkError } from "@/lib/api-errors";
 
 const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
 // const API_BASE_URL = "http://localhost:8082/api";
