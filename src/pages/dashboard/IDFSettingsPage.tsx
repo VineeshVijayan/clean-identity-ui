@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSettings } from "@/context/SettingsContext";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { ManageSecurity } from "@/components/settings/ManageSecurity";
 
 export const IDFSettingsPage = () => {
   const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
@@ -104,6 +105,13 @@ export const IDFSettingsPage = () => {
                   <Shield className="h-4 w-4" />
                   Manage Roles
                 </TabsTrigger>
+                <TabsTrigger
+                  value="security"
+                  className="data-[state=active]:bg-muted rounded-none border-b-2 border-transparent data-[state=active]:border-primary px-6 py-4 gap-2"
+                >
+                  <Shield className="h-4 w-4" />
+                  Security
+                </TabsTrigger>
               </TabsList>
             </div>
 
@@ -139,6 +147,9 @@ export const IDFSettingsPage = () => {
 
             <TabsContent value="manage-roles" className="p-6 mt-0">
               <ManageRolesSettings />
+            </TabsContent>
+            <TabsContent value="security" className="p-6 mt-0">
+              <ManageSecurity />
             </TabsContent>
           </Tabs>
         </CardContent>

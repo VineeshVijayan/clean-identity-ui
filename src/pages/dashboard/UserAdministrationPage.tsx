@@ -33,7 +33,8 @@ import {
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const API_BASE_URL = "https://identity-api.ndashdigital.com/api"; // or REACT_APP_API_BASE_URL
+const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
+// const API_BASE_URL = "http://localhost:8082/api";
 
 type User = {
     id: string;
