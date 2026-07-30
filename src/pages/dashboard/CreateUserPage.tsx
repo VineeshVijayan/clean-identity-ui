@@ -13,6 +13,7 @@ import { motion } from "framer-motion";
 import { AppWindow, ArrowLeft, Camera, Plus, Save, Trash2, Upload, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { mapApiError, networkError } from "@/lib/api-errors";
 
 const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
 // const API_BASE_URL = "http://localhost:8082/api";
@@ -333,28 +334,26 @@ export const CreateUserPage = () => {
       const response = await res.json();
 
       if (!res.ok) {
-        if (typeof response.error === "string") {
-          const errorMessage = response.error.toLowerCase();
+        const { toast: friendlyToast, fieldErrors } = mapApiError(res, response, {
+          fallbackTitle: "Unable to create user",
+          fallbackMessage:
+            "The user could not be created. Please review the highlighted information and try again.",
+        });
 
-          setErrors((prev) => ({
-            ...prev,
-            email: errorMessage.includes("email") ? response.error : "",
-            ssn: errorMessage.includes("ssn") ? response.error : "",
-          }));
-
-          toast({
-            variant: "destructive",
-            title: "Validation Error",
-            description: response.error,
-          });
-
-          return;
-        }
+        setErrors((prev) => ({
+          ...prev,
+          email: fieldErrors.email || "",
+          ssn: fieldErrors.ssn || "",
+          phoneNumber: fieldErrors.phoneNumber || "",
+          dob: fieldErrors.dob || "",
+          firstName: fieldErrors.firstName || "",
+          lastName: fieldErrors.lastName || "",
+        }));
 
         toast({
           variant: "destructive",
-          title: "Error",
-          description: response.statusMessage || "Failed to create user",
+          title: friendlyToast.title,
+          description: friendlyToast.description,
         });
 
         return;
@@ -368,10 +367,11 @@ export const CreateUserPage = () => {
       navigate("/users");
 
     } catch {
+      const { toast: t } = networkError("Unable to create user");
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Something went wrong. Please try again.",
+        title: t.title,
+        description: t.description,
       });
     } finally {
       setIsLoading(false);

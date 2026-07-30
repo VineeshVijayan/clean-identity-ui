@@ -13,6 +13,7 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
           "hover:border-primary/50",
           "disabled:cursor-not-allowed disabled:opacity-50",
           "file:border-0 file:bg-transparent file:text-sm file:font-medium",
+          "aria-[invalid=true]:border-red-500 aria-[invalid=true]:focus:ring-red-500/40 aria-[invalid=true]:focus:border-red-500 aria-[invalid=true]:hover:border-red-500",
           className
         )}
         ref={ref}
