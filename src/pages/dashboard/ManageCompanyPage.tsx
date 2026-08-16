@@ -25,6 +25,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { identityFetch } from "@/services/api-config";
+import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
 import { motion } from "framer-motion";
 import { Building2, ChevronLeft, ChevronRight, Edit, Plus, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -49,8 +52,9 @@ interface Approver {
   email: string;
 }
 
+type FetchType = "ALL" | "ACTIVE" | "INACTIVE";
+
 export const ManageCompanyPage = () => {
-  const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
   const navigate = useNavigate();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [search, setSearch] = useState("");
@@ -58,6 +62,7 @@ export const ManageCompanyPage = () => {
   const [editing, setEditing] = useState<Company | null>(null);
   const [approvers, setApprovers] = useState<Approver[]>([]);
   const [statusMap, setStatusMap] = useState<Record<string, boolean>>({});
+  const [fetchType, setFetchType] = useState<FetchType>("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 20;
 
@@ -81,7 +86,7 @@ export const ManageCompanyPage = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search]);
+  }, [search, fetchType]);
 
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(totalPages);
@@ -100,14 +105,8 @@ export const ManageCompanyPage = () => {
     if (!editing) return;
 
     try {
-      const token = localStorage.getItem("auth-token");
-
-      await fetch(`${API_BASE_URL}/companies/${editing.id}`, {
+      const res = await identityFetch(`/companies/${editing.id}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: token ? `Bearer ${token}` : "",
-        },
         body: JSON.stringify({
           name: editing.name,
           location: editing.location,
@@ -120,6 +119,12 @@ export const ManageCompanyPage = () => {
         }),
       });
 
+      if (!res.ok) {
+        const body = await readResponseBody(res);
+        toast.error(getApiErrorMessage(body, "Update failed"));
+        return;
+      }
+
       // update UI
       setCompanies((prev) =>
         prev.map((c) => (c.id === editing.id ? editing : c))
@@ -129,21 +134,14 @@ export const ManageCompanyPage = () => {
       toast.success("Company updated successfully");
 
     } catch (err) {
-      toast.error("Update failed");
+      toast.error(getErrorFromCatch(err, "Update failed"));
     }
   };
 
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
-        const token = localStorage.getItem("auth-token");
-
-        const res = await fetch(`${API_BASE_URL}/companies`, {
-          headers: {
-            Authorization: token ? `Bearer ${token}` : "",
-          },
-        });
-
+        const res = await identityFetch(`/companies?fetchType=${fetchType}`);
         const data = await res.json();
 
         const list = data.data || data;
@@ -171,61 +169,51 @@ export const ManageCompanyPage = () => {
     };
 
     fetchCompanies();
-  }, []);
+  }, [fetchType]);
 
   useEffect(() => {
     const fetchApprovers = async () => {
       try {
-        const token = localStorage.getItem("auth-token");
+        const res = await identityFetch(`/users/managers?fetchType=${fetchType}`);
 
-        const res = await fetch(`${API_BASE_URL}/users/managers`, {
-          headers: {
-            Authorization: token ? `Bearer ${token}` : "",
-          },
-        });
-
-        if (!res.ok) throw new Error();
+        if (!res.ok) {
+          const body = await readResponseBody(res);
+          console.error(getApiErrorMessage(body, "Failed to load approvers"));
+          return;
+        }
 
         const data = await res.json();
         const list = data.data || data;
 
         setApprovers(list);
       } catch (err) {
-        console.error("Failed to load approvers", err);
+        console.error(getErrorFromCatch(err, "Failed to load approvers"), err);
       }
     };
 
     fetchApprovers();
-  }, []);
+  }, [fetchType]);
 
   const toggleStatus = async (company: Company) => {
 
     const newStatus = !(statusMap[company.id] ?? company.isEnabled);
   
     try {
-  
-      const token = localStorage.getItem("auth-token");
-  
-      const response = await fetch(
-        `${API_BASE_URL}/companies/${company.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: token ? `Bearer ${token}` : "",
-          },
-          body: JSON.stringify({
-            name: company.name,
-            location: company.location,
-            phoneNumber: company.phoneNumber,
-            approverId: company.approverId,
-            isEnabled: newStatus,
-          }),
-        }
-      );
+      const response = await identityFetch(`/companies/${company.id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          name: company.name,
+          location: company.location,
+          phoneNumber: company.phoneNumber,
+          approverId: company.approverId,
+          isEnabled: newStatus,
+        }),
+      });
   
       if (!response.ok) {
-        throw new Error();
+        const body = await readResponseBody(response);
+        toast.error(getApiErrorMessage(body, "Failed to update company status"));
+        return;
       }
   
       setStatusMap((prev) => ({
@@ -245,9 +233,8 @@ export const ManageCompanyPage = () => {
         `Company ${newStatus ? "activated" : "deactivated"} successfully`
       );
   
-    } catch {
-  
-      toast.error("Failed to update company status");
+    } catch (err) {
+      toast.error(getErrorFromCatch(err, "Failed to update company status"));
     }
   };
 
@@ -275,14 +262,35 @@ export const ManageCompanyPage = () => {
 
       <Card className="glass-card">
         <CardContent className="p-6 space-y-4">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search companies..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
-            />
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="relative max-w-md flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search companies..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <ToggleGroup
+              type="single"
+              value={fetchType}
+              onValueChange={(value) => {
+                if (value) setFetchType(value as FetchType);
+              }}
+              variant="outline"
+              size="sm"
+            >
+              <ToggleGroupItem value="ALL" aria-label="Show all companies">
+                All
+              </ToggleGroupItem>
+              <ToggleGroupItem value="ACTIVE" aria-label="Show active companies">
+                Active
+              </ToggleGroupItem>
+              <ToggleGroupItem value="INACTIVE" aria-label="Show inactive companies">
+                Inactive
+              </ToggleGroupItem>
+            </ToggleGroup>
           </div>
 
           <div className="rounded-lg border border-border overflow-hidden">

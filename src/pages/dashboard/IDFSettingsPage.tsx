@@ -15,13 +15,13 @@ import { ChangeSidebarIconSettings } from "@/components/settings/ChangeSidebarIc
 import { ChangeButtonColorSettings } from "@/components/settings/ChangeButtonColorSettings";
 import { ManageRolesSettings } from "@/components/settings/ManageRolesSettings";
 import { useToast } from "@/hooks/use-toast";
-import { useSettings } from "@/context/SettingsContext";
+import { useSettings, isSettingEnabled } from "@/context/SettingsContext";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { API_BASE_URL } from "@/services/api-config";
 import { ManageSecurity } from "@/components/settings/ManageSecurity";
 
 export const IDFSettingsPage = () => {
-  const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
   const { settings, setSettings } = useSettings();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("sidebar-icons");
@@ -128,7 +128,7 @@ export const IDFSettingsPage = () => {
                 </div>
 
                 <Switch
-                  checked={settings?.SHOW_COMPANY_MENU || false}
+                  checked={isSettingEnabled(settings?.SHOW_COMPANY_MENU, true)}
                   onCheckedChange={(value) =>
                     setSettings((prev: any) => ({
                       ...prev,

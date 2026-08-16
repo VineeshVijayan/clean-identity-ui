@@ -14,6 +14,8 @@ import {
   Check,
   X
 } from "lucide-react";
+import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
+import { API_BASE_URL } from "@/services/api-config";
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 
@@ -25,8 +27,6 @@ const authHeaders = () => {
     "Content-Type": "application/json",
   };
 };
-
-const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
 
 /* ─── Types ─── */
 type AccessRequestEntry = {
@@ -81,7 +81,9 @@ export const AccessRequestsPage = () => {
         });
 
         if (!res.ok) {
-          throw new Error("Failed to fetch requests");
+          const body = await readResponseBody(res);
+          console.error(getApiErrorMessage(body, "Failed to fetch requests"));
+          return;
         }
 
         const response = await res.json();
@@ -198,7 +200,13 @@ export const AccessRequestsPage = () => {
       }
 
       if (!res || !res.ok) {
-        throw new Error("Approval failed");
+        const body = res ? await readResponseBody(res) : null;
+        toast({
+          title: "Approval failed",
+          description: getApiErrorMessage(body, "Approval failed"),
+          variant: "destructive",
+        });
+        return;
       }
 
       // Remove row after approval
@@ -218,6 +226,7 @@ export const AccessRequestsPage = () => {
 
       toast({
         title: "Approval failed",
+        description: getErrorFromCatch(err, "Approval failed"),
         variant: "destructive",
       });
     }

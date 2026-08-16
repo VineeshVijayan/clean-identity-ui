@@ -11,10 +11,10 @@ import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { ArrowLeft, Check, CheckCircle2, FolderOpen, Save, Shield, ShieldAlert, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
+import { API_BASE_URL, CONNECTOR_API_BASE_URL } from "@/services/api-config";
 import { useNavigate } from "react-router-dom";
 // Mock applications data
-const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
-const CONNECTOR_API_BASE_URL = "https://idf-connector.ndashdigital.com/api";
 
 type BlueprintApp = {
   id: string;
@@ -180,7 +180,15 @@ export const NewRolePage = () => {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Failed to create blueprint");
+      if (!res.ok) {
+        const body = await readResponseBody(res);
+        toast({
+          title: "Error",
+          description: getApiErrorMessage(body, "Failed to create blueprint"),
+          variant: "destructive",
+        });
+        return;
+      }
 
       toast({
         title: "Success",
@@ -191,7 +199,7 @@ export const NewRolePage = () => {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to create blueprint",
+        description: getErrorFromCatch(error, "Failed to create blueprint"),
         variant: "destructive",
       });
     }
@@ -226,7 +234,9 @@ export const NewRolePage = () => {
         });
 
         if (!response.ok) {
-          throw new Error("Failed to fetch job titles");
+          const body = await readResponseBody(response);
+          console.error("Failed to fetch job titles", getApiErrorMessage(body, "Failed to fetch job titles"));
+          return;
         }
 
         const result = await response.json();
@@ -260,7 +270,15 @@ export const NewRolePage = () => {
           },
         });
 
-        if (!res.ok) throw new Error("Failed to fetch applications");
+        if (!res.ok) {
+          const body = await readResponseBody(res);
+          toast({
+            title: "Error",
+            description: getApiErrorMessage(body, "Failed to load applications"),
+            variant: "destructive",
+          });
+          return;
+        }
 
         const response = await res.json();
 
@@ -280,7 +298,7 @@ export const NewRolePage = () => {
       } catch (err) {
         toast({
           title: "Error",
-          description: "Failed to load applications",
+          description: getErrorFromCatch(err, "Failed to load applications"),
           variant: "destructive",
         });
       }
@@ -331,9 +349,13 @@ export const NewRolePage = () => {
           );
 
           if (!res.ok) {
-            throw new Error(
-              "Failed to fetch integration roles"
+            const body = await readResponseBody(res);
+            console.error(
+              "Failed to fetch integration roles",
+              getApiErrorMessage(body, "Failed to fetch integration roles")
             );
+            setAvailableRoles([]);
+            return;
           }
 
           const data = await res.json();

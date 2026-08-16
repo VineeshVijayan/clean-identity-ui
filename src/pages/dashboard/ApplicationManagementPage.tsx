@@ -35,10 +35,9 @@ import {
   User,
   X,
 } from "lucide-react";
+import { connectorFetch, identityFetch } from "@/services/api-config";
+import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
 import { useEffect, useRef, useState } from "react";
-
-const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
-const CONNECTOR_API_BASE_URL = "https://idf-connector.ndashdigital.com/api";
 
 
 type Subordinate = {
@@ -285,17 +284,12 @@ export const ApplicationManagementPage = () => {
 
   /* Fetch users */
   useEffect(() => {
-    const token = localStorage.getItem("auth-token");
     const userId = getUserId();
 
     if (!userId) return;
 
-    fetch(`${API_BASE_URL}/users/${userId}`, {
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        Authorization: token ? `Bearer ${token}` : "",
-      },
+    identityFetch(`/users/${userId}`, {
+      headers: { Accept: "application/json" },
     })
       .then((r) => r.json())
       .then((res) => {
@@ -334,13 +328,8 @@ export const ApplicationManagementPage = () => {
 
   /* Fetch Applications */
   useEffect(() => {
-    const token = localStorage.getItem("auth-token");
-    fetch(`${API_BASE_URL}/applications`, {
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        Authorization: token ? `Bearer ${token}` : "",
-      },
+    identityFetch("/applications", {
+      headers: { Accept: "application/json" },
     })
       .then((r) => r.json())
       .then((res) => {
@@ -364,23 +353,22 @@ export const ApplicationManagementPage = () => {
       return;
     }
 
-    const token = localStorage.getItem("auth-token");
-
     const fetchUserApplications = async () => {
       try {
-        const res = await fetch(
-          `${API_BASE_URL}/applications/users/${remSelectedUser.id}`,
-          {
-            headers: {
-              Accept: "application/json",
-              "Content-Type": "application/json",
-              Authorization: token ? `Bearer ${token}` : "",
-            },
-          }
+        const res = await identityFetch(
+          `/applications/users/${remSelectedUser.id}`,
+          { headers: { Accept: "application/json" } }
         );
 
         if (!res.ok) {
-          throw new Error("Failed to fetch applications");
+          const body = await readResponseBody(res);
+          toast({
+            title: "Failed to load applications",
+            description: getApiErrorMessage(body, "Could not fetch user applications."),
+            variant: "destructive",
+          });
+          setRemCardList([]);
+          return;
         }
 
         const response = await res.json();
@@ -419,7 +407,7 @@ export const ApplicationManagementPage = () => {
 
         toast({
           title: "Failed to load applications",
-          description: "Could not fetch user applications.",
+          description: getErrorFromCatch(err, "Could not fetch user applications."),
           variant: "destructive",
         });
 
@@ -435,7 +423,7 @@ export const ApplicationManagementPage = () => {
 
     if (!selectedApp?.integrationName) return null;
 
-    return `${CONNECTOR_API_BASE_URL}/integrations/${selectedApp.integrationName.toLowerCase()}`;
+    return `/integrations/${selectedApp.integrationName.toLowerCase()}`;
   };
 
   const integrationBase = getIntegrationApiBase(reqApp);
@@ -450,23 +438,15 @@ export const ApplicationManagementPage = () => {
     const integrationBase = getIntegrationApiBase(reqApp);
 
     if (!integrationBase) return;
-    const token = localStorage.getItem("auth-token");
+
     const fetchIntegrationData = async () => {
       try {
         const [rolesRes, projectsRes] = await Promise.all([
-          fetch(`${integrationBase}/roles`, {
-            headers: {
-              Accept: "application/json",
-              "Content-Type": "application/json",
-              Authorization: token ? `Bearer ${token}` : "",
-            },
+          connectorFetch(`${integrationBase}/roles`, {
+            headers: { Accept: "application/json" },
           }),
-          fetch(`${integrationBase}/projects`, {
-            headers: {
-              Accept: "application/json",
-              "Content-Type": "application/json",
-              Authorization: token ? `Bearer ${token}` : "",
-            },
+          connectorFetch(`${integrationBase}/projects`, {
+            headers: { Accept: "application/json" },
           }),
         ]);
 

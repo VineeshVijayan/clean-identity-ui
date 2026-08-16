@@ -6,8 +6,9 @@ import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { ArrowLeft, Check, Eye, EyeOff, Key, Shield, X } from "lucide-react";
 import { useState } from "react";
+import { API_BASE_URL } from "@/services/api-config";
+import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
 import { useNavigate } from "react-router-dom";
-const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
 
 const getUserFromToken = () => {
   const token = localStorage.getItem("auth-token");
@@ -81,7 +82,18 @@ export const ChangePasswordPage = () => {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const body = await readResponseBody(res);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: getApiErrorMessage(
+            body,
+            "Failed to change password. Please check your current password."
+          ),
+        });
+        return;
+      }
 
       toast({
         title: "Password Changed",
@@ -96,12 +108,15 @@ export const ChangePasswordPage = () => {
 
       navigate("/profile");
 
-    } catch {
+    } catch (err) {
 
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to change password. Please check your current password.",
+        description: getErrorFromCatch(
+          err,
+          "Failed to change password. Please check your current password."
+        ),
       });
 
     } finally {

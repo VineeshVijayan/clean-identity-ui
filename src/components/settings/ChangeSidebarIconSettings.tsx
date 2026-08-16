@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/hooks/use-toast";
+import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
 import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
@@ -36,6 +37,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import { API_BASE_URL } from "@/services/api-config";
 import { useRef, useState } from "react";
 
 /* ---------- Available Icons ---------- */
@@ -72,30 +74,46 @@ const sidebarItems = [
 
 export const ChangeSidebarIconSettings = () => {
 
-  const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
   const { settings, setSettings } = useSettings();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("sidebar-icons");
-
 
   const handleSaveAll = async () => {
     const token = localStorage.getItem("auth-token");
-    await fetch(`${API_BASE_URL}/settings`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: token ? `Bearer ${token}` : "",
-      },
-      body: JSON.stringify({
-        SHOW_COMPANY_MENU: String(settings.SHOW_COMPANY_MENU),
-      }),
-    });
+    try {
+      const res = await fetch(`${API_BASE_URL}/settings`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+        body: JSON.stringify({
+          SHOW_COMPANY_MENU: String(settings.SHOW_COMPANY_MENU),
+        }),
+      });
 
-    toast({
-      title: "Settings Saved",
-      description: "All IDF settings have been saved successfully.",
-    });
+      if (!res.ok) {
+        const body = await readResponseBody(res);
+        toast({
+          title: "Error",
+          description: getApiErrorMessage(body, "Failed to save settings"),
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Settings Saved",
+        description: "All IDF settings have been saved successfully.",
+      });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: getErrorFromCatch(err, "Failed to save settings"),
+        variant: "destructive",
+      });
+    }
   };
-  const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [selectedItem, setSelectedItem] = useState<string | null>(null);

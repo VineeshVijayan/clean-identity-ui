@@ -61,7 +61,7 @@ export const DashboardLayout = () => {
         onLogout={handleLogout}
       />
 
-      <div className="flex-1 flex flex-col min-h-screen">
+      <div className="flex min-h-screen flex-1 flex-col lg:ml-72">
         <DashboardNavbar
           user={user}
           onMenuClick={() => setSidebarOpen(true)}

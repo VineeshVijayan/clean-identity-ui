@@ -28,10 +28,9 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { API_BASE_URL, CONNECTOR_API_BASE_URL } from "@/services/api-config";
+import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
 import { useNavigate } from "react-router-dom";
-
-const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
-const CONNECTOR_API_BASE_URL = "https://idf-connector.ndashdigital.com/api";
 
 type Role = {
   id: number;
@@ -126,7 +125,10 @@ export const ManageRolesPage = () => {
           },
         });
 
-        if (!res.ok) throw new Error("Failed to fetch blueprints");
+        if (!res.ok) {
+          const body = await readResponseBody(res);
+          throw new Error(getApiErrorMessage(body, "Failed to fetch blueprints"));
+        }
 
         const response = await res.json();
         const rolesArray = Array.isArray(response)
@@ -149,7 +151,7 @@ export const ManageRolesPage = () => {
       } catch (err) {
         toast({
           title: "Error",
-          description: "Failed to load roles",
+          description: getErrorFromCatch(err, "Failed to load roles"),
           variant: "destructive",
         });
       }
@@ -182,7 +184,10 @@ export const ManageRolesPage = () => {
           },
         });
 
-        if (!res.ok) throw new Error("Failed to fetch applications");
+        if (!res.ok) {
+          const body = await readResponseBody(res);
+          throw new Error(getApiErrorMessage(body, "Failed to fetch applications"));
+        }
 
         const response = await res.json();
 
@@ -202,7 +207,7 @@ export const ManageRolesPage = () => {
       } catch (err) {
         toast({
           title: "Error",
-          description: "Failed to load applications",
+          description: getErrorFromCatch(err, "Failed to load applications"),
           variant: "destructive",
         });
       }
@@ -237,7 +242,8 @@ export const ManageRolesPage = () => {
         });
 
         if (!res.ok) {
-          throw new Error("Failed to fetch integration roles");
+          const body = await readResponseBody(res);
+          throw new Error(getApiErrorMessage(body, "Failed to fetch integration roles"));
         }
 
         const data = await res.json();
@@ -271,7 +277,15 @@ export const ManageRolesPage = () => {
         },
       });
 
-      if (!res.ok) throw new Error("Delete failed");
+      if (!res.ok) {
+        const body = await readResponseBody(res);
+        toast({
+          title: "Error",
+          description: getApiErrorMessage(body, "Failed to delete role"),
+          variant: "destructive",
+        });
+        return;
+      }
 
       setRoles((prev) => prev.filter((r) => r.id !== deleteRoleId));
 
@@ -279,10 +293,10 @@ export const ManageRolesPage = () => {
         title: "Role Deleted",
         description: "The role has been deleted successfully.",
       });
-    } catch {
+    } catch (err) {
       toast({
         title: "Error",
-        description: "Failed to delete role",
+        description: getErrorFromCatch(err, "Failed to delete role"),
         variant: "destructive",
       });
     } finally {
@@ -403,7 +417,15 @@ export const ManageRolesPage = () => {
         }
       );
 
-      if (!res.ok) throw new Error("Update failed");
+      if (!res.ok) {
+        const body = await readResponseBody(res);
+        toast({
+          title: "Error",
+          description: getApiErrorMessage(body, "Failed to update blueprint"),
+          variant: "destructive",
+        });
+        return;
+      }
 
       toast({
         title: "Success",
@@ -412,7 +434,7 @@ export const ManageRolesPage = () => {
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to update blueprint",
+        description: getErrorFromCatch(error, "Failed to update blueprint"),
         variant: "destructive",
       });
     }

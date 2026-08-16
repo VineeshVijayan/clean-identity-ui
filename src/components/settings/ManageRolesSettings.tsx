@@ -19,9 +19,9 @@ import {
 } from "@/components/ui/table";
 import { Plus, Shield } from "lucide-react";
 import { useEffect, useState } from "react";
+import { API_BASE_URL } from "@/services/api-config";
+import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
 import { toast } from "sonner";
-
-const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
 
 interface Role {
   id: string;
@@ -52,7 +52,11 @@ export const ManageRolesSettings = () => {
         },
       });
 
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const body = await readResponseBody(res);
+        toast.error(getApiErrorMessage(body, "Failed to load roles"));
+        return;
+      }
 
       const data = await res.json();
 
@@ -68,8 +72,8 @@ export const ManageRolesSettings = () => {
 
       setRoles(mapped);
 
-    } catch {
-      toast.error("Failed to load roles");
+    } catch (err) {
+      toast.error(getErrorFromCatch(err, "Failed to load roles"));
     }
   };
 
@@ -96,10 +100,11 @@ export const ManageRolesSettings = () => {
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => null);
 
       if (!res.ok) {
-        throw new Error(data?.message || "Failed to create role");
+        toast.error(getApiErrorMessage(data, "Failed to create role"));
+        return;
       }
 
       const createdRole: Role = {
@@ -117,8 +122,8 @@ export const ManageRolesSettings = () => {
         description: `"${createdRole.name}" has been added.`,
       });
 
-    } catch (error: any) {
-      toast.error(error.message || "Failed to create role");
+    } catch (error: unknown) {
+      toast.error(getErrorFromCatch(error, "Failed to create role"));
     }
   };
 
@@ -137,14 +142,18 @@ export const ManageRolesSettings = () => {
         },
       });
 
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const body = await readResponseBody(res);
+        toast.error(getApiErrorMessage(body, "Failed to delete role"));
+        return;
+      }
 
       setRoles((prev) => prev.filter((r) => r.id !== deleteRoleId));
 
       toast.success("Role deleted successfully");
 
-    } catch {
-      toast.error("Failed to delete role");
+    } catch (err) {
+      toast.error(getErrorFromCatch(err, "Failed to delete role"));
     } finally {
       setDeleteRoleId(null);
     }

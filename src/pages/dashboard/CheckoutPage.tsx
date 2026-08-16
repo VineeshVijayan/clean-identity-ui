@@ -25,10 +25,9 @@ import {
   MessageSquare,
   AppWindow,
 } from "lucide-react";
+import { CONNECTOR_API_BASE_URL } from "@/services/api-config";
+import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
 import { useEffect, useState } from "react";
-
-/* ---------------- CONFIG ---------------- */
-const CONNECTOR_API_BASE_URL = "https://idf-connector.ndashdigital.com/api";
 
 /* ---------------- APP ICON MAPPING ---------------- */
 const APP_ICONS: Record<string, string> = {
@@ -117,6 +116,17 @@ export const CheckoutPage = () => {
       const res = await fetch(`${CONNECTOR_API_BASE_URL}/checkout/pending`, {
         headers: authHeaders(),
       });
+
+      if (!res.ok) {
+        const body = await readResponseBody(res);
+        toast({
+          title: "Error",
+          description: getApiErrorMessage(body, "Failed to load checkout data"),
+          variant: "destructive",
+        });
+        return;
+      }
+
       const json = await res.json();
       const data = json?.data || [];
 
@@ -134,8 +144,12 @@ export const CheckoutPage = () => {
 
       setRequestApps(mapped.filter((x) => x.processType === "REQUEST"));
       setDeleteApps(mapped.filter((x) => x.processType === "REMOVE"));
-    } catch {
-      toast({ title: "Error", description: "Failed to load checkout data", variant: "destructive" });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: getErrorFromCatch(err, "Failed to load checkout data"),
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
