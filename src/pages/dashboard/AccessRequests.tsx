@@ -12,20 +12,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import {
   Check,
+  Loader2,
   X
 } from "lucide-react";
 import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
-import { API_BASE_URL } from "@/services/api-config";
+import { identityFetch } from "@/services/api-config";
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 
-const authHeaders = () => {
-  const token = localStorage.getItem("auth-token");
-  return {
-    Authorization: token ? `Bearer ${token}` : "",
-    Accept: "application/json",
-    "Content-Type": "application/json",
-  };
+const acceptJsonHeaders = {
+  Accept: "application/json",
 };
 
 /* ─── Types ─── */
@@ -57,6 +53,8 @@ export const AccessRequestsPage = () => {
   // ✅ EXISTING STATE (KEPT SAME)
   const [requestAccessEntries, setRequestAccessEntries] = useState<AccessRequestEntry[]>([]);
   const [approvalEntries, setApprovalEntries] = useState<AccessRequestEntry[]>([]);
+  const [requestsLoading, setRequestsLoading] = useState(false);
+  const [approvalsLoading, setApprovalsLoading] = useState(false);
 
   const getDeptId = () => {
     const token = localStorage.getItem("auth-token");
@@ -75,9 +73,12 @@ export const AccessRequestsPage = () => {
     if (activeTab !== "requests") return;
 
     const loadRequests = async () => {
+      setRequestsLoading(true);
+
       try {
-        const res = await fetch(`${API_BASE_URL}/delegates/my-requests`, {
-          headers: authHeaders(),
+        const res = await identityFetch("/delegates/my-requests", {
+          headers: acceptJsonHeaders,
+          skipLoader: true,
         });
 
         if (!res.ok) {
@@ -118,6 +119,8 @@ export const AccessRequestsPage = () => {
         setRequestAccessEntries(mapped);
       } catch (err) {
         console.error(err);
+      } finally {
+        setRequestsLoading(false);
       }
     };
 
@@ -128,14 +131,16 @@ export const AccessRequestsPage = () => {
     if (activeTab !== "approvals") return;
 
     const loadApprovals = async () => {
+      setApprovalsLoading(true);
+
       try {
         const departmentId = getDeptId();
 
-        // Existing delegate approvals
         const delegatePromise = departmentId
-          ? fetch(`${API_BASE_URL}/delegates/requests?departmentId=${departmentId}`, {
-            headers: authHeaders(),
-          }).then((res) => (res.ok ? res.json() : { data: [] }))
+          ? identityFetch(`/delegates/requests?departmentId=${departmentId}`, {
+              headers: acceptJsonHeaders,
+              skipLoader: true,
+            }).then((res) => (res.ok ? res.json() : { data: [] }))
           : Promise.resolve({ data: [] });
 
         const [delegateResponse] = await Promise.all([
@@ -163,6 +168,8 @@ export const AccessRequestsPage = () => {
         setApprovalEntries([...delegateMapped]);
       } catch (err) {
         console.error(err);
+      } finally {
+        setApprovalsLoading(false);
       }
     };
 
@@ -190,13 +197,11 @@ export const AccessRequestsPage = () => {
 
       // Delegate approval
       if (type === "DELEGATE") {
-        res = await fetch(
-          `${API_BASE_URL}/delegates/requests/${actualId}/approve`,
-          {
-            method: "PUT",
-            headers: authHeaders(),
-          }
-        );
+        res = await identityFetch(`/delegates/requests/${actualId}/approve`, {
+          method: "PUT",
+          headers: acceptJsonHeaders,
+          skipLoader: true,
+        });
       }
 
       if (!res || !res.ok) {
@@ -253,96 +258,132 @@ export const AccessRequestsPage = () => {
 
         {/* REQUEST TAB */}
         <TabsContent value="requests">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Department</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Comments</TableHead>
-                <TableHead>Requested At</TableHead>
-                <TableHead>Actioned By</TableHead>
-                <TableHead>Actioned At</TableHead>
-              </TableRow>
-            </TableHeader>
-
-            <TableBody>
-              {requestAccessEntries.map((r) => (
-                <TableRow key={r.id}>
-                  <TableCell>{r.departmentName}</TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(r.status)}>
-                      {r.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{r.comments}</TableCell>
-                  <TableCell>{r.requestedAt}</TableCell>
-                  <TableCell>{r.actionedByName}</TableCell>
-                  <TableCell>{r.actionedAt}</TableCell>
+          <div className="relative overflow-hidden rounded-lg border border-border">
+            {requestsLoading && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-[1px]">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            )}
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Department</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Comments</TableHead>
+                  <TableHead>Requested At</TableHead>
+                  <TableHead>Actioned By</TableHead>
+                  <TableHead>Actioned At</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+
+              <TableBody>
+                {!requestsLoading && requestAccessEntries.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={6}
+                      className="h-24 text-center text-muted-foreground"
+                    >
+                      No requests found.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  requestAccessEntries.map((r) => (
+                    <TableRow key={r.id}>
+                      <TableCell>{r.departmentName}</TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(r.status)}>
+                          {r.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{r.comments}</TableCell>
+                      <TableCell>{r.requestedAt}</TableCell>
+                      <TableCell>{r.actionedByName}</TableCell>
+                      <TableCell>{r.actionedAt}</TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </TabsContent>
 
         <TabsContent value="approvals">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Type</TableHead>
-                <TableHead>Requester Name</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Comments</TableHead>
-                <TableHead>Requested At</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-
-            <TableBody>
-              {approvalEntries.map((r) => (
-                <TableRow key={r.id}>
-                  <TableCell>
-                    <Badge
-                      className={
-                        r.requestType === "COMPANY"
-                          ? "bg-blue-500/10 text-blue-500"
-                          : "bg-purple-500/10 text-purple-500"
-                      }
-                    >
-                      {r.requestType}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{r.requesterName}</TableCell>
-                  <TableCell>
-                    <Badge className={getStatusColor(r.status)}>
-                      {r.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{r.comments}</TableCell>
-                  <TableCell>{r.requestedAt}</TableCell>
-                  <TableCell className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() => handleApproveRequest(r.id)}
-                      disabled={r.status !== "Pending"}
-                    >
-                      <Check className="h-4 w-4 mr-1" />
-                      Approve
-                    </Button>
-
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleRejectRequest(r.id)}
-                      disabled={r.status !== "Pending"}
-                    >
-                      <X className="h-4 w-4 mr-1" />
-                      Reject
-                    </Button>
-                  </TableCell>
+          <div className="relative overflow-hidden rounded-lg border border-border">
+            {approvalsLoading && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-[1px]">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            )}
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Requester Name</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Comments</TableHead>
+                  <TableHead>Requested At</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+
+              <TableBody>
+                {!approvalsLoading && approvalEntries.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={6}
+                      className="h-24 text-center text-muted-foreground"
+                    >
+                      No approvals found.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  approvalEntries.map((r) => (
+                    <TableRow key={r.id}>
+                      <TableCell>
+                        <Badge
+                          className={
+                            r.requestType === "COMPANY"
+                              ? "bg-blue-500/10 text-blue-500"
+                              : "bg-purple-500/10 text-purple-500"
+                          }
+                        >
+                          {r.requestType}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{r.requesterName}</TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(r.status)}>
+                          {r.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{r.comments}</TableCell>
+                      <TableCell>{r.requestedAt}</TableCell>
+                      <TableCell className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => handleApproveRequest(r.id)}
+                          disabled={r.status !== "Pending"}
+                        >
+                          <Check className="h-4 w-4 mr-1" />
+                          Approve
+                        </Button>
+
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleRejectRequest(r.id)}
+                          disabled={r.status !== "Pending"}
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Reject
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </TabsContent>
       </Tabs>
 

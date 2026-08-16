@@ -43,9 +43,12 @@ export const ManageSecurity = () => {
       }
 
       const data = await res.json();
+      const settings = data?.data ?? data;
 
-      setTimeoutValue(data.value);
-      setTimeoutUnit(data.unit);
+      setTimeoutValue(
+        settings?.value != null ? String(settings.value) : "1"
+      );
+      setTimeoutUnit(settings?.unit ?? "HOURS");
 
     } catch (err) {
       toast.error(getErrorFromCatch(err, "Failed to load security settings"));
@@ -136,7 +139,7 @@ export const ManageSecurity = () => {
               <Label>Unit</Label>
 
               <Select
-                value={timeoutUnit}
+                value={timeoutUnit ?? "HOURS"}
                 onValueChange={setTimeoutUnit}
               >
 
@@ -161,7 +164,7 @@ export const ManageSecurity = () => {
             <p className="text-sm">
               <strong>Current Configuration:</strong>{" "}
               {timeoutValue}{" "}
-              {timeoutUnit.toLowerCase()}
+              {(timeoutUnit ?? "HOURS").toLowerCase()}
             </p>
 
           </div>

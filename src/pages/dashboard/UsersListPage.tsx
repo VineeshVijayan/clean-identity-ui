@@ -48,6 +48,7 @@ import {
   Download,
   Edit,
   Filter,
+  Loader2,
   MoreVertical,
   Search,
   Send,
@@ -241,12 +242,14 @@ const UserTable = ({
   setSearchQuery,
   fetchType,
   onFetchTypeChange,
+  loading = false,
 }: {
   users: User[];
   searchQuery: string;
   setSearchQuery: (v: string) => void;
   fetchType: FetchType;
   onFetchTypeChange: (value: FetchType) => void;
+  loading?: boolean;
 }) => {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
@@ -442,7 +445,12 @@ const UserTable = ({
       </div>
 
       {/* Table */}
-      <div className="glass-card overflow-hidden">
+      <div className="relative glass-card overflow-hidden">
+        {loading && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-[1px]">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        )}
         <Table>
           <TableHeader>
             <TableRow>
@@ -482,7 +490,14 @@ const UserTable = ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginated.map((user) => (
+            {!loading && paginated.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                  No users found.
+                </TableCell>
+              </TableRow>
+            ) : (
+              paginated.map((user) => (
               <TableRow
                 key={user.id}
                 className={`transition-opacity duration-300 ${
@@ -533,7 +548,8 @@ const UserTable = ({
                   </DropdownMenu>
                 </TableCell>
               </TableRow>
-            ))}
+              ))
+            )}
           </TableBody>
         </Table>
 
@@ -574,10 +590,12 @@ const DelegateTable = ({
   users,
   searchQuery,
   setSearchQuery,
+  loading = false,
 }: {
   users: User[];
   searchQuery: string;
   setSearchQuery: (v: string) => void;
+  loading?: boolean;
 }) => {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
@@ -761,7 +779,12 @@ const DelegateTable = ({
       </div>
 
       {/* Table */}
-      <div className="glass-card overflow-hidden">
+      <div className="relative glass-card overflow-hidden">
+        {loading && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-[1px]">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        )}
         <Table>
           <TableHeader>
             <TableRow>
@@ -801,7 +824,14 @@ const DelegateTable = ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginated.map((user) => (
+            {!loading && paginated.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                  No users found.
+                </TableCell>
+              </TableRow>
+            ) : (
+              paginated.map((user) => (
               <TableRow key={user.id}>
                 <TableCell>
                   <div className="flex items-center gap-3">
@@ -845,7 +875,8 @@ const DelegateTable = ({
                   </DropdownMenu>
                 </TableCell>
               </TableRow>
-            ))}
+              ))
+            )}
           </TableBody>
         </Table>
 
@@ -897,6 +928,8 @@ export const UsersListPage = () => {
   const [syncing, setSyncing] = useState(false);
   const [fetchType, setFetchType] = useState<FetchType>("ALL");
   const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
+  const [teamLoading, setTeamLoading] = useState(false);
+  const [delegateLoading, setDelegateLoading] = useState(false);
 
   const handleSyncUsers = async () => {
     try {
@@ -905,6 +938,7 @@ export const UsersListPage = () => {
       const res = await connectorFetch("/odoo/hr/employees/sync", {
         method: "POST",
         headers: acceptJsonHeaders,
+        skipLoader: true,
       });
 
       if (!res.ok) {
@@ -932,44 +966,50 @@ export const UsersListPage = () => {
       return;
     }
 
-    const res = await identityFetch(`/users/${userId}?fetchType=${fetchType}`, {
-      headers: acceptJsonHeaders,
-    });
+    setTeamLoading(true);
 
-    if (res.status === 401) {
-      localStorage.clear();
-      navigate("/login");
+    try {
+      const res = await identityFetch(`/users/${userId}?fetchType=${fetchType}`, {
+        headers: acceptJsonHeaders,
+        skipLoader: true,
+      });
+
+      if (res.status === 401) {
+        localStorage.clear();
+        navigate("/login");
+      }
+
+      if (!res.ok) {
+        const body = await readResponseBody(res);
+        throw new Error(getApiErrorMessage(body, "Failed to fetch user"));
+      }
+
+      const response = await res.json();
+
+      const user = response.data;
+
+      const mappedUsers = (user.subordinates || []).map((u: any) => ({
+        id: String(u.id),
+        firstName: u.firstName || "",
+        lastName: u.lastName || "",
+        email: u.email || "",
+        role: "Employee",
+        status: mapUserStatus(u),
+        lastLogin: "—",
+        departmentId: "",
+        departmentName: "",
+        companyName:
+          u.companyName ||
+          u.company?.name ||
+          u.company ||
+          u.organizationName ||
+          "—",
+      }));
+
+      setUsers(mappedUsers);
+    } finally {
+      setTeamLoading(false);
     }
-
-    if (!res.ok) {
-      const body = await readResponseBody(res);
-      throw new Error(getApiErrorMessage(body, "Failed to fetch user"));
-    }
-
-    const response = await res.json();
-
-    const user = response.data;
-
-    // 👇 map ONLY subordinates
-    const mappedUsers = (user.subordinates || []).map((u: any) => ({
-      id: String(u.id),
-      firstName: u.firstName || "",
-      lastName: u.lastName || "",
-      email: u.email || "",
-      role: "Employee",
-      status: mapUserStatus(u),
-      lastLogin: "—",
-      departmentId: "",
-      departmentName: "",
-      companyName:
-        u.companyName ||
-        u.company?.name ||
-        u.company ||
-        u.organizationName ||
-        "—",
-    }));
-
-    setUsers(mappedUsers);
   };
 
   useEffect(() => {
@@ -977,7 +1017,10 @@ export const UsersListPage = () => {
   }, [fetchType]);
 
   useEffect(() => {
-    identityFetch("/departments", { headers: acceptJsonHeaders })
+    identityFetch("/departments", {
+      headers: acceptJsonHeaders,
+      skipLoader: true,
+    })
       .then(async (res) => {
         if (!res.ok) {
           const body = await readResponseBody(res);
@@ -1046,6 +1089,7 @@ export const UsersListPage = () => {
       const response = await identityFetch("/delegates/request", {
         method: "POST",
         headers: acceptJsonHeaders,
+        skipLoader: true,
         body: JSON.stringify({
           targetDepartmentId: Number(selectedDepartment),
           comments: delegateReason || "",
@@ -1079,6 +1123,7 @@ export const UsersListPage = () => {
       const response = await identityFetch("/delegates/revoke", {
         method: "POST",
         headers: acceptJsonHeaders,
+        skipLoader: true,
         body: JSON.stringify({
           requesterId: userId,
           targetDepartmentId: Number(revokeDepartment),
@@ -1111,9 +1156,12 @@ export const UsersListPage = () => {
   }, [activeTab]);
 
   const fetchDelegateUsers = async () => {
+    setDelegateLoading(true);
+
     try {
       const res = await identityFetch("/delegates/users", {
         headers: acceptJsonHeaders,
+        skipLoader: true,
       });
 
       if (!res.ok) {
@@ -1144,6 +1192,8 @@ export const UsersListPage = () => {
       setDelegateUsers(mapped);
     } catch (err) {
       console.error(err);
+    } finally {
+      setDelegateLoading(false);
     }
   };
 
@@ -1229,6 +1279,7 @@ export const UsersListPage = () => {
             setSearchQuery={setTeamSearch}
             fetchType={fetchType}
             onFetchTypeChange={setFetchType}
+            loading={teamLoading}
           />
         </TabsContent>
 
@@ -1237,6 +1288,7 @@ export const UsersListPage = () => {
             users={delegateUsers}
             searchQuery={delegateSearch}
             setSearchQuery={setDelegateSearch}
+            loading={delegateLoading}
           />
         </TabsContent>
       </Tabs>
