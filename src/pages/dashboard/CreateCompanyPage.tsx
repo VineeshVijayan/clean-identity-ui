@@ -3,10 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
-import { ArrowLeft, Building2, UserRound } from "lucide-react";
+import { ArrowLeft, Building2, Loader2, UserRound } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { API_BASE_URL } from "@/services/api-config";
+import { useToast } from "@/hooks/use-toast";
+import { getApiErrorToast, getErrorFromCatch, networkError } from "@/lib/api-errors";
 
 type Errors = Partial<Record<
   | "companyName"
@@ -22,8 +24,8 @@ type Errors = Partial<Record<
 >>;
 
 export const CreateCompanyPage = () => {
-  const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [companyName, setCompanyName] = useState("");
   const [location, setLocation] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -40,6 +42,7 @@ export const CreateCompanyPage = () => {
 
   const [errors, setErrors] = useState<Errors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [isLoading, setIsLoading] = useState(false);
 
   const fieldRefs = {
     companyName: useRef<HTMLInputElement>(null),
@@ -173,6 +176,7 @@ export const CreateCompanyPage = () => {
     }
 
     try {
+      setIsLoading(true);
       const token = localStorage.getItem("auth-token");
 
       const res = await fetch(`${API_BASE_URL}/companies`, {
@@ -197,14 +201,44 @@ export const CreateCompanyPage = () => {
         }),
       });
 
-      if (!res.ok) throw new Error("Failed");
+      let responseBody: unknown = null;
+      const text = await res.text();
+      if (text) {
+        try {
+          responseBody = JSON.parse(text);
+        } catch {
+          responseBody = text;
+        }
+      }
 
-      toast.success("Company created successfully");
+      if (!res.ok) {
+        const errorToast = getApiErrorToast(res, responseBody, {
+          fallbackTitle: "Error",
+          fallbackMessage: "Failed to create company",
+        });
+        toast({
+          variant: "destructive",
+          title: errorToast.title,
+          description: errorToast.description,
+        });
+        return;
+      }
+
+      toast({
+        title: "Success",
+        description: "Company created successfully",
+      });
       navigate("/company/manage");
-
     } catch (err) {
       console.error(err);
-      toast.error("Failed to create company");
+      const { toast: errorToast } = networkError("Error");
+      toast({
+        variant: "destructive",
+        title: errorToast.title,
+        description: getErrorFromCatch(err, "Failed to create company"),
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -450,7 +484,10 @@ export const CreateCompanyPage = () => {
           <Button type="button" variant="outline" onClick={() => navigate(-1)}>
             Cancel
           </Button>
-          <Button type="submit">Create Company</Button>
+          <Button type="submit" disabled={isLoading}>
+            {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {isLoading ? "Creating..." : "Create Company"}
+          </Button>
         </div>
       </form>
     </motion.div>

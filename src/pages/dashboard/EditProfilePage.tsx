@@ -30,8 +30,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
-// const API_BASE_URL = "http://localhost:8082/api";
+import { identityFetch } from "@/services/api-config";
+import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
+
 const getUserFromToken = () => {
   const token = localStorage.getItem("auth-token");
   if (!token) return null;
@@ -78,6 +79,12 @@ export const EditProfilePage = () => {
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [roleToAdd, setRoleToAdd] = useState("");
   const [selectedBlueprint, setSelectedBlueprint] = useState("");
+  const [companyId, setCompanyId] = useState<number | null>(null);
+  const [selectedManagerId, setSelectedManagerId] = useState<number | null>(null);
+  const [existingManagerName, setExistingManagerName] = useState<string | null>(null);
+  const [availableManagers, setAvailableManagers] = useState<
+    { id: number; firstName: string; lastName: string; email: string; active: boolean }[]
+  >([]);
 
   /* ---------------- GET USER FROM LOCAL STORAGE ---------------- */
 
@@ -136,27 +143,27 @@ export const EditProfilePage = () => {
   useEffect(() => {
 
     const fetchUser = async () => {
-
-      const token = localStorage.getItem("auth-token");
-
       try {
+        const res = await identityFetch(`/users/${userId}`);
 
-        const res = await fetch(`${API_BASE_URL}/users/${userId}`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: token ? `Bearer ${token}` : "",
-          },
-        });
-
-        if (!res.ok) throw new Error();
-
-
+        if (!res.ok) {
+          const body = await readResponseBody(res);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: getApiErrorMessage(body, "Failed to load user data"),
+          });
+          return;
+        }
 
         const data = await res.json();
         const user = data?.data || data;
         setCountryCode(user.countryCode || "US:+1");
         setSelectedRoles(user.roles || []);
         setSelectedBlueprint(user.blueprints?.[0] || "");
+        setCompanyId(user.companyId ?? null);
+        setSelectedManagerId(user.manager ?? null);
+        setExistingManagerName(user.managerName ?? null);
 
         setForm({
           employeeId: user.id || "",
@@ -171,12 +178,12 @@ export const EditProfilePage = () => {
 
         });
 
-      } catch {
+      } catch (err) {
 
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Failed to load user data",
+          description: getErrorFromCatch(err, "Failed to load user data"),
         });
 
       }
@@ -189,13 +196,9 @@ export const EditProfilePage = () => {
   /* ---------------- FETCH ASSIGNED APPLICATIONS ---------------- */
   useEffect(() => {
     if (!userId) return;
-    const token = localStorage.getItem("auth-token");
-    fetch(`${API_BASE_URL}/applications/users/${userId}`, {
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        Authorization: token ? `Bearer ${token}` : "",
-      },
+
+    identityFetch(`/applications/users/${userId}`, {
+      headers: { Accept: "application/json" },
     })
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((res) => {
@@ -249,19 +252,34 @@ export const EditProfilePage = () => {
     setSelectedBlueprint("");
   };
 
+  const handleManagerSelect = (managerId: string) => {
+    const selected = availableManagers.find(
+      (manager) => String(manager.id) === managerId
+    );
+
+    if (!selected) return;
+
+    setSelectedManagerId(selected.id);
+  };
+
+  const removeManager = () => {
+    setSelectedManagerId(null);
+  };
+
   useEffect(() => {
     const fetchRoles = async () => {
-      const token = localStorage.getItem("auth-token");
-
       try {
-        const res = await fetch(`${API_BASE_URL}/roles`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: token ? `Bearer ${token}` : "",
-          },
-        });
+        const res = await identityFetch("/roles");
 
-        if (!res.ok) throw new Error();
+        if (!res.ok) {
+          const body = await readResponseBody(res);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: getApiErrorMessage(body, "Failed to load roles"),
+          });
+          return;
+        }
 
         const data = await res.json();
 
@@ -274,11 +292,11 @@ export const EditProfilePage = () => {
             name: role.name,
           }))
         );
-      } catch {
+      } catch (err) {
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Failed to load roles",
+          description: getErrorFromCatch(err, "Failed to load roles"),
         });
       }
     };
@@ -289,17 +307,18 @@ export const EditProfilePage = () => {
 
   useEffect(() => {
     const fetchBluePrints = async () => {
-      const token = localStorage.getItem("auth-token");
-
       try {
-        const res = await fetch(`${API_BASE_URL}/blueprints`, {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: token ? `Bearer ${token}` : "",
-          },
-        });
+        const res = await identityFetch("/blueprints");
 
-        if (!res.ok) throw new Error();
+        if (!res.ok) {
+          const body = await readResponseBody(res);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: getApiErrorMessage(body, "Failed to load blueprints"),
+          });
+          return;
+        }
 
         const data = await res.json();
 
@@ -312,17 +331,70 @@ export const EditProfilePage = () => {
             name: role.name,
           }))
         );
-      } catch {
+      } catch (err) {
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Failed to load blueprints",
+          description: getErrorFromCatch(err, "Failed to load blueprints"),
         });
       }
     };
 
     fetchBluePrints();
   }, [toast]);
+
+  useEffect(() => {
+    if (!companyId || !userId) {
+      setAvailableManagers([]);
+      return;
+    }
+
+    const fetchCompanyUsers = async () => {
+      try {
+        const res = await identityFetch(
+          `/companies/${companyId}/users?userId=${userId}`,
+          { headers: { Accept: "application/json" } }
+        );
+
+        if (!res.ok) {
+          const body = await readResponseBody(res);
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: getApiErrorMessage(body, "Failed to load managers"),
+          });
+          return;
+        }
+
+        const data = await res.json();
+        const users = data?.data || [];
+
+        setAvailableManagers(
+          users.map((manager: {
+            id: number;
+            firstName?: string;
+            lastName?: string;
+            email?: string;
+            active?: boolean;
+          }) => ({
+            id: manager.id,
+            firstName: manager.firstName || "",
+            lastName: manager.lastName || "",
+            email: manager.email || "",
+            active: manager.active ?? true,
+          }))
+        );
+      } catch (err) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: getErrorFromCatch(err, "Failed to load managers"),
+        });
+      }
+    };
+
+    fetchCompanyUsers();
+  }, [companyId, userId, toast]);
 
   /* ---------------- UPDATE FORM ---------------- */
 
@@ -429,8 +501,6 @@ export const EditProfilePage = () => {
 
     setIsLoading(true);
 
-    const token = localStorage.getItem("auth-token");
-
     const payload = {
       employeeId: form.employeeId,
       username: form.email,
@@ -444,20 +514,24 @@ export const EditProfilePage = () => {
       dob: form.dob ? new Date(form.dob).toISOString() : null,
       roles: selectedRoles,
       blueprints: selectedBlueprint ? [selectedBlueprint] : [],
+      manager: selectedManagerId,
     };
 
     try {
-
-      const res = await fetch(`${API_BASE_URL}/users/${userId}`, {
+      const res = await identityFetch(`/users/${userId}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: token ? `Bearer ${token}` : "",
-        },
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const body = await readResponseBody(res);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: getApiErrorMessage(body, "Failed to update profile"),
+        });
+        return;
+      }
 
       toast({
         title: "Profile Updated",
@@ -466,12 +540,12 @@ export const EditProfilePage = () => {
 
       navigate(fromPage);
 
-    } catch {
+    } catch (err) {
 
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to update profile",
+        description: getErrorFromCatch(err, "Failed to update profile"),
       });
 
     } finally {
@@ -496,6 +570,8 @@ export const EditProfilePage = () => {
     setCountryCode("US:+1"); // Reset country code selector
     setPhotoPreview(null);
     setErrors({});
+    setSelectedManagerId(null);
+    setExistingManagerName(null);
   };
 
   /* ---------------- ANIMATION ---------------- */
@@ -886,6 +962,52 @@ export const EditProfilePage = () => {
                       {errors.blueprint}
                     </p>
                   )}
+                </div>
+
+                <div className="space-y-3">
+                  <Label>Manager</Label>
+
+                  <Select
+                    value={
+                      selectedManagerId != null ? String(selectedManagerId) : ""
+                    }
+                    onValueChange={handleManagerSelect}
+                    disabled={!companyId}
+                  >
+                    <SelectTrigger>
+                      <SelectValue
+                        placeholder={
+                          companyId ? "Select Manager" : "Company not available"
+                        }
+                      />
+                    </SelectTrigger>
+
+                    <SelectContent>
+                      {availableManagers.map((manager) => (
+                        <SelectItem key={manager.id} value={String(manager.id)}>
+                          {`${manager.firstName} ${manager.lastName}`.trim()}
+                          {manager.email ? ` (${manager.email})` : ""}
+                          {!manager.active ? " — Inactive" : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <div className="flex flex-wrap gap-2">
+                    {existingManagerName && (
+                      <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">
+                        <span>{existingManagerName}</span>
+
+                        <button
+                          type="button"
+                          onClick={removeManager}
+                          className="hover:text-destructive"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
               </div>

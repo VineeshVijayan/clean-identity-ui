@@ -1,6 +1,9 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { identityFetch } from "@/services/api-config";
+import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
+import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { AppWindow, Globe, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -15,8 +18,9 @@ interface Application {
 }
 
 export const ManageApplicationPage = () => {
+  const { toast } = useToast();
   const [applications, setApplications] = useState<Application[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loaded, setLoaded] = useState(false);
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
@@ -37,18 +41,17 @@ export const ManageApplicationPage = () => {
   useEffect(() => {
     const fetchApplications = async () => {
       try {
-        const token = localStorage.getItem("auth-token");
+        const res = await identityFetch("/applications");
 
-        const res = await fetch(
-          "https://identity-api.ndashdigital.com/api/applications",
-          {
-            headers: {
-              Authorization: token ? `Bearer ${token}` : "",
-            },
-          }
-        );
-
-        if (!res.ok) throw new Error("Failed to fetch applications");
+        if (!res.ok) {
+          const body = await readResponseBody(res);
+          toast({
+            title: "Error",
+            description: getApiErrorMessage(body, "Failed to load applications"),
+            variant: "destructive",
+          });
+          return;
+        }
 
         const data = await res.json();
         const list =
@@ -59,8 +62,13 @@ export const ManageApplicationPage = () => {
         setApplications(list);
       } catch (err) {
         console.error("Failed to load applications", err);
+        toast({
+          title: "Error",
+          description: getErrorFromCatch(err, "Failed to load applications"),
+          variant: "destructive",
+        });
       } finally {
-        setLoading(false);
+        setLoaded(true);
       }
     };
 
@@ -99,19 +107,7 @@ export const ManageApplicationPage = () => {
             />
           </div>
 
-          {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <Card key={i} className="animate-pulse">
-                  <CardContent className="p-5 space-y-3">
-                    <div className="h-5 bg-muted rounded w-3/4" />
-                    <div className="h-4 bg-muted rounded w-full" />
-                    <div className="h-4 bg-muted rounded w-1/2" />
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : filtered.length === 0 ? (
+          {!loaded ? null : filtered.length === 0 ? (
             <div className="text-center text-muted-foreground py-12">
               <AppWindow className="h-12 w-12 mx-auto mb-3 opacity-30" />
               <p className="text-lg font-medium">No applications found</p>
@@ -154,18 +150,6 @@ export const ManageApplicationPage = () => {
                     <p className="text-sm text-muted-foreground line-clamp-2">
                       {app.description}
                     </p>
-
-                    {/* {app.appUrl && (
-                      <a
-                        href={app.appUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-primary hover:underline inline-flex items-center gap-1"
-                      >
-                        <Globe className="h-3 w-3" />
-                        Visit Application
-                      </a>
-                    )} */}
                   </CardContent>
                 </Card>
               ))}

@@ -11,10 +11,9 @@ import {
 } from "@/components/ui/select";
 import { Shield } from "lucide-react";
 import { useEffect, useState } from "react";
+import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
+import { API_BASE_URL } from "@/services/api-config";
 import { toast } from "sonner";
-
-const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
-// const API_BASE_URL = "http://localhost:8082/api";
 
 export const ManageSecurity = () => {
 
@@ -37,15 +36,22 @@ export const ManageSecurity = () => {
         },
       });
 
-      if (!res.ok) throw new Error();
+      if (!res.ok) {
+        const body = await readResponseBody(res);
+        toast.error(getApiErrorMessage(body, "Failed to load security settings"));
+        return;
+      }
 
       const data = await res.json();
+      const settings = data?.data ?? data;
 
-      setTimeoutValue(data.value);
-      setTimeoutUnit(data.unit);
+      setTimeoutValue(
+        settings?.value != null ? String(settings.value) : "1"
+      );
+      setTimeoutUnit(settings?.unit ?? "HOURS");
 
-    } catch {
-      toast.error("Failed to load security settings");
+    } catch (err) {
+      toast.error(getErrorFromCatch(err, "Failed to load security settings"));
     }
   };
 
@@ -73,12 +79,14 @@ export const ManageSecurity = () => {
       });
   
       if (!response.ok) {
-        throw new Error();
+        const body = await readResponseBody(response);
+        toast.error(getApiErrorMessage(body, "Failed to update security settings."));
+        return;
       }
   
       toast.success("Security settings updated successfully.");
-    } catch {
-      toast.error("Failed to update security settings.");
+    } catch (err) {
+      toast.error(getErrorFromCatch(err, "Failed to update security settings."));
     } finally {
       setLoading(false);
     }
@@ -131,7 +139,7 @@ export const ManageSecurity = () => {
               <Label>Unit</Label>
 
               <Select
-                value={timeoutUnit}
+                value={timeoutUnit ?? "HOURS"}
                 onValueChange={setTimeoutUnit}
               >
 
@@ -156,7 +164,7 @@ export const ManageSecurity = () => {
             <p className="text-sm">
               <strong>Current Configuration:</strong>{" "}
               {timeoutValue}{" "}
-              {timeoutUnit.toLowerCase()}
+              {(timeoutUnit ?? "HOURS").toLowerCase()}
             </p>
 
           </div>

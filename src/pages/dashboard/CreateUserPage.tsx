@@ -13,10 +13,8 @@ import { motion } from "framer-motion";
 import { AppWindow, ArrowLeft, Camera, Plus, Save, Trash2, Upload, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { mapApiError, networkError } from "@/lib/api-errors";
-
-const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
-// const API_BASE_URL = "http://localhost:8082/api";
+import { identityFetch } from "@/services/api-config";
+import { getApiErrorMessage, getErrorFromCatch, mapApiError, networkError, readResponseBody } from "@/lib/api-errors";
 
 export const CreateUserPage = () => {
 
@@ -29,6 +27,20 @@ export const CreateUserPage = () => {
   const [roles, setRoles] = useState<string[]>([]);
   const [idfRoles, setIDFRoles] = useState<string[]>([]);
   const [companies, setCompanies] = useState<{ id: number; name: string }[]>([]);
+  const [defaultCompanyId, setDefaultCompanyId] = useState<number | null>(null);
+
+  const extractCompanyId = (user: {
+    companyId?: number | string;
+    company?: { id?: number | string };
+  }) => {
+    if (user.companyId != null && user.companyId !== "") {
+      return Number(user.companyId);
+    }
+    if (user.company?.id != null) {
+      return Number(user.company.id);
+    }
+    return null;
+  };
 
   const getUserFromToken = () => {
 
@@ -74,83 +86,114 @@ export const CreateUserPage = () => {
     ssn: "",
     address: "",
   });
+
   useEffect(() => {
-
     const tokenUser = getUserFromToken();
-
     const userRoles: string[] = tokenUser?.roles || [];
-
-    const isSuperAdmin =
-      userRoles.includes("super_admin");
-
-    const hasAccess =
-      isSuperAdmin ||
-      userRoles.includes("Company");
+    const isSuperAdmin = userRoles.includes("super_admin");
+    const hasAccess = isSuperAdmin || userRoles.includes("Company");
 
     setShowCompanyDropdown(hasAccess);
+    setShowIDFRoles(userRoles.includes("super_admin"));
 
-    // Show IDF Role only if the user has ONLY the Super Admin role
-    // Show IDF Role only if the logged-in user has the Super Admin role
-    const canViewIDFRoles = userRoles.includes("super_admin");
+    const tokenCompanyId = extractCompanyId(tokenUser ?? {});
+    if (tokenCompanyId) {
+      setDefaultCompanyId(tokenCompanyId);
+      setFormData((prev) => ({
+        ...prev,
+        companyId: prev.companyId || String(tokenCompanyId),
+      }));
+    }
 
-    setShowIDFRoles(canViewIDFRoles);
-    if (!hasAccess) return;
+    if (!hasAccess) {
+      const userId = tokenUser?.userId;
+      if (!userId) return;
 
-    const token = localStorage.getItem("auth-token");
+      identityFetch(`/users/${userId}`)
+        .then(async (res) => {
+          if (!res.ok) {
+            const body = await readResponseBody(res);
+            throw new Error(getApiErrorMessage(body, "Failed to load creator company"));
+          }
+          return res.json();
+        })
+        .then((data) => {
+          const companyId = extractCompanyId(data?.data ?? data ?? {});
+          if (!companyId) return;
 
-    const companyApi = isSuperAdmin
-      ? `${API_BASE_URL}/companies`
-      : `${API_BASE_URL}/companies/my`;
+          setDefaultCompanyId(companyId);
+          setFormData((prev) => ({
+            ...prev,
+            companyId: prev.companyId || String(companyId),
+          }));
+        })
+        .catch(() => {
+          console.error("Failed to load creator company");
+        });
 
-    fetch(companyApi, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: token ? `Bearer ${token}` : "",
-      },
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error();
+      return;
+    }
+
+    const companyEndpoint = isSuperAdmin ? "/companies" : "/companies/my";
+
+    identityFetch(companyEndpoint)
+      .then(async (res) => {
+        if (!res.ok) {
+          const body = await readResponseBody(res);
+          throw new Error(getApiErrorMessage(body, "Failed to load companies"));
+        }
         return res.json();
       })
       .then((data) => {
+        const list = Array.isArray(data) ? data : data?.data || [];
 
-        const list = Array.isArray(data)
-          ? data
-          : data?.data || [];
-
-        setCompanies(
-          list
-          .filter((company: any) => company.enabled === true) 
-          .map((company: any) => ({
+        const mapped = list
+          .filter((company: { enabled?: boolean }) => company.enabled === true)
+          .map((company: { id: number; name: string }) => ({
             id: company.id,
             name: company.name,
-          }))
+          }));
+
+        setCompanies(mapped);
+
+        if (mapped.length === 1) {
+          setDefaultCompanyId(mapped[0].id);
+          setFormData((prev) => ({
+            ...prev,
+            companyId: String(mapped[0].id),
+          }));
+          return;
+        }
+
+        const matchedCompany = mapped.find(
+          (company) => String(company.id) === String(tokenCompanyId)
         );
+        if (matchedCompany) {
+          setFormData((prev) => ({
+            ...prev,
+            companyId: String(matchedCompany.id),
+          }));
+        }
       })
-      .catch(() => {
+      .catch((err) => {
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Failed to load companies",
+          description: getErrorFromCatch(err, "Failed to load companies"),
         });
       });
-
   }, []);
 
   /* ---------------- FETCH ROLES ---------------- */
 
   useEffect(() => {
 
-    const token = localStorage.getItem("auth-token");
-
-    fetch(`${API_BASE_URL}/blueprints`, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: token ? `Bearer ${token}` : "",
-      },
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error();
+    identityFetch("/blueprints")
+      .then(async (res) => {
+        if (!res.ok) {
+          const body = await readResponseBody(res);
+          throw new Error(getApiErrorMessage(body, "Failed to load roles"));
+        }
         return res.json();
       })
       .then((data) => {
@@ -159,11 +202,11 @@ export const CreateUserPage = () => {
           : data?.data || data?.roles || [];
         setRoles(list.map((r: any) => r.name));
       })
-      .catch(() => {
+      .catch((err) => {
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Failed to load roles",
+          description: getErrorFromCatch(err, "Failed to load roles"),
         });
       });
 
@@ -171,16 +214,12 @@ export const CreateUserPage = () => {
 
 
   useEffect(() => {
-    const token = localStorage.getItem("auth-token");
-
-    fetch(`${API_BASE_URL}/roles`, {
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: token ? `Bearer ${token}` : "",
-      },
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error();
+    identityFetch("/roles")
+      .then(async (res) => {
+        if (!res.ok) {
+          const body = await readResponseBody(res);
+          throw new Error(getApiErrorMessage(body, "Failed to load roles"));
+        }
         return res.json();
       })
       .then((data) => {
@@ -204,11 +243,11 @@ export const CreateUserPage = () => {
           }));
         }
       })
-      .catch(() => {
+      .catch((err) => {
         toast({
           variant: "destructive",
           title: "Error",
-          description: "Failed to load roles",
+          description: getErrorFromCatch(err, "Failed to load roles"),
         });
       });
   }, []);
@@ -227,6 +266,13 @@ export const CreateUserPage = () => {
   };
 
   //-----------Validation----------
+
+  const resolveCompanyId = () => {
+    if (formData.companyId) {
+      return Number(formData.companyId);
+    }
+    return defaultCompanyId;
+  };
 
   const validateForm = () => {
     const newErrors = {
@@ -302,7 +348,7 @@ export const CreateUserPage = () => {
 
     setIsLoading(true);
 
-    const token = localStorage.getItem("auth-token");
+    const companyId = resolveCompanyId();
 
     const payload = {
       username: formData.email,
@@ -315,19 +361,12 @@ export const CreateUserPage = () => {
       dob: formData.dob ? new Date(formData.dob).toISOString() : null,
       blueprints: formData.role ? [formData.role] : [],
       roles: formData.idfRoles,
-      ...(showCompanyDropdown &&
-        formData.companyId && {
-        companyId: Number(formData.companyId),
-      }),
+      ...(companyId ? { companyId } : {}),
     };
 
     try {
-      const res = await fetch(`${API_BASE_URL}/users`, {
+      const res = await identityFetch("/users", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: token ? `Bearer ${token}` : "",
-        },
         body: JSON.stringify(payload),
       });
 
@@ -627,7 +666,6 @@ export const CreateUserPage = () => {
                       </option>
                     ))}
                   </select>
-
                 </div>
               )}
 

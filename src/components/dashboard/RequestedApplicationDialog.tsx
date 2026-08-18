@@ -16,10 +16,9 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Send } from "lucide-react";
+import { API_BASE_URL, CONNECTOR_API_BASE_URL } from "@/services/api-config";
+import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
 import { useEffect, useState } from "react";
-
-const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
-const CONNECTOR_API_BASE_URL = "https://idf-connector.ndashdigital.com/api";
 
 type Application = {
   id: string;
@@ -71,7 +70,13 @@ export const RequestedApplicationDialog = ({
         Authorization: token ? `Bearer ${token}` : "",
       },
     })
-      .then((r) => r.json())
+      .then(async (r) => {
+        if (!r.ok) {
+          const body = await readResponseBody(r);
+          throw new Error(getApiErrorMessage(body, "Failed to load applications"));
+        }
+        return r.json();
+      })
       .then((res) => {
         const list = (res?.data?.content || []).map((app: any) => ({
           id: String(app.id),
@@ -80,7 +85,13 @@ export const RequestedApplicationDialog = ({
         }));
         setApplications(list);
       })
-      .catch(() => {});
+      .catch((err) => {
+        toast({
+          title: "Error",
+          description: getErrorFromCatch(err, "Failed to load applications"),
+          variant: "destructive",
+        });
+      });
   }, [open]);
 
   /* Dependent projects + roles */
@@ -102,8 +113,20 @@ export const RequestedApplicationDialog = ({
     };
 
     Promise.all([
-      fetch(`${base}/roles`, { headers }).then((r) => r.json()),
-      fetch(`${base}/projects`, { headers }).then((r) => r.json()),
+      fetch(`${base}/roles`, { headers }).then(async (r) => {
+        if (!r.ok) {
+          const body = await readResponseBody(r);
+          throw new Error(getApiErrorMessage(body, "Failed to load roles"));
+        }
+        return r.json();
+      }),
+      fetch(`${base}/projects`, { headers }).then(async (r) => {
+        if (!r.ok) {
+          const body = await readResponseBody(r);
+          throw new Error(getApiErrorMessage(body, "Failed to load projects"));
+        }
+        return r.json();
+      }),
     ])
       .then(([rolesData, projectsData]) => {
         setAvailableRoles(Array.isArray(rolesData) ? rolesData : rolesData.data || []);
@@ -111,7 +134,13 @@ export const RequestedApplicationDialog = ({
           Array.isArray(projectsData) ? projectsData : projectsData.data || []
         );
       })
-      .catch(() => {});
+      .catch((err) => {
+        toast({
+          title: "Error",
+          description: getErrorFromCatch(err, "Failed to load integration data"),
+          variant: "destructive",
+        });
+      });
   }, [appId, applications]);
 
   const reset = () => {

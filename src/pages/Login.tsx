@@ -5,16 +5,13 @@ import { Label } from "@/components/ui/label";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/hooks/use-toast";
 import { logout } from "@/services/jwt-service";
+import { SESSION_BASE_URL } from "@/services/api-config";
+import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
 import { motion } from "framer-motion";
 import { jwtDecode } from "jwt-decode";
 import { ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-
-const API_BASE_URL = "https://idf-session-api.ndashdigital.com/api";
-// const API_BASE_URL = "http://localhost:8080/api";
-// If using CRA replace with:
-// const API_BASE_URL = process.env.REACT_APP_SESSION_BASE_URL;
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -49,7 +46,7 @@ const Login = () => {
 
 
     try {
-      const response = await fetch(`${API_BASE_URL}/authenticate`, {
+      const response = await fetch(`${SESSION_BASE_URL}/authenticate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -57,20 +54,13 @@ const Login = () => {
         body: JSON.stringify({ email, password }),
       });
 
-      const responseText = await response.text();
-
-      let data: any = {};
-
-      try {
-        data = responseText ? JSON.parse(responseText) : {};
-      } catch {
-        data = { message: responseText };
-      }
+      const body = await readResponseBody(response);
+      const data = (body && typeof body === "object" ? body : { message: body }) as Record<string, unknown>;
 
       if (!response.ok) {
-        const rawMsg = (data?.message || "").toString();
+        const rawMsg = getApiErrorMessage(data, "Invalid username or password!");
         const lower = rawMsg.toLowerCase();
-        let friendly = rawMsg || "Invalid username or password!";
+        let friendly = rawMsg;
 
         // Username-related failures → show specific message
         if (
@@ -93,12 +83,16 @@ const Login = () => {
         throw new Error(friendly);
       }
 
+      const token = (data as { token?: string }).token;
+      if (!token) {
+        throw new Error(getApiErrorMessage(data, "Invalid login response"));
+      }
       // ✅ Save token
-      localStorage.setItem("auth-token", data.token);
+      localStorage.setItem("auth-token", token);
 
 
       // ✅ Decode token
-      const decoded: any = jwtDecode(data.token);
+      const decoded: any = jwtDecode(token);
       const expiresIn = decoded.exp * 1000 - Date.now();
 
       setTimeout(() => {
@@ -149,10 +143,10 @@ const Login = () => {
       const isCompanyOnly = normalized.includes("company") && !isPrivileged;
       navigate(isUserOnly || isCompanyOnly ? "/welcome" : "/dashboard");
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast({
         title: "Login Failed",
-        description: err.message || "Something went wrong.",
+        description: getErrorFromCatch(err, "Something went wrong."),
         variant: "destructive",
       });
     } finally {

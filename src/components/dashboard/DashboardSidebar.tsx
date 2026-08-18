@@ -8,7 +8,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useSettings } from "@/context/SettingsContext";
+import { useSettings, isSettingEnabled } from "@/context/SettingsContext";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -90,7 +90,13 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
   }, []);
 
   const toggleMenu = (key: string) => {
-    setOpenMenus((prev) => ({ ...prev, [key]: !prev[key] }));
+    setOpenMenus((prev) => {
+      const isOpen = !!prev[key];
+      if (isOpen) {
+        return {};
+      }
+      return { [key]: true };
+    });
   };
 
   const hasRole = (role: string) =>
@@ -203,10 +209,11 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
 
   // Build menu based on role priority
   const canViewCompanyMenu =
-    settings.SHOW_COMPANY_MENU &&
+    isSettingEnabled(settings.SHOW_COMPANY_MENU, true) &&
     (
       hasRole("super_admin") ||
       hasRole("administration") ||
+      hasRole("manager") ||
       hasRole("company")
     );
   let menuItems: MenuItem[] = [];
@@ -333,7 +340,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed lg:static inset-y-0 left-0 z-50 w-72 bg-sidebar border-r border-sidebar-border flex flex-col transition-transform duration-300",
+          "fixed inset-y-0 left-0 z-50 flex h-svh w-72 flex-col border-r border-sidebar-border bg-sidebar transition-transform duration-300",
           open ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >

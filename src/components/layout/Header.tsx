@@ -27,7 +27,6 @@ export const Header = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
             <div className="relative">
               <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full group-hover:bg-primary/30 transition-colors" />
@@ -42,36 +41,50 @@ export const Header = () => {
             </span>
           </Link>
 
+          {isAuthPage ? (
+            <nav className="hidden md:flex items-center gap-1">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  to={link.href}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${location.pathname === link.href
+                    ? "text-primary bg-primary/10"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                    }`}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          ) : (
+            <>
+              {/* Desktop Navigation */}
+              <nav className="hidden md:flex items-center gap-1">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    to={link.href}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${location.pathname === link.href
+                      ? "text-primary bg-primary/10"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                      }`}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </nav>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                to={link.href}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${location.pathname === link.href
-                  ? "text-primary bg-primary/10"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-                  }`}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-
-          {/* Auth Buttons */}
-          <div className="hidden md:flex items-center gap-3">
-            {!isAuthPage && (
-              <>
+              {/* Auth Buttons */}
+              <div className="hidden md:flex items-center gap-3">
                 <Button variant="ghost" asChild>
                   <Link to="/login">Sign In</Link>
                 </Button>
                 <Button variant="hero" size="sm" asChild>
                   <Link to="/register">Get Started</Link>
                 </Button>
-              </>
-            )}
-          </div>
+              </div>
+            </>
+          )}
 
           {/* Mobile Menu Button */}
           <button

@@ -11,6 +11,8 @@ import {
 import { motion } from "framer-motion";
 import { CheckCircle, ClipboardList, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
+import { API_BASE_URL } from "@/services/api-config";
+import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
 import { toast } from "sonner";
 
 type AccessRequest = {
@@ -21,8 +23,6 @@ type AccessRequest = {
   comments: string;
   requestedAt: string;
 };
-
-const API_BASE_URL = "https://identity-api.ndashdigital.com/api";
 
 // ✅ Auth Header
 const authHeaders = () => {
@@ -86,15 +86,16 @@ export const MyApprovalPage = () => {
         }
       );
 
-      const data = await res.json();
+      const body = await readResponseBody(res);
 
       if (res.ok) {
-        setRequests(data.data || []);
+        const data = body as { data?: AccessRequest[] };
+        setRequests(data?.data || []);
       } else {
-        throw new Error(data?.error || "Failed");
+        toast.error(getApiErrorMessage(body, "Failed to fetch requests"));
       }
     } catch (error) {
-      toast.error("Failed to fetch requests");
+      toast.error(getErrorFromCatch(error, "Failed to fetch requests"));
     } finally {
       setLoading(false);
     }
@@ -127,7 +128,11 @@ export const MyApprovalPage = () => {
         }
       );
 
-      if (!res.ok) throw new Error("Action failed");
+      if (!res.ok) {
+        const body = await readResponseBody(res);
+        toast.error(getApiErrorMessage(body, "Action failed"));
+        return;
+      }
 
       // ✅ Update UI instantly
       setRequests((prev) =>
@@ -138,7 +143,7 @@ export const MyApprovalPage = () => {
 
       toast.success(`Request ${status.toLowerCase()} successfully`);
     } catch (error) {
-      toast.error("Action failed");
+      toast.error(getErrorFromCatch(error, "Action failed"));
     } finally {
       setActionLoadingId(null);
     }
