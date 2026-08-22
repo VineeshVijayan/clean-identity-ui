@@ -13,6 +13,8 @@ export { ApiError, getApiErrorMessage, parseResponse, readResponseBody, unwrapAp
 
 const IDENTITY_API_PROD = "https://identity-api.ndashdigital.com/api";
 const IDENTITY_API_LOCAL = "http://localhost:8080/api";
+const CONNECTOR_API_PROD = "https://idf-connector.ndashdigital.com/api";
+const CONNECTOR_API_LOCAL = "http://localhost:8081/api";
 
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
@@ -24,7 +26,7 @@ export const SESSION_BASE_URL =
 
 export const CONNECTOR_API_BASE_URL =
   import.meta.env.VITE_CONNECTOR_BASE_URL ||
-  "https://idf-connector.ndashdigital.com/api";
+  (import.meta.env.DEV ? CONNECTOR_API_LOCAL : CONNECTOR_API_PROD);
 
 export type ApiRequestOptions = RequestInit & {
   skipLoader?: boolean;

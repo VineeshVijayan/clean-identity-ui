@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Send } from "lucide-react";
 import { API_BASE_URL, CONNECTOR_API_BASE_URL } from "@/services/api-config";
 import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
+import { mapIntegrationProjects, type IntegrationProject } from "@/lib/integration-api";
 import { useEffect, useState } from "react";
 
 type Application = {
@@ -26,7 +27,6 @@ type Application = {
   integrationName: string;
 };
 
-type IntegrationProject = { id: string; key: string; name: string };
 type IntegrationRole = { id: string; name: string };
 
 interface Props {
@@ -130,9 +130,7 @@ export const RequestedApplicationDialog = ({
     ])
       .then(([rolesData, projectsData]) => {
         setAvailableRoles(Array.isArray(rolesData) ? rolesData : rolesData.data || []);
-        setAvailableProjects(
-          Array.isArray(projectsData) ? projectsData : projectsData.data || []
-        );
+        setAvailableProjects(mapIntegrationProjects(projectsData));
       })
       .catch((err) => {
         toast({

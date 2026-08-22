@@ -50,7 +50,7 @@ import {
     UserPlus
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 type FetchType = "ALL" | "ACTIVE" | "INACTIVE";
 
@@ -58,8 +58,10 @@ const mapUserStatus = (user: {
     status?: string | boolean;
     enabled?: boolean;
     active?: boolean;
+    isActive?: boolean;
 }) => {
     if (typeof user.status === "string") return user.status;
+    if (typeof user.isActive === "boolean") return user.isActive ? "Active" : "Inactive";
     if (typeof user.enabled === "boolean") return user.enabled ? "Active" : "Inactive";
     if (typeof user.active === "boolean") return user.active ? "Active" : "Inactive";
     if (typeof user.status === "boolean") return user.status ? "Active" : "Inactive";
@@ -169,6 +171,7 @@ const downloadUsersCsv = (users: User[], filename: string) => {
 
 export const UserAdministrationPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { toast } = useToast();
     const [users, setUsers] = useState<User[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
@@ -180,6 +183,7 @@ export const UserAdministrationPage = () => {
     const [roleFilter, setRoleFilter] = useState("all");
     const [companyFilter, setCompanyFilter] = useState("all");
     const [filterOpen, setFilterOpen] = useState(false);
+    const [togglingUserId, setTogglingUserId] = useState<string | null>(null);
     const PAGE_SIZE = 20;
 
     const activeFilterCount = [roleFilter, companyFilter].filter(
@@ -246,6 +250,51 @@ export const UserAdministrationPage = () => {
 
         loadUsers();
     }, [fetchType]);
+
+    const toggleUserStatus = async (user: User) => {
+        const isActive = user.status !== "Active";
+
+        setTogglingUserId(user.id);
+
+        try {
+            const res = await identityFetch(`/users/${user.id}/active`, {
+                method: "PUT",
+                skipLoader: true,
+                body: JSON.stringify({ isActive }),
+            });
+
+            if (!res.ok) {
+                const body = await readResponseBody(res);
+                toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: getApiErrorMessage(body, "Failed to update user status"),
+                });
+                return;
+            }
+
+            setUsers((prev) =>
+                prev.map((item) =>
+                    item.id === user.id
+                        ? { ...item, status: isActive ? "Active" : "Inactive" }
+                        : item
+                )
+            );
+
+            toast({
+                title: "Status Updated",
+                description: `User ${isActive ? "activated" : "deactivated"} successfully.`,
+            });
+        } catch (err) {
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: getErrorFromCatch(err, "Failed to update user status"),
+            });
+        } finally {
+            setTogglingUserId(null);
+        }
+    };
 
     const availableRoles = useMemo(() => {
         const roles = new Set<string>();
@@ -559,6 +608,8 @@ export const UserAdministrationPage = () => {
                                         <div className="flex items-center justify-end gap-2">
                                             <Switch
                                                 checked={user.status === "Active"}
+                                                disabled={togglingUserId === user.id}
+                                                onCheckedChange={() => toggleUserStatus(user)}
                                                 aria-label={`Toggle status for ${user.firstName}`}
                                             />
                                             <DropdownMenu>
@@ -583,7 +634,17 @@ export const UserAdministrationPage = () => {
                                                         <Edit className="h-4 w-4 mr-2" />
                                                         Edit
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        onClick={() =>
+                                                            navigate("/admin/reset-password", {
+                                                                state: {
+                                                                    userId: user.id,
+                                                                    user,
+                                                                    from: location.pathname,
+                                                                },
+                                                            })
+                                                        }
+                                                    >
                                                         <KeyRound className="h-4 w-4 mr-2" />
                                                         Reset Password
                                                     </DropdownMenuItem>
