@@ -28,6 +28,7 @@ import { ManageRolesPage } from "./pages/dashboard/ManageRolesPage";
 import { MyApprovalPage } from "./pages/dashboard/MyApprovalPage";
 import { NewApplicationPage } from "./pages/dashboard/NewApplicationPage";
 import { NewRolePage } from "./pages/dashboard/NewRolePage";
+import { ResetPasswordPage } from "./pages/dashboard/ResetPasswordPage";
 import { ReportsPage } from "./pages/dashboard/ReportsPage";
 import { UpdateApplicationPage } from "./pages/dashboard/UpdateApplicationPage";
 import { UserAdministrationPage } from "./pages/dashboard/UserAdministrationPage";
@@ -98,6 +99,7 @@ const App = () => (
             <Route path="manage-application" element={<ManageApplicationPage />} />
             <Route path="settings" element={<IDFSettingsPage />} />
             <Route path="user-administration" element={<UserAdministrationPage />} />
+            <Route path="reset-password" element={<ResetPasswordPage />} />
           </Route>
 
           {/* Other Routes */}

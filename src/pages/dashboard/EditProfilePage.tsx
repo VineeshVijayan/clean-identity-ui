@@ -31,7 +31,8 @@ import {
 } from "@/components/ui/select";
 
 import { identityFetch } from "@/services/api-config";
-import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
+import { getApiErrorMessage, getErrorFromCatch, mapBlueprintOptions, readResponseBody } from "@/lib/api-errors";
+import { getUserRoles } from "@/services/jwt-service";
 
 const getUserFromToken = () => {
   const token = localStorage.getItem("auth-token");
@@ -43,6 +44,58 @@ const getUserFromToken = () => {
   } catch {
     return null;
   }
+};
+
+const getStoredUser = () => {
+  try {
+    return JSON.parse(localStorage.getItem("user") || "{}") as {
+      userId?: string | number;
+    };
+  } catch {
+    return {};
+  }
+};
+
+type ManagerOption = {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  active: boolean;
+};
+
+const mapManagerUsers = (users: unknown[]): ManagerOption[] =>
+  users.map((manager) => {
+    const item = manager as {
+      id: number;
+      firstName?: string;
+      lastName?: string;
+      email?: string;
+      active?: boolean;
+    };
+
+    return {
+      id: item.id,
+      firstName: item.firstName || "",
+      lastName: item.lastName || "",
+      email: item.email || "",
+      active: item.active ?? true,
+    };
+  });
+
+const fetchManagers = async (): Promise<ManagerOption[]> => {
+  const res = await identityFetch("/users/managers?fetchType=ACTIVE", {
+    headers: { Accept: "application/json" },
+  });
+
+  if (!res.ok) {
+    const body = await readResponseBody(res);
+    throw new Error(getApiErrorMessage(body, "Failed to load managers"));
+  }
+
+  const data = await res.json();
+  const users = data?.data ?? (Array.isArray(data) ? data : []);
+  return mapManagerUsers(users);
 };
 export const EditProfilePage = () => {
 
@@ -63,8 +116,16 @@ export const EditProfilePage = () => {
 
   // fallback (optional)
   const tokenUser = getUserFromToken();
+  const storedUser = getStoredUser();
 
-  const userId = passedUserId || tokenUser?.userId;
+  const userId =
+    passedUserId ||
+    tokenUser?.userId ||
+    storedUser.userId ||
+    tokenUser?.id;
+  const isSuperAdmin = getUserRoles().some(
+    (role) => role?.toLowerCase() === "super_admin"
+  );
   const userEmail = passedUser?.email || tokenUser?.sub;
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -79,7 +140,6 @@ export const EditProfilePage = () => {
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [roleToAdd, setRoleToAdd] = useState("");
   const [selectedBlueprint, setSelectedBlueprint] = useState("");
-  const [companyId, setCompanyId] = useState<number | null>(null);
   const [selectedManagerId, setSelectedManagerId] = useState<number | null>(null);
   const [existingManagerName, setExistingManagerName] = useState<string | null>(null);
   const [availableManagers, setAvailableManagers] = useState<
@@ -158,10 +218,10 @@ export const EditProfilePage = () => {
 
         const data = await res.json();
         const user = data?.data || data;
+
         setCountryCode(user.countryCode || "US:+1");
         setSelectedRoles(user.roles || []);
         setSelectedBlueprint(user.blueprints?.[0] || "");
-        setCompanyId(user.companyId ?? null);
         setSelectedManagerId(user.manager ?? null);
         setExistingManagerName(user.managerName ?? null);
 
@@ -240,8 +300,14 @@ export const EditProfilePage = () => {
     setRoleToAdd("");
   };
 
-  const handleBluePrintSelect = (blueprint: string) => {
-    setSelectedBlueprint(blueprint);
+  const handleBluePrintSelect = (blueprintId: string) => {
+    const selected = availableBlueprints.find(
+      (blueprint) => String(blueprint.id) === blueprintId
+    );
+
+    if (!selected) return;
+
+    setSelectedBlueprint(selected.name);
   };
 
   const removeRole = (roleName: string) => {
@@ -260,10 +326,14 @@ export const EditProfilePage = () => {
     if (!selected) return;
 
     setSelectedManagerId(selected.id);
+    setExistingManagerName(
+      `${selected.firstName} ${selected.lastName}`.trim() || selected.email || null
+    );
   };
 
   const removeManager = () => {
     setSelectedManagerId(null);
+    setExistingManagerName(null);
   };
 
   useEffect(() => {
@@ -322,15 +392,7 @@ export const EditProfilePage = () => {
 
         const data = await res.json();
 
-        // Supports ["admin","user"] OR {data:["admin","user"]}
-        const roles = data?.data || [];
-
-        setAvailableBluePrints(
-          roles.map((role: any) => ({
-            id: role.id,
-            name: role.name,
-          }))
-        );
+        setAvailableBluePrints(mapBlueprintOptions(data));
       } catch (err) {
         toast({
           variant: "destructive",
@@ -344,47 +406,18 @@ export const EditProfilePage = () => {
   }, [toast]);
 
   useEffect(() => {
-    if (!companyId || !userId) {
-      setAvailableManagers([]);
-      return;
-    }
+    if (!isSuperAdmin) return;
 
-    const fetchCompanyUsers = async () => {
+    const loadManagers = async () => {
       try {
-        const res = await identityFetch(
-          `/companies/${companyId}/users?userId=${userId}`,
-          { headers: { Accept: "application/json" } }
-        );
-
-        if (!res.ok) {
-          const body = await readResponseBody(res);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: getApiErrorMessage(body, "Failed to load managers"),
-          });
-          return;
-        }
-
-        const data = await res.json();
-        const users = data?.data || [];
-
+        const managers = await fetchManagers();
         setAvailableManagers(
-          users.map((manager: {
-            id: number;
-            firstName?: string;
-            lastName?: string;
-            email?: string;
-            active?: boolean;
-          }) => ({
-            id: manager.id,
-            firstName: manager.firstName || "",
-            lastName: manager.lastName || "",
-            email: manager.email || "",
-            active: manager.active ?? true,
-          }))
+          userId
+            ? managers.filter((manager) => String(manager.id) !== String(userId))
+            : managers
         );
       } catch (err) {
+        setAvailableManagers([]);
         toast({
           variant: "destructive",
           title: "Error",
@@ -393,8 +426,8 @@ export const EditProfilePage = () => {
       }
     };
 
-    fetchCompanyUsers();
-  }, [companyId, userId, toast]);
+    loadManagers();
+  }, [isSuperAdmin, userId, toast]);
 
   /* ---------------- UPDATE FORM ---------------- */
 
@@ -514,7 +547,7 @@ export const EditProfilePage = () => {
       dob: form.dob ? new Date(form.dob).toISOString() : null,
       roles: selectedRoles,
       blueprints: selectedBlueprint ? [selectedBlueprint] : [],
-      manager: selectedManagerId,
+      ...(isSuperAdmin ? { manager: selectedManagerId } : {}),
     };
 
     try {
@@ -551,27 +584,6 @@ export const EditProfilePage = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  /* ---------------- CLEAR ---------------- */
-
-  const handleClear = () => {
-    setForm({
-      employeeId: "",
-      firstName: "",
-      lastName: "",
-      phoneNumber: "",
-      countryCode: "",
-      email: "",
-      dob: "",
-      ssn: "",
-      companyName: "",
-    });
-    setCountryCode("US:+1"); // Reset country code selector
-    setPhotoPreview(null);
-    setErrors({});
-    setSelectedManagerId(null);
-    setExistingManagerName(null);
   };
 
   /* ---------------- ANIMATION ---------------- */
@@ -930,7 +942,7 @@ export const EditProfilePage = () => {
                       {availableBlueprints.map((bp) => (
                         <SelectItem
                           key={bp.id}
-                          value={bp.name}
+                          value={String(bp.id)}
                         >
                           {bp.name
                             .replace(/_/g, " ")
@@ -967,47 +979,50 @@ export const EditProfilePage = () => {
                 <div className="space-y-3">
                   <Label>Manager</Label>
 
-                  <Select
-                    value={
-                      selectedManagerId != null ? String(selectedManagerId) : ""
-                    }
-                    onValueChange={handleManagerSelect}
-                    disabled={!companyId}
-                  >
-                    <SelectTrigger>
-                      <SelectValue
-                        placeholder={
-                          companyId ? "Select Manager" : "Company not available"
+                  {isSuperAdmin ? (
+                    <>
+                      <Select
+                        value={
+                          selectedManagerId != null ? String(selectedManagerId) : ""
                         }
-                      />
-                    </SelectTrigger>
+                        onValueChange={handleManagerSelect}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select Manager" />
+                        </SelectTrigger>
 
-                    <SelectContent>
-                      {availableManagers.map((manager) => (
-                        <SelectItem key={manager.id} value={String(manager.id)}>
-                          {`${manager.firstName} ${manager.lastName}`.trim()}
-                          {manager.email ? ` (${manager.email})` : ""}
-                          {!manager.active ? " — Inactive" : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                        <SelectContent>
+                          {availableManagers.map((manager) => (
+                            <SelectItem key={manager.id} value={String(manager.id)}>
+                              {`${manager.firstName} ${manager.lastName}`.trim()}
+                              {manager.email ? ` (${manager.email})` : ""}
+                              {!manager.active ? " — Inactive" : ""}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
 
-                  <div className="flex flex-wrap gap-2">
-                    {existingManagerName && (
-                      <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">
-                        <span>{existingManagerName}</span>
+                      <div className="flex flex-wrap gap-2">
+                        {existingManagerName && (
+                          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">
+                            <span>{existingManagerName}</span>
 
-                        <button
-                          type="button"
-                          onClick={removeManager}
-                          className="hover:text-destructive"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
+                            <button
+                              type="button"
+                              onClick={removeManager}
+                              className="hover:text-destructive"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground py-2">
+                      {existingManagerName || "—"}
+                    </p>
+                  )}
                 </div>
 
               </div>
@@ -1169,11 +1184,6 @@ export const EditProfilePage = () => {
 
 
         <motion.div variants={itemVariants} className="flex justify-end gap-3">
-
-          <Button variant="outline" type="button" onClick={handleClear}>
-            Clear
-          </Button>
-
           <Button type="submit" disabled={isLoading}>
             <Save className="h-4 w-4 mr-2" />
             {isLoading ? "Saving..." : "Save Profile"}

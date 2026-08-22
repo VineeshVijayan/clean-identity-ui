@@ -360,6 +360,61 @@ export function unwrapApiData<T>(body: unknown): T {
 }
 
 /**
+ * Normalizes common API list shapes into a flat array.
+ */
+export function unwrapApiList(body: unknown): unknown[] {
+  if (Array.isArray(body)) return body;
+
+  if (!body || typeof body !== "object") return [];
+
+  const record = body as Record<string, unknown>;
+
+  if (Array.isArray(record.content)) return record.content;
+  if (Array.isArray(record.blueprints)) return record.blueprints;
+  if (Array.isArray(record.roles)) return record.roles;
+  if (Array.isArray(record.items)) return record.items;
+
+  const data = record.data;
+  if (Array.isArray(data)) return data;
+
+  if (data && typeof data === "object") {
+    const nested = data as Record<string, unknown>;
+    if (Array.isArray(nested.content)) return nested.content;
+    if (Array.isArray(nested.blueprints)) return nested.blueprints;
+    if (Array.isArray(nested.roles)) return nested.roles;
+    if (Array.isArray(nested.items)) return nested.items;
+  }
+
+  return [];
+}
+
+export type BlueprintOption = {
+  id: string | number;
+  name: string;
+};
+
+export function mapBlueprintOptions(body: unknown): BlueprintOption[] {
+  return unwrapApiList(body)
+    .map((item) => {
+      if (typeof item === "string") {
+        return { id: item, name: item };
+      }
+
+      if (!item || typeof item !== "object") return null;
+
+      const record = item as Record<string, unknown>;
+      const name = record.name ?? record.title ?? record.label;
+      if (name == null || name === "") return null;
+
+      return {
+        id: record.id ?? name,
+        name: String(name),
+      };
+    })
+    .filter((item): item is BlueprintOption => item != null);
+}
+
+/**
  * Returns the best message from a caught error (ApiError, Error, or fallback).
  */
 export function getErrorFromCatch(error: unknown, fallback: string): string {

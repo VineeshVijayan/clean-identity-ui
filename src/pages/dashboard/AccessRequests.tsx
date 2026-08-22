@@ -55,6 +55,7 @@ export const AccessRequestsPage = () => {
   const [approvalEntries, setApprovalEntries] = useState<AccessRequestEntry[]>([]);
   const [requestsLoading, setRequestsLoading] = useState(false);
   const [approvalsLoading, setApprovalsLoading] = useState(false);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   const getDeptId = () => {
     const token = localStorage.getItem("auth-token");
@@ -189,61 +190,62 @@ export const AccessRequestsPage = () => {
     }
   };
 
-  const handleApproveRequest = async (id: string) => {
+  const handleDelegateAction = async (
+    entry: AccessRequestEntry,
+    status: "APPROVED" | "REJECTED"
+  ) => {
+    const [, actualId] = entry.id.split("-");
+
+    if (!actualId || entry.requestType !== "DELEGATE") {
+      return;
+    }
+
     try {
-      const [type, actualId] = id.split("-");
+      setActionLoadingId(entry.id);
 
-      let res;
+      const res = await identityFetch(`/delegates/${actualId}/action`, {
+        method: "POST",
+        headers: {
+          ...acceptJsonHeaders,
+          "Content-Type": "application/json",
+        },
+        skipLoader: true,
+        body: JSON.stringify({
+          status,
+          comments: entry.comments || "",
+        }),
+      });
 
-      // Delegate approval
-      if (type === "DELEGATE") {
-        res = await identityFetch(`/delegates/requests/${actualId}/approve`, {
-          method: "PUT",
-          headers: acceptJsonHeaders,
-          skipLoader: true,
-        });
-      }
-
-      if (!res || !res.ok) {
-        const body = res ? await readResponseBody(res) : null;
+      if (!res.ok) {
+        const body = await readResponseBody(res);
         toast({
-          title: "Approval failed",
-          description: getApiErrorMessage(body, "Approval failed"),
+          title: "Action failed",
+          description: getApiErrorMessage(body, "Action failed"),
           variant: "destructive",
         });
         return;
       }
 
-      // Remove row after approval
-      setApprovalEntries((prev) =>
-        prev.filter((r) => r.id !== id)
-      );
+      setApprovalEntries((prev) => prev.filter((r) => r.id !== entry.id));
 
       toast({
-        title: "Approved",
+        title: status === "APPROVED" ? "Approved" : "Rejected",
         description:
-          type === "COMPANY"
-            ? "Company approved successfully"
-            : "Delegate request approved successfully",
+          status === "APPROVED"
+            ? "Delegate request approved successfully"
+            : "Delegate request rejected successfully",
       });
     } catch (err) {
       console.error(err);
 
       toast({
-        title: "Approval failed",
-        description: getErrorFromCatch(err, "Approval failed"),
+        title: "Action failed",
+        description: getErrorFromCatch(err, "Action failed"),
         variant: "destructive",
       });
+    } finally {
+      setActionLoadingId(null);
     }
-  };
-
-  const handleRejectRequest = (id: string) => {
-    setRequestAccessEntries((prev) =>
-      prev.map((r) =>
-        r.id === id ? { ...r, status: "Rejected" } : r
-      )
-    );
-    toast({ title: "Rejected" });
   };
 
   return (
@@ -361,8 +363,10 @@ export const AccessRequestsPage = () => {
                       <TableCell className="flex gap-2">
                         <Button
                           size="sm"
-                          onClick={() => handleApproveRequest(r.id)}
-                          disabled={r.status !== "Pending"}
+                          onClick={() => handleDelegateAction(r, "APPROVED")}
+                          disabled={
+                            r.status !== "Pending" || actionLoadingId === r.id
+                          }
                         >
                           <Check className="h-4 w-4 mr-1" />
                           Approve
@@ -371,8 +375,10 @@ export const AccessRequestsPage = () => {
                         <Button
                           size="sm"
                           variant="destructive"
-                          onClick={() => handleRejectRequest(r.id)}
-                          disabled={r.status !== "Pending"}
+                          onClick={() => handleDelegateAction(r, "REJECTED")}
+                          disabled={
+                            r.status !== "Pending" || actionLoadingId === r.id
+                          }
                         >
                           <X className="h-4 w-4 mr-1" />
                           Reject

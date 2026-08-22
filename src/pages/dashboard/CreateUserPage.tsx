@@ -14,7 +14,7 @@ import { AppWindow, ArrowLeft, Camera, Plus, Save, Trash2, Upload, User } from "
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { identityFetch } from "@/services/api-config";
-import { getApiErrorMessage, getErrorFromCatch, mapApiError, networkError, readResponseBody } from "@/lib/api-errors";
+import { getApiErrorMessage, getErrorFromCatch, mapBlueprintOptions, mapApiError, networkError, readResponseBody } from "@/lib/api-errors";
 
 export const CreateUserPage = () => {
 
@@ -197,10 +197,7 @@ export const CreateUserPage = () => {
         return res.json();
       })
       .then((data) => {
-        const list = Array.isArray(data)
-          ? data
-          : data?.data || data?.roles || [];
-        setRoles(list.map((r: any) => r.name));
+        setRoles(mapBlueprintOptions(data).map((blueprint) => blueprint.name));
       })
       .catch((err) => {
         toast({

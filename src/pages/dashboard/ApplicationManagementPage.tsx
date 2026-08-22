@@ -36,6 +36,7 @@ import {
   X,
 } from "lucide-react";
 import { connectorFetch, identityFetch } from "@/services/api-config";
+import { mapIntegrationProjects, type IntegrationProject } from "@/lib/integration-api";
 import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
 import { useEffect, useRef, useState } from "react";
 
@@ -60,12 +61,6 @@ type UserEntry = {
   departmentName: string;
   subordinates: Subordinate[];
   applications: UserApplicationEntry[];
-};
-
-type IntegrationProject = {
-  id: string;
-  key: string;
-  name: string;
 };
 
 type IntegrationRole = {
@@ -455,9 +450,7 @@ export const ApplicationManagementPage = () => {
 
         setAvailableRoles(Array.isArray(rolesData) ? rolesData : rolesData.data || []);
 
-        setAvailableProjects(
-          Array.isArray(projectsData) ? projectsData : projectsData.data || []
-        );
+        setAvailableProjects(mapIntegrationProjects(projectsData));
       } catch (error) {
         console.error("Failed to fetch integration data", error);
       }

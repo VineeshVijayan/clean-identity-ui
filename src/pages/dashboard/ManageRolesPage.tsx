@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { API_BASE_URL, CONNECTOR_API_BASE_URL } from "@/services/api-config";
-import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
+import { getApiErrorMessage, getErrorFromCatch, readResponseBody, unwrapApiList } from "@/lib/api-errors";
 import { useNavigate } from "react-router-dom";
 
 type Role = {
@@ -89,11 +89,6 @@ export const ManageRolesPage = () => {
     role.name.toLowerCase().includes(blueprintSearch.toLowerCase())
   );
 
-  const visibleBlueprints =
-    blueprintSearch.trim() === ""
-      ? filteredBlueprints.slice(0, 8) // initial limited list
-      : filteredBlueprints;
-
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (
@@ -131,23 +126,32 @@ export const ManageRolesPage = () => {
         }
 
         const response = await res.json();
-        const rolesArray = Array.isArray(response)
-          ? response
-          : response.data || [];
+        const rolesArray = unwrapApiList(response);
 
-        const mappedRoles: Role[] = rolesArray.map((r: any) => ({
+        const mappedRoles: Role[] = rolesArray.map((r: {
+          id: number;
+          name: string;
+          description?: string;
+          userCount?: number;
+          permissionCount?: number;
+          type?: "system" | "custom";
+          createdDate?: string;
+          lastModified?: string;
+          applications?: Role["applications"];
+          jobTitles?: Role["jobTitles"];
+        }) => ({
           id: r.id,
           name: r.name,
+          description: r.description || "",
+          userCount: r.userCount || 0,
+          permissionCount: r.permissionCount || 0,
+          type: r.type || "custom",
+          createdDate: r.createdDate || "",
+          lastModified: r.lastModified || "",
           applications: r.applications || [],
           jobTitles: r.jobTitles || [],
         }));
         setRoles(mappedRoles);
-        setAvailableRoles(
-          roles.map((role: any) => ({
-            id: role.id,
-            name: role.name,
-          }))
-        );
       } catch (err) {
         toast({
           title: "Error",
@@ -511,8 +515,8 @@ export const ManageRolesPage = () => {
 
             {blueprintDropdownOpen && (
               <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-lg max-h-72 overflow-y-auto">
-                {visibleBlueprints.length > 0 ? (
-                  visibleBlueprints.map((role) => (
+                {filteredBlueprints.length > 0 ? (
+                  filteredBlueprints.map((role) => (
                     <button
                       key={role.id}
                       type="button"
