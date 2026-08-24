@@ -4,9 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/hooks/use-toast";
-import { logout } from "@/services/jwt-service";
-import { SESSION_BASE_URL } from "@/services/api-config";
-import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
+import { getAuthErrorMessage, login as authLogin } from "@/services/auth-service";
 import { motion } from "framer-motion";
 import { jwtDecode } from "jwt-decode";
 import { ArrowRight, Eye, EyeOff, Lock, Mail } from "lucide-react";
@@ -44,84 +42,16 @@ const Login = () => {
 
     setIsLoading(true);
 
-
     try {
-      const response = await fetch(`${SESSION_BASE_URL}/authenticate`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      const data = await authLogin({ email, password });
+      const accessToken = data.accessToken ?? data.token;
 
-      const body = await readResponseBody(response);
-      const data = (body && typeof body === "object" ? body : { message: body }) as Record<string, unknown>;
-
-      if (!response.ok) {
-        const rawMsg = getApiErrorMessage(data, "Invalid username or password!");
-        const lower = rawMsg.toLowerCase();
-        let friendly = rawMsg;
-
-        // Username-related failures → show specific message
-        if (
-          response.status === 404 ||
-          lower.includes("user not found") ||
-          lower.includes("no such user") ||
-          lower.includes("username") ||
-          lower.includes("user does not exist") ||
-          lower.includes("invalid user")
-        ) {
-          friendly = "User is not valid.";
-        } else if (
-          lower.includes("password") ||
-          lower.includes("credentials") ||
-          lower.includes("unauthorized")
-        ) {
-          friendly = "Invalid username or password!";
-        }
-
-        throw new Error(friendly);
+      if (!accessToken) {
+        throw new Error("Invalid login response");
       }
 
-      const token = (data as { token?: string }).token;
-      if (!token) {
-        throw new Error(getApiErrorMessage(data, "Invalid login response"));
-      }
-      // ✅ Save token
-      localStorage.setItem("auth-token", token);
-
-
-      // ✅ Decode token
-      const decoded: any = jwtDecode(token);
-      const expiresIn = decoded.exp * 1000 - Date.now();
-
-      setTimeout(() => {
-        logout();
-      }, expiresIn);
-
-      // ✅ Save roles
-      if (decoded.roles) {
-        const roles = Array.isArray(decoded.roles)
-          ? decoded.roles
-          : [decoded.roles];
-        localStorage.setItem("roles", JSON.stringify(roles));
-      }
-
-      // ✅ Save user
-      const userInfo = {
-        name: decoded.userName || "",
-        connectorUserId: decoded.connectorUserId || "",
-        userId: decoded.userId || "",
-        employeeId: decoded.employeeId || "",
-        email: decoded.sub || email,
-      };
-
-      localStorage.setItem("user", JSON.stringify(userInfo));
-
-      // Load settings for logged-in user
       await fetchSettings();
 
-      // ✅ Notify layout
       window.dispatchEvent(new Event("auth-change"));
 
       toast({
@@ -129,7 +59,7 @@ const Login = () => {
         description: "You have successfully signed in.",
       });
 
-      // Redirect user-only roles to landing page; others to dashboard
+      const decoded = jwtDecode<{ roles?: string | string[] }>(accessToken);
       const rolesList: string[] = Array.isArray(decoded.roles)
         ? decoded.roles
         : decoded.roles
@@ -142,11 +72,31 @@ const Login = () => {
       const isUserOnly = normalized.includes("user") && !isPrivileged;
       const isCompanyOnly = normalized.includes("company") && !isPrivileged;
       navigate(isUserOnly || isCompanyOnly ? "/welcome" : "/dashboard");
-
     } catch (err: unknown) {
+      const rawMsg = getAuthErrorMessage(err, "Something went wrong.");
+      const lower = rawMsg.toLowerCase();
+      let friendly = rawMsg;
+
+      if (
+        lower.includes("user not found") ||
+        lower.includes("no such user") ||
+        lower.includes("username") ||
+        lower.includes("user does not exist") ||
+        lower.includes("invalid user")
+      ) {
+        friendly = "User is not valid.";
+      } else if (
+        lower.includes("password") ||
+        lower.includes("credentials") ||
+        lower.includes("unauthorized") ||
+        lower.includes("authentication failed")
+      ) {
+        friendly = "Invalid username or password!";
+      }
+
       toast({
         title: "Login Failed",
-        description: getErrorFromCatch(err, "Something went wrong."),
+        description: friendly,
         variant: "destructive",
       });
     } finally {

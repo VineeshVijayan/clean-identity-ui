@@ -1,3 +1,4 @@
+import { AuthBootstrap } from "@/components/AuthBootstrap";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { GlobalApiLoader } from "@/components/GlobalApiLoader";
 import { Toaster } from "@/components/ui/toaster";
@@ -53,6 +54,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <AuthBootstrap />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />

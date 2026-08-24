@@ -6,6 +6,9 @@ import {
   readResponseBody,
   unwrapApiData,
 } from "@/lib/api-errors";
+import { fetchWithAuthRetry } from "@/services/auth-interceptor";
+import { clearSessionAndRedirect } from "@/services/auth-service";
+import { tokenStorage } from "@/services/token-storage";
 
 export { ApiError, getApiErrorMessage, parseResponse, readResponseBody, unwrapApiData };
 
@@ -15,6 +18,8 @@ const IDENTITY_API_PROD = "https://identity-api.ndashdigital.com/api";
 const IDENTITY_API_LOCAL = "http://localhost:8080/api";
 const CONNECTOR_API_PROD = "https://idf-connector.ndashdigital.com/api";
 const CONNECTOR_API_LOCAL = "http://localhost:8081/api";
+const SESSION_API_PROD = "https://idf-session-api.ndashdigital.com/api";
+const SESSION_API_LOCAL = "http://localhost:8082/api";
 
 export const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
@@ -22,7 +27,7 @@ export const API_BASE_URL =
 
 export const SESSION_BASE_URL =
   import.meta.env.VITE_SESSION_BASE_URL ||
-  "https://idf-session-api.ndashdigital.com/api";
+  (import.meta.env.DEV ? SESSION_API_LOCAL : SESSION_API_PROD);
 
 export const CONNECTOR_API_BASE_URL =
   import.meta.env.VITE_CONNECTOR_BASE_URL ||
@@ -37,7 +42,7 @@ export type ApiRequestOptions = RequestInit & {
  * Get authorization headers for API calls
  */
 export const getAuthHeaders = (): HeadersInit => {
-  const token = localStorage.getItem("auth-token");
+  const token = tokenStorage.getAccessToken();
   return {
     "Content-Type": "application/json",
     ...(token && { Authorization: `Bearer ${token}` }),
@@ -71,17 +76,25 @@ const apiRequest = async (
   endpoint: string,
   options: ApiRequestOptions = {}
 ): Promise<Response> => {
-  const { skipLoader, ...fetchOptions } = options;
+  const { skipLoader, skipAuth, ...fetchOptions } = options;
 
   if (!skipLoader) {
     loadingStore.start();
   }
 
   try {
-    return await fetch(resolveUrl(baseUrl, endpoint), {
+    const url = resolveUrl(baseUrl, endpoint);
+    const response = await fetchWithAuthRetry(url, {
       ...fetchOptions,
+      skipAuth,
       headers: buildHeaders(options),
     });
+
+    if (response.status === 401 && !skipAuth && tokenStorage.hasSession()) {
+      clearSessionAndRedirect();
+    }
+
+    return response;
   } finally {
     if (!skipLoader) {
       loadingStore.end();
