@@ -6,21 +6,10 @@ import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { ArrowLeft, Check, Eye, EyeOff, Key, Shield, X } from "lucide-react";
 import { useState } from "react";
-import { API_BASE_URL } from "@/services/api-config";
+import { identityFetch } from "@/services/api-config";
 import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
+import { getLoggedInUserId } from "@/services/jwt-service";
 import { useNavigate } from "react-router-dom";
-
-const getUserFromToken = () => {
-  const token = localStorage.getItem("auth-token");
-  if (!token) return null;
-
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    return payload;
-  } catch {
-    return null;
-  }
-};
 const passwordRequirements = [
   { id: "length", label: "At least 8 characters", check: (p: string) => p.length >= 8 },
   { id: "uppercase", label: "One uppercase letter", check: (p: string) => /[A-Z]/.test(p) },
@@ -32,8 +21,7 @@ const passwordRequirements = [
 export const ChangePasswordPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const tokenUser = getUserFromToken();
-  const userId = tokenUser?.userId;
+  const userId = getLoggedInUserId();
   const [isLoading, setIsLoading] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);

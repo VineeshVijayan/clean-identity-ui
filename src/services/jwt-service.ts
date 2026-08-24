@@ -1,4 +1,10 @@
 import { jwtDecode } from "jwt-decode";
+import {
+  ensureValidAccessToken,
+  logout as authLogout,
+  startProactiveRefresh,
+} from "@/services/auth-service";
+import { tokenStorage } from "@/services/token-storage";
 
 interface DecodedToken {
   userName?: string;
@@ -21,29 +27,25 @@ interface UserDetails {
 }
 
 /**
- * Checks if a user is logged in and the JWT token is valid (not expired)
+ * Checks if a user is logged in with a valid or refreshable session.
  */
 export const isUserLoggedIn = (): boolean => {
-  const token = localStorage.getItem("auth-token");
-
-  if (!token) {
+  if (!tokenStorage.hasSession()) {
     return false;
   }
 
-  try {
-    const decoded = jwtDecode<DecodedToken>(token);
-
-    return decoded.exp * 1000 > Date.now();
-  } catch {
-    return false;
+  if (tokenStorage.getAccessToken() && !tokenStorage.isAccessTokenExpired()) {
+    return true;
   }
+
+  return Boolean(tokenStorage.getRefreshToken());
 };
 
 /**
  * Returns user details if the token is valid, otherwise null
  */
 export const getUserDetails = (): UserDetails | null => {
-  const token = localStorage.getItem("auth-token");
+  const token = tokenStorage.getAccessToken();
 
   if (!token) {
     return null;
@@ -52,7 +54,7 @@ export const getUserDetails = (): UserDetails | null => {
   try {
     const decoded = jwtDecode<DecodedToken>(token);
 
-    if (decoded.exp * 1000 < Date.now()) {
+    if (tokenStorage.isAccessTokenExpired()) {
       return null;
     }
 
@@ -71,7 +73,7 @@ export const getUserDetails = (): UserDetails | null => {
  * Checks if the logged-in user has a manager-level role
  */
 export const isManager = (): boolean => {
-  const token = localStorage.getItem("auth-token");
+  const token = tokenStorage.getAccessToken();
   if (!token) return false;
 
   const userRoles = ["AM", "M", "PO"];
@@ -90,7 +92,7 @@ export const isManager = (): boolean => {
     } else {
       return false;
     }
-  } catch (error) {
+  } catch {
     return false;
   }
 };
@@ -99,13 +101,13 @@ export const isManager = (): boolean => {
  * Get the logged-in user's ID
  */
 export const getLoggedInUserId = (): string | null => {
-  const token = localStorage.getItem("auth-token");
+  const token = tokenStorage.getAccessToken();
   if (!token) return null;
 
   try {
     const decodedToken = jwtDecode<DecodedToken>(token);
     return decodedToken.userId || decodedToken.sub || null;
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -139,22 +141,23 @@ export const hasAllRoles = (requiredRoles: string[]): boolean => {
   return requiredRoles.every((r) => roles.includes(r));
 };
 
-/**
- * Logout user - clears all client-side cached data (localStorage,
- * sessionStorage, and Cache Storage) so the next user starts fresh.
- */
-export const logout = (): void => {
-
-  localStorage.clear();
-  sessionStorage.clear();
-
-  if (typeof caches !== "undefined") {
-    caches.keys().then(keys => {
-      keys.forEach(key => caches.delete(key));
-    });
+export const initializeAuthSession = async (): Promise<boolean> => {
+  if (!tokenStorage.hasSession()) {
+    return false;
   }
 
-  window.dispatchEvent(new Event("auth-change"));
+  const valid = await ensureValidAccessToken();
+  if (!valid) {
+    return false;
+  }
 
-  window.location.replace("/login");
+  startProactiveRefresh();
+  return true;
+};
+
+/**
+ * Logout user - clears auth state and redirects to login.
+ */
+export const logout = (): void => {
+  void authLogout();
 };

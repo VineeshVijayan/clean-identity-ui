@@ -1,19 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { jwtDecode } from "jwt-decode";
-import { getUserRoles, logout as logoutService } from "@/services/jwt-service";
-import { SESSION_BASE_URL } from "@/services/api-config";
-
-interface DecodedToken {
-  userName?: string;
-  name?: string;
-  roles?: string | string[];
-  userId?: string;
-  sub?: string;
-  employeeId?: string;
-  connectorUserId?: string;
-  exp: number;
-}
+import {
+  getUserRoles,
+  initializeAuthSession,
+  isUserLoggedIn,
+  logout as logoutService,
+} from "@/services/jwt-service";
+import { getAuthErrorMessage, login as authLogin } from "@/services/auth-service";
 
 interface User {
   name: string;
@@ -39,37 +31,31 @@ export const useAuth = (): UseAuthReturn => {
   const [user, setUser] = useState<User | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const navigate = useNavigate();
 
-  const checkAuth = useCallback(() => {
-    const authToken = localStorage.getItem("auth-token");
+  const checkAuth = useCallback(async () => {
     const storedUser = localStorage.getItem("user");
     const storedRoles = getUserRoles();
 
-    if (authToken && storedUser) {
-      try {
-        const decoded = jwtDecode<DecodedToken>(authToken);
-        if (decoded.exp * 1000 > Date.now()) {
-          setIsLoggedIn(true);
-          setUser(JSON.parse(storedUser));
-          setRoles(storedRoles);
-        } else {
-          // Token expired
-          logoutService();
-          setIsLoggedIn(false);
-          setUser(null);
-          setRoles([]);
-        }
-      } catch {
-        setIsLoggedIn(false);
-        setUser(null);
-        setRoles([]);
-      }
-    } else {
+    if (!isUserLoggedIn()) {
       setIsLoggedIn(false);
       setUser(null);
       setRoles([]);
+      setIsLoading(false);
+      return;
     }
+
+    const valid = await initializeAuthSession();
+    if (!valid || !storedUser) {
+      setIsLoggedIn(false);
+      setUser(null);
+      setRoles([]);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoggedIn(true);
+    setUser(JSON.parse(storedUser));
+    setRoles(storedRoles);
     setIsLoading(false);
   }, []);
 
@@ -81,46 +67,23 @@ export const useAuth = (): UseAuthReturn => {
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      // For demo purposes, simulate successful login
-      // In production, this would call the actual API:
-      // const response = await fetch(`${SESSION_BASE_URL}/authenticate`, {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({ email, password }),
-      // });
-
-      // Simulate API response for demo
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Create a mock token for demo (in production, this comes from API)
-      const mockUser = {
-        name: email.split("@")[0],
-        email,
-        userId: "user-" + Date.now(),
-        employeeId: "EMP-001",
-        connectorUserId: "connector-001",
-      };
-
-      // Store mock data
-      localStorage.setItem("auth-token", "demo-token-" + Date.now());
-      localStorage.setItem("user", JSON.stringify(mockUser));
-      localStorage.setItem("roles", JSON.stringify(["super_admin", "user"]));
-
+      await authLogin({ email, password });
       window.dispatchEvent(new Event("auth-change"));
       return { success: true };
     } catch (error) {
-      console.error("Login error:", error);
-      return { success: false, error: "Invalid credentials" };
+      return {
+        success: false,
+        error: getAuthErrorMessage(error, "Invalid credentials"),
+      };
     }
   };
 
   const logout = useCallback(() => {
-    logoutService();
+    void logoutService();
     setIsLoggedIn(false);
     setUser(null);
     setRoles([]);
-    navigate("/");
-  }, [navigate]);
+  }, []);
 
   const hasRole = useCallback((role: string) => roles.includes(role), [roles]);
   

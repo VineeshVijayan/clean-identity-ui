@@ -1,4 +1,9 @@
-import { getUserRoles, isUserLoggedIn, logout } from "@/services/jwt-service";
+import {
+  getUserRoles,
+  initializeAuthSession,
+  logout,
+} from "@/services/jwt-service";
+import { clearSessionAndRedirect } from "@/services/auth-service";
 import { useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { DashboardNavbar } from "./DashboardNavbar";
@@ -9,22 +14,27 @@ export const DashboardLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
   const [roles, setRoles] = useState<string[]>([]);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
-    const checkAuth = () => {
-      const loggedIn = isUserLoggedIn();
-    
-      if (!loggedIn) {
-        logout();
+    let cancelled = false;
+
+    const checkAuth = async () => {
+      const valid = await initializeAuthSession();
+
+      if (cancelled) return;
+
+      if (!valid) {
+        clearSessionAndRedirect();
         return;
       }
-    
+
       try {
         const storedUser = localStorage.getItem("user");
-    
+
         if (storedUser) {
           const parsed = JSON.parse(storedUser);
-    
+
           setUser({
             name: parsed.name,
             email: parsed.email,
@@ -36,21 +46,27 @@ export const DashboardLayout = () => {
           email: "user@example.com",
         });
       }
-    
+
       setRoles(getUserRoles());
+      setAuthReady(true);
     };
 
     checkAuth();
     window.addEventListener("auth-change", checkAuth);
 
     return () => {
+      cancelled = true;
       window.removeEventListener("auth-change", checkAuth);
     };
   }, [navigate]);
 
   const handleLogout = () => {
-    logout();
-};
+    void logout();
+  };
+
+  if (!authReady) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background flex">
