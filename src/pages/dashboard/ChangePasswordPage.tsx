@@ -52,21 +52,14 @@ export const ChangePasswordPage = () => {
 
     setIsLoading(true);
 
-    const token = localStorage.getItem("auth-token");
-
     const payload = {
       oldPassword: formData.currentPassword,
       newPassword: formData.newPassword,
     };
 
     try {
-
-      const res = await fetch(`${API_BASE_URL}/users/${userId}/reset-password`, {
+      const res = await identityFetch(`/users/${userId}/reset-password`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: token ? `Bearer ${token}` : "",
-        },
         body: JSON.stringify(payload),
       });
 

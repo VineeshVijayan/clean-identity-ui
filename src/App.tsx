@@ -33,6 +33,7 @@ import { ResetPasswordPage } from "./pages/dashboard/ResetPasswordPage";
 import { ReportsPage } from "./pages/dashboard/ReportsPage";
 import { UpdateApplicationPage } from "./pages/dashboard/UpdateApplicationPage";
 import { UserAdministrationPage } from "./pages/dashboard/UserAdministrationPage";
+import { UserSyncPage } from "./pages/dashboard/UserSyncPage";
 import { UserLandingPage } from "./pages/dashboard/UserLandingPage";
 import { UsersListPage } from "./pages/dashboard/UsersListPage";
 import DocsPage from "./pages/DocsPage";
@@ -101,6 +102,7 @@ const App = () => (
             <Route path="manage-application" element={<ManageApplicationPage />} />
             <Route path="settings" element={<IDFSettingsPage />} />
             <Route path="user-administration" element={<UserAdministrationPage />} />
+            <Route path="user-sync" element={<UserSyncPage />} />
             <Route path="reset-password" element={<ResetPasswordPage />} />
           </Route>
 

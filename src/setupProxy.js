@@ -1,39 +1,24 @@
-const { createProxyMiddleware } = require('http-proxy-middleware');
+const { createProxyMiddleware } = require("http-proxy-middleware");
 
 module.exports = function (app) {
-    // Proxy for Session API
-    app.use(
-        '/session-api',
-        createProxyMiddleware({
-            target: 'https://idf-session-api.ndashdigital.com/api',
-            changeOrigin: true,
-            pathRewrite: {
-                '^/session-api': '',
-            },
-        })
-    );
+  app.use(
+    "/api",
+    createProxyMiddleware({
+      target: "http://localhost:8080",
+      changeOrigin: true,
+    })
+  );
 
-    // Proxy for Identity API
-    app.use(
-        '/identity-api',
-        createProxyMiddleware({
-            target: 'https://identity-api.ndashdigital.com/api',
-            changeOrigin: true,
-            pathRewrite: {
-                '^/identity-api': '',
-            },
-        })
-    );
-
-    // Proxy for Connector API
-    app.use(
-        '/connector-api',
-        createProxyMiddleware({
-            target: 'https://idf-connector.ndashdigital.com/api',
-            changeOrigin: true,
-            pathRewrite: {
-                '^/connector-api': '',
-            },
-        })
-    );
+  const hub = {
+    target: "http://localhost:8080",
+    changeOrigin: true,
+    pathRewrite: {
+      "^/session-api": "/api",
+      "^/identity-api": "/api",
+      "^/connector-api": "/api",
+    },
+  };
+  app.use("/session-api", createProxyMiddleware(hub));
+  app.use("/identity-api", createProxyMiddleware(hub));
+  app.use("/connector-api", createProxyMiddleware(hub));
 };

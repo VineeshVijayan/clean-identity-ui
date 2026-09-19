@@ -53,6 +53,19 @@ export async function readResponseBody(response: Response): Promise<unknown> {
 const readString = (value: unknown): string =>
   typeof value === "string" && value.trim() ? value.trim() : "";
 
+export function extractFieldErrorMessages(body: unknown): string[] {
+  if (!body || typeof body !== "object") return [];
+  const structured = (body as Record<string, unknown>).errors;
+  if (!Array.isArray(structured)) return [];
+  return structured
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") return "";
+      const rec = entry as Record<string, unknown>;
+      return readString(rec.message) || readString(rec.error);
+    })
+    .filter(Boolean);
+}
+
 const isStatusLabel = (value: string): boolean => {
   const normalized = value.trim().toUpperCase();
   return normalized === "ERROR" || normalized === "SUCCESS";
@@ -75,10 +88,16 @@ export const extractRawMessage = (body: unknown): string => {
     return integrationMessage;
   }
 
-  // Identity ApiResponse: { statusMessage, statusCode, error, data }
+  const fieldMessages = extractFieldErrorMessages(body);
   const apiError = readString(b.error);
+  if (apiError && apiError.toLowerCase() === "validation failed" && fieldMessages.length) {
+    return fieldMessages.join("; ");
+  }
   if (apiError) {
     return apiError;
+  }
+  if (fieldMessages.length) {
+    return fieldMessages.join("; ");
   }
 
   if (integrationMessage) {

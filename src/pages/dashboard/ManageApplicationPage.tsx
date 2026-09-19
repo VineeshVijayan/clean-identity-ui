@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { identityFetch } from "@/services/api-config";
+import { applicationsListPath, identityFetch } from "@/services/api-config";
 import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
@@ -41,7 +41,7 @@ export const ManageApplicationPage = () => {
   useEffect(() => {
     const fetchApplications = async () => {
       try {
-        const res = await identityFetch("/applications");
+        const res = await identityFetch(applicationsListPath);
 
         if (!res.ok) {
           const body = await readResponseBody(res);

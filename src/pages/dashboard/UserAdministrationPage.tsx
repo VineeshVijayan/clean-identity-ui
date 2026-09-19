@@ -46,6 +46,7 @@ import {
     Filter,
     KeyRound,
     MoreVertical,
+    RefreshCw,
     Search,
     UserPlus
 } from "lucide-react";
@@ -398,10 +399,16 @@ export const UserAdministrationPage = () => {
                         Manage and view all users in the system
                     </p>
                 </div>
-                <Button onClick={() => navigate("/users/create")}>
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Create User
-                </Button>
+                <div className="flex flex-wrap items-center gap-2">
+                    <Button variant="outline" onClick={() => navigate("/admin/user-sync")}>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        User Sync
+                    </Button>
+                    <Button onClick={() => navigate("/users/create")}>
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Create User
+                    </Button>
+                </div>
             </div>
 
             <div className="glass-card p-4">

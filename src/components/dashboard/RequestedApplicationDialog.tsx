@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Send } from "lucide-react";
-import { API_BASE_URL, CONNECTOR_API_BASE_URL } from "@/services/api-config";
+import { applicationsListPath, identityFetch, connectorFetch } from "@/services/api-config";
 import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
 import { mapIntegrationProjects, type IntegrationProject } from "@/lib/integration-api";
 import { useEffect, useState } from "react";
@@ -62,12 +62,9 @@ export const RequestedApplicationDialog = ({
   /* Fetch applications when dialog opens */
   useEffect(() => {
     if (!open) return;
-    const token = localStorage.getItem("auth-token");
-    fetch(`${API_BASE_URL}/applications`, {
+    identityFetch(applicationsListPath, {
       headers: {
         Accept: "application/json",
-        "Content-Type": "application/json",
-        Authorization: token ? `Bearer ${token}` : "",
       },
     })
       .then(async (r) => {
@@ -104,23 +101,21 @@ export const RequestedApplicationDialog = ({
 
     const selected = applications.find((a) => a.id === appId);
     if (!selected?.integrationName) return;
-    const base = `${CONNECTOR_API_BASE_URL}/integrations/${selected.integrationName.toLowerCase()}`;
-    const token = localStorage.getItem("auth-token");
-    const headers = {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      Authorization: token ? `Bearer ${token}` : "",
-    };
+    const base = `/integrations/${selected.integrationName.toLowerCase()}`;
 
     Promise.all([
-      fetch(`${base}/roles`, { headers }).then(async (r) => {
+      connectorFetch(`${base}/roles`, {
+        headers: { Accept: "application/json" },
+      }).then(async (r) => {
         if (!r.ok) {
           const body = await readResponseBody(r);
           throw new Error(getApiErrorMessage(body, "Failed to load roles"));
         }
         return r.json();
       }),
-      fetch(`${base}/projects`, { headers }).then(async (r) => {
+      connectorFetch(`${base}/projects`, {
+        headers: { Accept: "application/json" },
+      }).then(async (r) => {
         if (!r.ok) {
           const body = await readResponseBody(r);
           throw new Error(getApiErrorMessage(body, "Failed to load projects"));

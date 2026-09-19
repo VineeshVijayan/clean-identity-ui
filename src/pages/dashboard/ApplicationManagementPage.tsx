@@ -35,7 +35,7 @@ import {
   User,
   X,
 } from "lucide-react";
-import { connectorFetch, identityFetch } from "@/services/api-config";
+import { applicationsListPath, connectorFetch, identityFetch } from "@/services/api-config";
 import { mapIntegrationProjects, type IntegrationProject } from "@/lib/integration-api";
 import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
 import { useEffect, useRef, useState } from "react";
@@ -323,7 +323,7 @@ export const ApplicationManagementPage = () => {
 
   /* Fetch Applications */
   useEffect(() => {
-    identityFetch("/applications", {
+    identityFetch(applicationsListPath, {
       headers: { Accept: "application/json" },
     })
       .then((r) => r.json())

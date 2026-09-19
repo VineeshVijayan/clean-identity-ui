@@ -11,7 +11,7 @@ import type {
   TokenResponse,
 } from "@/services/auth-types";
 import { fetchWithAuthRetry, refreshAccessToken } from "@/services/auth-interceptor";
-import { SESSION_BASE_URL } from "@/services/api-config";
+import { API_BASE_URL } from "@/services/api-config";
 import { tokenStorage } from "@/services/token-storage";
 
 const PROACTIVE_REFRESH_BUFFER_MS = 60_000;
@@ -139,7 +139,7 @@ export const persistUserSession = (accessToken: string, email: string) => {
 export const login = async (
   credentials: LoginCredentials
 ): Promise<AuthResponse> => {
-  const response = await fetch(`${SESSION_BASE_URL}/authenticate`, {
+  const response = await fetch(`${API_BASE_URL}/authenticate`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -183,7 +183,7 @@ export const logout = async (): Promise<void> => {
 
   if (userId && accessToken) {
     try {
-      await fetch(`${SESSION_BASE_URL}/auth/session-timeout/${userId}`, {
+      await fetch(`${API_BASE_URL}/auth/session-timeout/${userId}`, {
         method: "DELETE",
         headers: {
           Accept: "application/json",
@@ -212,7 +212,7 @@ export const updateSessionTimeout = async (
     throw new Error("You must be signed in to update session timeout.");
   }
 
-  const response = await fetchWithAuthRetry(`${SESSION_BASE_URL}/auth/session-timeout`, {
+  const response = await fetchWithAuthRetry(`${API_BASE_URL}/auth/session-timeout`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -243,7 +243,7 @@ export const resetSessionTimeout = async (userId: string): Promise<void> => {
   }
 
   const response = await fetchWithAuthRetry(
-    `${SESSION_BASE_URL}/auth/session-timeout/${userId}`,
+    `${API_BASE_URL}/auth/session-timeout/${userId}`,
     {
       method: "DELETE",
       headers: {

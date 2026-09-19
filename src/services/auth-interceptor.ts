@@ -1,6 +1,6 @@
 import { readResponseBody } from "@/lib/api-errors";
 import type { TokenResponse } from "@/services/auth-types";
-import { SESSION_BASE_URL } from "@/services/api-config";
+import { API_BASE_URL } from "@/services/api-config";
 import { tokenStorage } from "@/services/token-storage";
 
 let refreshPromise: Promise<boolean> | null = null;
@@ -20,7 +20,7 @@ export const refreshAccessToken = async (): Promise<boolean> => {
     }
 
     try {
-      const response = await fetch(`${SESSION_BASE_URL}/auth/refresh`, {
+      const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

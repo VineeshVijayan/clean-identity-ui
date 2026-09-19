@@ -25,7 +25,7 @@ import {
   MessageSquare,
   AppWindow,
 } from "lucide-react";
-import { CONNECTOR_API_BASE_URL } from "@/services/api-config";
+import { connectorFetch } from "@/services/api-config";
 import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
 import { useEffect, useState } from "react";
 
@@ -72,7 +72,7 @@ const getAppDescription = (name: string): string => {
 
 /* ---------------- TYPES ---------------- */
 interface CheckoutItem {
-  checkoutId: number;
+  checkoutId: string;
   applicationName: string;
   requestedBy: string;
   requestDate: string;
@@ -81,6 +81,7 @@ interface CheckoutItem {
   priority: "high" | "medium" | "low";
   processType: "REQUEST" | "REMOVE";
   email?: string;
+  displayName?: string;
 }
 
 /* ---------------- COMPONENT ---------------- */
@@ -99,11 +100,6 @@ export const CheckoutPage = () => {
   const [selectedItem, setSelectedItem] = useState<CheckoutItem | null>(null);
 
   /* ---------------- HELPERS ---------------- */
-  const authHeaders = () => {
-    const token = localStorage.getItem("auth-token");
-    return { Authorization: token ? `Bearer ${token}` : "" };
-  };
-
   const formatDate = (d?: string) =>
     d ? new Date(d).toLocaleDateString() : "N/A";
 
@@ -113,9 +109,7 @@ export const CheckoutPage = () => {
   const loadPendingCheckouts = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${CONNECTOR_API_BASE_URL}/checkout/pending`, {
-        headers: authHeaders(),
-      });
+      const res = await connectorFetch("/checkout/pending");
 
       if (!res.ok) {
         const body = await readResponseBody(res);
@@ -130,16 +124,17 @@ export const CheckoutPage = () => {
       const json = await res.json();
       const data = json?.data || [];
 
-      const mapped: CheckoutItem[] = data.map((it: any) => ({
-        checkoutId: it.checkoutId,
-        applicationName: it.applicationName,
-        requestedBy: it.requestedForName || "User",
-        requestDate: formatDate(it.createdAt),
-        justification: it.remarks || "—",
+      const mapped: CheckoutItem[] = data.map((it: Record<string, unknown>) => ({
+        checkoutId: String(it.checkoutId ?? ""),
+        applicationName: String(it.applicationName ?? ""),
+        requestedBy: String(it.requestedFor ?? it.requestedForName ?? "User"),
+        requestDate: formatDate(String(it.createdTime ?? it.createdAt ?? "")),
+        justification: String(it.remarks || "—"),
         status: "pending",
         priority: getPriority(),
-        processType: it.processType,
-        email: it.email,
+        processType: it.processType === "REMOVE" ? "REMOVE" : "REQUEST",
+        email: it.email ? String(it.email) : undefined,
+        displayName: String(it.requestedFor ?? it.email ?? "User"),
       }));
 
       setRequestApps(mapped.filter((x) => x.processType === "REQUEST"));
@@ -164,23 +159,41 @@ export const CheckoutPage = () => {
     if (name.includes("jira")) url = "/integrations/jira/create-user";
     else if (name.includes("github")) url = "/integrations/github/create-user";
     else {
-      toast({ title: "Unsupported App", description: app.applicationName, variant: "destructive" });
-      return;
+      throw new Error(`Unsupported app: ${app.applicationName}`);
     }
-    await fetch(`${CONNECTOR_API_BASE_URL}${url}`, {
+    if (!app.email) {
+      throw new Error("Checkout item is missing an email address");
+    }
+    const res = await connectorFetch(url, {
       method: "POST",
-      headers: authHeaders(),
-      body: JSON.stringify({ checkoutId: app.checkoutId, email: app.email, applicationName: app.applicationName }),
+      body: JSON.stringify({
+        checkoutId: app.checkoutId,
+        email: app.email,
+        displayName: app.displayName || app.requestedBy || app.email,
+      }),
     });
+    if (!res.ok) {
+      const body = await readResponseBody(res);
+      throw new Error(getApiErrorMessage(body, `Failed to provision ${app.applicationName}`));
+    }
   };
 
   /* ---------------- ACTION HANDLERS ---------------- */
   const confirmSubmitRequest = async () => {
     if (!selectedItem) return;
-    await createUser(selectedItem);
-    setRequestApps((p) => p.filter((x) => x.checkoutId !== selectedItem.checkoutId));
-    toast({ title: "Request Submitted", description: `${selectedItem.applicationName} access request submitted.` });
-    setShowSubmitRequestDialog(false);
+    try {
+      await createUser(selectedItem);
+      setRequestApps((p) => p.filter((x) => x.checkoutId !== selectedItem.checkoutId));
+      toast({ title: "Request Submitted", description: `${selectedItem.applicationName} access request submitted.` });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: getErrorFromCatch(err, "Failed to submit access request"),
+        variant: "destructive",
+      });
+    } finally {
+      setShowSubmitRequestDialog(false);
+    }
   };
 
   const confirmDeleteRequest = () => {

@@ -105,7 +105,7 @@ export const ResetPasswordPage = () => {
     setIsLoading(true);
 
     try {
-      const res = await identityFetch(`/users/${userId}/reset-password`, {
+      const res = await identityFetch("/users/admin-reset-password", {
         method: "POST",
         body: JSON.stringify({
           userId: Number(userId),

@@ -28,7 +28,7 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { API_BASE_URL, CONNECTOR_API_BASE_URL } from "@/services/api-config";
+import { API_BASE_URL, applicationsListPath } from "@/services/api-config";
 import { getApiErrorMessage, getErrorFromCatch, readResponseBody, unwrapApiList } from "@/lib/api-errors";
 import { useNavigate } from "react-router-dom";
 
@@ -171,7 +171,7 @@ export const ManageRolesPage = () => {
 
     if (!selectedApp?.integrationName) return null;
 
-    return `${CONNECTOR_API_BASE_URL}/integrations/${selectedApp.integrationName.toLowerCase()}`;
+    return `${API_BASE_URL}/integrations/${selectedApp.integrationName.toLowerCase()}`;
   };
 
   /* FETCH APPS */
@@ -180,7 +180,7 @@ export const ManageRolesPage = () => {
       try {
         const token = localStorage.getItem("auth-token");
 
-        const res = await fetch(`${API_BASE_URL}/applications`, {
+        const res = await fetch(`${API_BASE_URL}${applicationsListPath}`, {
           headers: {
             Accept: "application/json",
             "Content-Type": "application/json",

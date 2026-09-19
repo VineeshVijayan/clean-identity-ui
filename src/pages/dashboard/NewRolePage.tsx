@@ -12,7 +12,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Check, CheckCircle2, FolderOpen, Save, Shield, ShieldAlert, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
-import { API_BASE_URL, CONNECTOR_API_BASE_URL } from "@/services/api-config";
+import { API_BASE_URL, applicationsListPath } from "@/services/api-config";
 import { useNavigate } from "react-router-dom";
 // Mock applications data
 
@@ -219,7 +219,7 @@ export const NewRolePage = () => {
       return null;
     }
 
-    return `${CONNECTOR_API_BASE_URL}/integrations/${selectedApp.integrationName.toLowerCase()
+    return `${API_BASE_URL}/integrations/${selectedApp.integrationName.toLowerCase()
       }`;
   };
 
@@ -262,7 +262,7 @@ export const NewRolePage = () => {
       try {
         const token = localStorage.getItem("auth-token");
 
-        const res = await fetch(`${API_BASE_URL}/applications`, {
+        const res = await fetch(`${API_BASE_URL}${applicationsListPath}`, {
           headers: {
             Accept: "application/json",
             "Content-Type": "application/json",

@@ -12,26 +12,13 @@ import { tokenStorage } from "@/services/token-storage";
 
 export { ApiError, getApiErrorMessage, parseResponse, readResponseBody, unwrapApiData };
 
-// API Configuration — override via VITE_* env vars per environment
+const DEFAULT_API_BASE_URL = "/api";
 
-const IDENTITY_API_PROD = "https://identity-api.ndashdigital.com/api";
-const IDENTITY_API_LOCAL = "http://localhost:8080/api";
-const CONNECTOR_API_PROD = "https://idf-connector.ndashdigital.com/api";
-const CONNECTOR_API_LOCAL = "http://localhost:8081/api";
-const SESSION_API_PROD = "https://idf-session-api.ndashdigital.com/api";
-const SESSION_API_LOCAL = "http://localhost:8082/api";
+/** Hub clamps page size at 100 (AGENTS.md / identity-central-hub). */
+export const HUB_MAX_PAGE_SIZE = 100;
+export const applicationsListPath = `/applications?page=0&size=${HUB_MAX_PAGE_SIZE}`;
 
-export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.DEV ? IDENTITY_API_LOCAL : IDENTITY_API_PROD);
-
-export const SESSION_BASE_URL =
-  import.meta.env.VITE_SESSION_BASE_URL ||
-  (import.meta.env.DEV ? SESSION_API_LOCAL : SESSION_API_PROD);
-
-export const CONNECTOR_API_BASE_URL =
-  import.meta.env.VITE_CONNECTOR_BASE_URL ||
-  (import.meta.env.DEV ? CONNECTOR_API_LOCAL : CONNECTOR_API_PROD);
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL;
 
 export type ApiRequestOptions = RequestInit & {
   skipLoader?: boolean;
@@ -110,12 +97,12 @@ export const identityFetch = (
 export const sessionFetch = (
   endpoint: string,
   options?: ApiRequestOptions
-) => apiRequest(SESSION_BASE_URL, endpoint, options);
+) => apiRequest(API_BASE_URL, endpoint, options);
 
 export const connectorFetch = (
   endpoint: string,
   options?: ApiRequestOptions
-) => apiRequest(CONNECTOR_API_BASE_URL, endpoint, options);
+) => apiRequest(API_BASE_URL, endpoint, options);
 
 const fetchJson = async <T>(
   fetchFn: (endpoint: string, options?: ApiRequestOptions) => Promise<Response>,

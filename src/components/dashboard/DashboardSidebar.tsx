@@ -25,6 +25,7 @@ import {
   Link as LinkIcon,
   LogOut,
   Plus,
+  RefreshCw,
   Settings,
   ShieldCheck,
   ShoppingCart,
@@ -165,6 +166,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     icon: Database,
     submenu: [
       { label: "User Administration", href: "/admin/user-administration", icon: ShieldCheck },
+      { label: "User Sync", href: "/admin/user-sync", icon: RefreshCw },
       { label: "Connectors", href: "/admin/idf-administration", icon: LinkIcon },
       { label: "Manage Application", href: "/admin/manage-application", icon: AppWindow },
       { label: "Settings", href: "/admin/settings", icon: Cog },
