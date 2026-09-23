@@ -35,9 +35,19 @@ import {
   User,
   X,
 } from "lucide-react";
-import { applicationsListPath, connectorFetch, identityFetch } from "@/services/api-config";
-import { mapIntegrationProjects, type IntegrationProject } from "@/lib/integration-api";
+import { applicationsListPath, identityFetch } from "@/services/api-config";
+import { type IntegrationProject } from "@/lib/integration-api";
 import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
+import {
+  flattenUserApplications,
+  resourceFieldLabel,
+  toUserApplicationPayload,
+} from "@/lib/application-access";
+import {
+  listUserApplications,
+  loadIntegrationCatalog,
+  updateUserProfile,
+} from "@/services/application-api";
 import { useEffect, useRef, useState } from "react";
 
 
@@ -265,6 +275,7 @@ export const ApplicationManagementPage = () => {
   const [remCardList, setRemCardList] = useState<UserApplicationEntry[]>([]);
   const [showCardRemoveConfirm, setShowCardRemoveConfirm] = useState(false);
   const [cardToRemove, setCardToRemove] = useState<number | null>(null);
+  const [savingAccess, setSavingAccess] = useState(false);
 
   const getUserId = () => {
     const token = localStorage.getItem("auth-token");
@@ -328,13 +339,22 @@ export const ApplicationManagementPage = () => {
     })
       .then((r) => r.json())
       .then((res) => {
-        const mapped: Application[] = (res.data.content || []).map((app: any) => ({
-          id: app.id,
+        const mapped: Application[] = (res.data.content || []).map((app: {
+          id: number;
+          name: string;
+          description?: string;
+          appUrl?: string;
+          active: boolean;
+          integrationName?: string;
+          essential?: boolean;
+        }) => ({
+          id: String(app.id),
           name: app.name,
-          description: app.description,
-          appUrl: app.appUrl,
+          description: app.description || "",
+          appUrl: app.appUrl || "",
           active: app.active,
-          integrationName: app.integrationName
+          integrationName: app.integrationName || "",
+          essential: Boolean(app.essential),
         }));
         setApplications(mapped);
       })
@@ -413,51 +433,33 @@ export const ApplicationManagementPage = () => {
     fetchUserApplications();
   }, [remSelectedUser]);
 
-  const getIntegrationApiBase = (applicationId: string) => {
-    const selectedApp = applications.find((app) => app.id === applicationId);
-
-    if (!selectedApp?.integrationName) return null;
-
-    return `/integrations/${selectedApp.integrationName.toLowerCase()}`;
-  };
-
-  const integrationBase = getIntegrationApiBase(reqApp);
-
-  const rolesApi = `${integrationBase}/roles`;
-  const projectsApi = `${integrationBase}/projects`;
-  const createUserApi = `${integrationBase}/create-user`;
-
   useEffect(() => {
-    if (!reqApp) return;
+    if (!reqApp) {
+      setAvailableProjects([]);
+      setAvailableRoles([]);
+      return;
+    }
 
-    const integrationBase = getIntegrationApiBase(reqApp);
-
-    if (!integrationBase) return;
+    const selectedApp = applications.find((app) => app.id === reqApp);
+    if (!selectedApp?.integrationName) return;
 
     const fetchIntegrationData = async () => {
       try {
-        const [rolesRes, projectsRes] = await Promise.all([
-          connectorFetch(`${integrationBase}/roles`, {
-            headers: { Accept: "application/json" },
-          }),
-          connectorFetch(`${integrationBase}/projects`, {
-            headers: { Accept: "application/json" },
-          }),
-        ]);
-
-        const rolesData = await rolesRes.json();
-        const projectsData = await projectsRes.json();
-
-        setAvailableRoles(Array.isArray(rolesData) ? rolesData : rolesData.data || []);
-
-        setAvailableProjects(mapIntegrationProjects(projectsData));
+        const catalog = await loadIntegrationCatalog(selectedApp.integrationName);
+        setAvailableRoles(catalog.roles);
+        setAvailableProjects(catalog.projects);
       } catch (error) {
         console.error("Failed to fetch integration data", error);
+        toast({
+          title: "Error",
+          description: getErrorFromCatch(error, "Failed to load integration data"),
+          variant: "destructive",
+        });
       }
     };
 
     fetchIntegrationData();
-  }, [reqApp, applications]);
+  }, [reqApp, applications, toast]);
 
   /* ── Request Access submit ── */
   const handleRequestSubmit = () => {
@@ -472,11 +474,56 @@ export const ApplicationManagementPage = () => {
     setShowRequestConfirm(true);
   };
 
-  const confirmRequest = () => {
-    toast({ title: "Request Submitted", description: `Access request for ${reqApp} submitted successfully.` });
-    setReqApp(""); setReqProject(""); setReqRole("");
-    setReqSelectedUser(null);
-    setShowRequestConfirm(false);
+  const confirmRequest = async () => {
+    if (!reqSelectedUser) return;
+    const selectedApp = applications.find((app) => app.id === reqApp);
+    const selectedProject = availableProjects.find((project) => project.key === reqProject);
+    const selectedRole = availableRoles.find((role) => role.id === reqRole);
+    if (!selectedApp) return;
+
+    try {
+      setSavingAccess(true);
+      const current = await listUserApplications(reqSelectedUser.id, { skipLoader: true });
+      const flattened = flattenUserApplications(current);
+      const nextKey = `${selectedApp.id}|${reqProject}|${reqRole}`;
+      if (!flattened.some((item) => item.key === nextKey)) {
+        flattened.push({
+          key: nextKey,
+          applicationId: Number(selectedApp.id),
+          applicationName: selectedApp.name,
+          description: selectedApp.description || "",
+          essential: selectedApp.essential,
+          grantedDate: "",
+          resourceName: selectedProject?.name || reqProject,
+          resourceKey: reqProject,
+          resourceId: selectedProject?.id || "",
+          roleName: selectedRole?.name || "",
+          roleId: reqRole,
+        });
+      }
+
+      await updateUserProfile(reqSelectedUser.id, {
+        applications: toUserApplicationPayload(flattened),
+      });
+
+      toast({
+        title: "Access granted",
+        description: `${selectedApp.name} access was saved for ${reqSelectedUser.firstName}.`,
+      });
+      setReqApp("");
+      setReqProject("");
+      setReqRole("");
+      setReqSelectedUser(null);
+      setShowRequestConfirm(false);
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: getErrorFromCatch(err, "Failed to grant application access"),
+        variant: "destructive",
+      });
+    } finally {
+      setSavingAccess(false);
+    }
   };
 
   /* ── Remove Access submit ── */
@@ -507,11 +554,36 @@ export const ApplicationManagementPage = () => {
     setShowCardRemoveConfirm(true);
   };
 
-  const confirmCardRemove = () => {
-    setRemCardList((prev) => prev.filter((a) => a.id !== cardToRemove));
-    toast({ title: "Application Removed", description: "Application removed from your access list." });
-    setShowCardRemoveConfirm(false);
-    setCardToRemove(null);
+  const confirmCardRemove = async () => {
+    if (!remSelectedUser || cardToRemove == null) return;
+    const app = remCardList.find((item) => item.id === cardToRemove);
+    if (!app) return;
+
+    try {
+      setSavingAccess(true);
+      const current = await listUserApplications(remSelectedUser.id, { skipLoader: true });
+      const remaining = flattenUserApplications(current).filter(
+        (item) => item.applicationId !== app.applicationId
+      );
+      await updateUserProfile(remSelectedUser.id, {
+        applications: toUserApplicationPayload(remaining),
+      });
+      setRemCardList((prev) => prev.filter((item) => item.id !== cardToRemove));
+      toast({
+        title: "Application Removed",
+        description: `${app.name} was removed from the user's access list.`,
+      });
+      setShowCardRemoveConfirm(false);
+      setCardToRemove(null);
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: getErrorFromCatch(err, "Failed to remove application access"),
+        variant: "destructive",
+      });
+    } finally {
+      setSavingAccess(false);
+    }
   };
 
   const containerVariants = {
@@ -577,7 +649,7 @@ export const ApplicationManagementPage = () => {
         </div>
 
         <div className="space-y-2">
-          <Label>Select Project</Label>
+          <Label>Select {resourceFieldLabel(applications.find((app) => app.id === appValue)?.integrationName)}</Label>
           <Select value={projectValue} onValueChange={setProject}>
             <SelectTrigger>
               <SelectValue placeholder="Choose a project..." />
@@ -809,7 +881,9 @@ export const ApplicationManagementPage = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmRequest}>Submit</AlertDialogAction>
+            <AlertDialogAction onClick={confirmRequest} disabled={savingAccess}>
+              {savingAccess ? "Saving..." : "Submit"}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -846,9 +920,10 @@ export const ApplicationManagementPage = () => {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmCardRemove}
+              disabled={savingAccess}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Remove
+              {savingAccess ? "Removing..." : "Remove"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -11,7 +11,9 @@ export const loadingStore = {
   subscribe(listener: LoadingListener) {
     listeners.add(listener);
     listener(pendingCount);
-    return () => listeners.delete(listener);
+    return () => {
+      listeners.delete(listener);
+    };
   },
 
   start() {

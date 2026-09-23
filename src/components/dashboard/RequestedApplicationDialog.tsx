@@ -15,117 +15,92 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { resourceFieldLabel } from "@/lib/application-access";
+import { getErrorFromCatch } from "@/lib/api-errors";
+import type { IntegrationProject } from "@/lib/integration-api";
+import {
+  listApplications,
+  loadIntegrationCatalog,
+  type ApplicationDto,
+  type IntegrationRole,
+} from "@/services/application-api";
 import { Send } from "lucide-react";
-import { applicationsListPath, identityFetch, connectorFetch } from "@/services/api-config";
-import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
-import { mapIntegrationProjects, type IntegrationProject } from "@/lib/integration-api";
 import { useEffect, useState } from "react";
 
-type Application = {
-  id: string;
-  name: string;
+export type RequestedApplicationPayload = {
+  applicationId: string;
+  applicationName: string;
   integrationName: string;
+  projectKey: string;
+  projectName: string;
+  projectId: string;
+  roleId: string;
+  roleName: string;
 };
-
-type IntegrationRole = { id: string; name: string };
 
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  onSubmitted?: (payload: {
-    applicationId: string;
-    applicationName: string;
-    projectKey: string;
-    roleId: string;
-    roleName: string;
-  }) => void;
+  submitLabel?: string;
+  onSubmitted?: (payload: RequestedApplicationPayload) => void;
 }
 
 /**
- * Reuses the same Application → Project → Role loading logic used in
- * the "Requested Application(s)" section of Manage Team Access.
+ * Generic Application → Resource → Role picker.
+ * Resource options come from `/integrations/{integrationName}/projects`.
+ * For Jira that list is projects; other apps reuse the same catalog APIs.
  */
 export const RequestedApplicationDialog = ({
   open,
   onOpenChange,
+  submitLabel = "Submit Request",
   onSubmitted,
 }: Props) => {
   const { toast } = useToast();
-  const [applications, setApplications] = useState<Application[]>([]);
+  const [applications, setApplications] = useState<ApplicationDto[]>([]);
+  const [appsLoading, setAppsLoading] = useState(false);
+  const [catalogLoading, setCatalogLoading] = useState(false);
   const [availableProjects, setAvailableProjects] = useState<IntegrationProject[]>([]);
   const [availableRoles, setAvailableRoles] = useState<IntegrationRole[]>([]);
 
   const [appId, setAppId] = useState("");
   const [projectKey, setProjectKey] = useState("");
   const [roleId, setRoleId] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  /* Fetch applications when dialog opens */
+  const selectedApp = applications.find((app) => String(app.id) === appId);
+  const hasIntegration = Boolean(selectedApp?.integrationName);
+  const resourceLabel = resourceFieldLabel(selectedApp?.integrationName);
+
   useEffect(() => {
     if (!open) return;
-    identityFetch(applicationsListPath, {
-      headers: {
-        Accept: "application/json",
-      },
-    })
-      .then(async (r) => {
-        if (!r.ok) {
-          const body = await readResponseBody(r);
-          throw new Error(getApiErrorMessage(body, "Failed to load applications"));
-        }
-        return r.json();
-      })
-      .then((res) => {
-        const list = (res?.data?.content || []).map((app: any) => ({
-          id: String(app.id),
-          name: app.name,
-          integrationName: app.integrationName,
-        }));
-        setApplications(list);
-      })
+
+    setAppsLoading(true);
+    listApplications({ skipLoader: true })
+      .then((page) => setApplications(page.content.filter((app) => app.active)))
       .catch((err) => {
         toast({
           title: "Error",
           description: getErrorFromCatch(err, "Failed to load applications"),
           variant: "destructive",
         });
-      });
-  }, [open]);
+      })
+      .finally(() => setAppsLoading(false));
+  }, [open, toast]);
 
-  /* Dependent projects + roles */
   useEffect(() => {
     setProjectKey("");
     setRoleId("");
     setAvailableProjects([]);
     setAvailableRoles([]);
-    if (!appId) return;
+    setErrors({});
+    if (!appId || !selectedApp?.integrationName) return;
 
-    const selected = applications.find((a) => a.id === appId);
-    if (!selected?.integrationName) return;
-    const base = `/integrations/${selected.integrationName.toLowerCase()}`;
-
-    Promise.all([
-      connectorFetch(`${base}/roles`, {
-        headers: { Accept: "application/json" },
-      }).then(async (r) => {
-        if (!r.ok) {
-          const body = await readResponseBody(r);
-          throw new Error(getApiErrorMessage(body, "Failed to load roles"));
-        }
-        return r.json();
-      }),
-      connectorFetch(`${base}/projects`, {
-        headers: { Accept: "application/json" },
-      }).then(async (r) => {
-        if (!r.ok) {
-          const body = await readResponseBody(r);
-          throw new Error(getApiErrorMessage(body, "Failed to load projects"));
-        }
-        return r.json();
-      }),
-    ])
-      .then(([rolesData, projectsData]) => {
-        setAvailableRoles(Array.isArray(rolesData) ? rolesData : rolesData.data || []);
-        setAvailableProjects(mapIntegrationProjects(projectsData));
+    setCatalogLoading(true);
+    loadIntegrationCatalog(selectedApp.integrationName, { skipLoader: true })
+      .then((catalog) => {
+        setAvailableRoles(catalog.roles);
+        setAvailableProjects(catalog.projects);
       })
       .catch((err) => {
         toast({
@@ -133,34 +108,47 @@ export const RequestedApplicationDialog = ({
           description: getErrorFromCatch(err, "Failed to load integration data"),
           variant: "destructive",
         });
-      });
-  }, [appId, applications]);
+      })
+      .finally(() => setCatalogLoading(false));
+  }, [appId, selectedApp?.integrationName, toast]);
 
   const reset = () => {
     setAppId("");
     setProjectKey("");
     setRoleId("");
+    setErrors({});
+  };
+
+  const validate = () => {
+    const next: Record<string, string> = {};
+    if (!appId) next.application = "Application is required.";
+    if (hasIntegration && !projectKey) {
+      next.resource = `${resourceLabel} is required.`;
+    }
+    if (hasIntegration && !roleId) next.role = "Role is required.";
+    setErrors(next);
+    return Object.keys(next).length === 0;
   };
 
   const handleSubmit = () => {
-    if (!appId || !projectKey || !roleId) {
+    if (!validate()) {
       toast({
         title: "Validation Error",
-        description: "Please select Application, Project and Role.",
+        description: "Please complete the required application access fields.",
         variant: "destructive",
       });
       return;
     }
-    const app = applications.find((a) => a.id === appId);
+
+    const project = availableProjects.find((p) => p.key === projectKey);
     const role = availableRoles.find((r) => r.id === roleId);
-    toast({
-      title: "Application Requested",
-      description: `${app?.name} has been added to the request.`,
-    });
     onSubmitted?.({
       applicationId: appId,
-      applicationName: app?.name || "",
+      applicationName: selectedApp?.name || "",
+      integrationName: selectedApp?.integrationName || "",
       projectKey,
+      projectName: project?.name || projectKey,
+      projectId: project?.id || "",
       roleId,
       roleName: role?.name || "",
     });
@@ -186,49 +174,106 @@ export const RequestedApplicationDialog = ({
             <Label>Select Application</Label>
             <Select value={appId} onValueChange={setAppId}>
               <SelectTrigger>
-                <SelectValue placeholder="Choose an application..." />
+                <SelectValue
+                  placeholder={
+                    appsLoading ? "Loading applications..." : "Choose an application..."
+                  }
+                />
               </SelectTrigger>
               <SelectContent className="bg-popover border border-border shadow-lg z-50">
-                {applications.map((app) => (
-                  <SelectItem key={app.id} value={app.id}>
-                    {app.name}
-                  </SelectItem>
-                ))}
+                {applications.length === 0 && !appsLoading ? (
+                  <div className="px-3 py-2 text-sm text-muted-foreground">
+                    No applications configured.
+                  </div>
+                ) : (
+                  applications.map((app) => (
+                    <SelectItem key={app.id} value={String(app.id)}>
+                      {app.name}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
+            {errors.application ? (
+              <p className="text-xs text-destructive">{errors.application}</p>
+            ) : null}
           </div>
 
-          <div className="space-y-2">
-            <Label>Select Project</Label>
-            <Select value={projectKey} onValueChange={setProjectKey} disabled={!appId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choose a project..." />
-              </SelectTrigger>
-              <SelectContent className="bg-popover border border-border shadow-lg z-50">
-                {availableProjects.map((p) => (
-                  <SelectItem key={p.id} value={p.key}>
-                    {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {hasIntegration ? (
+            <>
+              <div className="space-y-2">
+                <Label>Select {resourceLabel}</Label>
+                <Select
+                  value={projectKey}
+                  onValueChange={setProjectKey}
+                  disabled={!appId || catalogLoading}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={
+                        catalogLoading
+                          ? `Loading ${resourceLabel.toLowerCase()}s...`
+                          : `Choose a ${resourceLabel.toLowerCase()}...`
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                    {availableProjects.length === 0 && !catalogLoading ? (
+                      <div className="px-3 py-2 text-sm text-muted-foreground">
+                        No {resourceLabel.toLowerCase()}s available.
+                      </div>
+                    ) : (
+                      availableProjects.map((p) => (
+                        <SelectItem key={p.id} value={p.key}>
+                          {p.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+                {errors.resource ? (
+                  <p className="text-xs text-destructive">{errors.resource}</p>
+                ) : null}
+              </div>
 
-          <div className="space-y-2">
-            <Label>Select Role</Label>
-            <Select value={roleId} onValueChange={setRoleId} disabled={!appId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choose a role..." />
-              </SelectTrigger>
-              <SelectContent className="bg-popover border border-border shadow-lg z-50">
-                {availableRoles.map((r) => (
-                  <SelectItem key={r.id} value={r.id}>
-                    {r.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+              <div className="space-y-2">
+                <Label>Select Role</Label>
+                <Select
+                  value={roleId}
+                  onValueChange={setRoleId}
+                  disabled={!appId || catalogLoading}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={
+                        catalogLoading ? "Loading roles..." : "Choose a role..."
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                    {availableRoles.length === 0 && !catalogLoading ? (
+                      <div className="px-3 py-2 text-sm text-muted-foreground">
+                        No roles available.
+                      </div>
+                    ) : (
+                      availableRoles.map((r) => (
+                        <SelectItem key={r.id} value={r.id}>
+                          {r.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+                {errors.role ? (
+                  <p className="text-xs text-destructive">{errors.role}</p>
+                ) : null}
+              </div>
+            </>
+          ) : appId ? (
+            <p className="text-sm text-muted-foreground">
+              This application does not require a project or role.
+            </p>
+          ) : null}
         </div>
 
         <DialogFooter>
@@ -240,7 +285,7 @@ export const RequestedApplicationDialog = ({
             className="bg-green-600 text-white hover:bg-green-700"
           >
             <Send className="h-4 w-4 mr-2" />
-            Submit Request
+            {submitLabel}
           </Button>
         </DialogFooter>
       </DialogContent>
