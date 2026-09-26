@@ -1,4 +1,8 @@
-import { RequestedApplicationDialog } from "@/components/dashboard/RequestedApplicationDialog";
+import { ApplicationStatusBadge } from "@/components/dashboard/ApplicationStatusBadge";
+import {
+  RequestedApplicationDialog,
+  type RequestedApplicationPayload,
+} from "@/components/dashboard/RequestedApplicationDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,7 +36,19 @@ import {
 
 import { identityFetch } from "@/services/api-config";
 import { getApiErrorMessage, getErrorFromCatch, mapBlueprintOptions, readResponseBody } from "@/lib/api-errors";
-import { getUserRoles } from "@/services/jwt-service";
+import {
+  flattenPendingRequests,
+  flattenUserApplications,
+  formatAccessLine,
+  formatDate,
+  toUserApplicationPayload,
+} from "@/lib/application-access";
+import {
+  getUserProfile,
+  updateUserProfile,
+  type FlattenedApplicationAccess,
+} from "@/services/application-api";
+import { getUserDetails, getUserRoles } from "@/services/jwt-service";
 
 const getUserFromToken = () => {
   const token = localStorage.getItem("auth-token");
@@ -101,7 +117,6 @@ export const EditProfilePage = () => {
 
 
   const location = useLocation();
-  const fromPage = location.state?.from || "/users";
   const source: "myteam" | "navbar" | "useradmin" =
     location.state?.source || (location.state?.userId ? "useradmin" : "navbar");
 
@@ -123,6 +138,8 @@ export const EditProfilePage = () => {
     tokenUser?.userId ||
     storedUser.userId ||
     tokenUser?.id;
+  const currentUserId = getUserDetails()?.userId || tokenUser?.userId || storedUser.userId;
+  const isSelfEdit = String(userId) === String(currentUserId);
   const isSuperAdmin = getUserRoles().some(
     (role) => role?.toLowerCase() === "super_admin"
   );
@@ -135,7 +152,7 @@ export const EditProfilePage = () => {
   >([]);
 
   const [availableBlueprints, setAvailableBluePrints] = useState<
-    { id: number; name: string }[]
+    { id: number | string; name: string }[]
   >([]);
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [roleToAdd, setRoleToAdd] = useState("");
@@ -167,20 +184,12 @@ export const EditProfilePage = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  type AssignedApp = {
-    id: number;
-    name: string;
-    description: string;
-    accessLevel: string;
-    grantedDate: string;
-    essential: boolean;
-  };
-  const [assignedApps, setAssignedApps] = useState<AssignedApp[]>([]);
-  const [appToRemove, setAppToRemove] = useState<AssignedApp | null>(null);
+  const [assignedApps, setAssignedApps] = useState<FlattenedApplicationAccess[]>([]);
+  const [pendingApps, setPendingApps] = useState<FlattenedApplicationAccess[]>([]);
+  const [appToRemove, setAppToRemove] = useState<FlattenedApplicationAccess | null>(null);
   const [showRequestDialog, setShowRequestDialog] = useState(false);
-  const [requestedApps, setRequestedApps] = useState<
-    { applicationId: string; applicationName: string; projectKey: string; roleId: string; roleName: string }[]
-  >([]);
+  const [draftApps, setDraftApps] = useState<FlattenedApplicationAccess[]>([]);
+  const [appsLoaded, setAppsLoaded] = useState(false);
 
   useEffect(() => {
     if (passedUser) {
@@ -198,26 +207,23 @@ export const EditProfilePage = () => {
     }
   }, []);
 
+  const applyApplicationState = (
+    applications: Parameters<typeof flattenUserApplications>[0],
+    pendingRequests: Parameters<typeof flattenPendingRequests>[0]
+  ) => {
+    setAssignedApps(flattenUserApplications(applications));
+    setPendingApps(flattenPendingRequests(pendingRequests));
+    setDraftApps([]);
+    setAppsLoaded(true);
+  };
+
   /* ---------------- FETCH USER ---------------- */
 
   useEffect(() => {
 
     const fetchUser = async () => {
       try {
-        const res = await identityFetch(`/users/${userId}`);
-
-        if (!res.ok) {
-          const body = await readResponseBody(res);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: getApiErrorMessage(body, "Failed to load user data"),
-          });
-          return;
-        }
-
-        const data = await res.json();
-        const user = data?.data || data;
+        const user = await getUserProfile(userId);
 
         setCountryCode(user.countryCode || "US:+1");
         setSelectedRoles(user.roles || []);
@@ -226,18 +232,17 @@ export const EditProfilePage = () => {
         setExistingManagerName(user.managerName ?? null);
 
         setForm({
-          employeeId: user.id || "",
+          employeeId: user.id != null ? String(user.id) : "",
           firstName: user.firstName || "",
           lastName: user.lastName || "",
           phoneNumber: user.phoneNumber || "",
           countryCode: user.countryCode || "US:+1",
           email: user.email || "",
           dob: user.dob ? user.dob.substring(0, 10) : "",
-          ssn: user.maskedSsn ? user.maskedSsn : "", // ✅ FIX
+          ssn: user.maskedSsn ? user.maskedSsn : "",
           companyName: user.companyName ? user.companyName : "Parent Company",
-
         });
-
+        applyApplicationState(user.applications, user.pendingApplicationAccessRequests);
       } catch (err) {
 
         toast({
@@ -253,39 +258,12 @@ export const EditProfilePage = () => {
 
   }, [userId, toast]);
 
-  /* ---------------- FETCH ASSIGNED APPLICATIONS ---------------- */
-  useEffect(() => {
-    if (!userId) return;
-
-    identityFetch(`/applications/users/${userId}`, {
-      headers: { Accept: "application/json" },
-    })
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((res) => {
-        const list = res?.data || res || [];
-        const mapped: AssignedApp[] = list
-          .filter((app: any) => app.active)
-          .map((app: any) => ({
-            id: app.id,
-            name: app.name,
-            description: app.description || "",
-            accessLevel: app.accessLevel || "Standard",
-            grantedDate: app.grantedDate
-              ? new Date(app.grantedDate).toLocaleDateString()
-              : "",
-            essential: app.essential || false,
-          }));
-        setAssignedApps(mapped);
-      })
-      .catch(() => setAssignedApps([]));
-  }, [userId]);
-
   const confirmRemoveApp = () => {
     if (!appToRemove) return;
-    setAssignedApps((prev) => prev.filter((a) => a.id !== appToRemove.id));
+    setAssignedApps((prev) => prev.filter((a) => a.key !== appToRemove.key));
     toast({
       title: "Application Removed",
-      description: `${appToRemove.name} was removed from the user's assignments.`,
+      description: `${appToRemove.applicationName} will be removed when you save the profile.`,
     });
     setAppToRemove(null);
   };
@@ -548,31 +526,25 @@ export const EditProfilePage = () => {
       roles: selectedRoles,
       blueprints: selectedBlueprint ? [selectedBlueprint] : [],
       ...(isSuperAdmin ? { manager: selectedManagerId } : {}),
+      ...(appsLoaded
+        ? { applications: toUserApplicationPayload([...assignedApps, ...draftApps]) }
+        : {}),
     };
 
     try {
-      const res = await identityFetch(`/users/${userId}`, {
-        method: "PUT",
-        body: JSON.stringify(payload),
-      });
+      const updated = await updateUserProfile(userId, payload);
+      applyApplicationState(updated.applications, updated.pendingApplicationAccessRequests);
 
-      if (!res.ok) {
-        const body = await readResponseBody(res);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: getApiErrorMessage(body, "Failed to update profile"),
-        });
-        return;
-      }
-
+      const accessMessage = updated.applicationAccessMessage;
       toast({
         title: "Profile Updated",
-        description: "User profile updated successfully",
+        description: isSelfEdit && accessMessage
+          ? accessMessage.replace(
+              "Profile updated. Application access request has been submitted for manager approval.",
+              "Application access request submitted for manager approval."
+            )
+          : accessMessage || "User profile updated successfully",
       });
-
-      navigate(fromPage);
-
     } catch (err) {
 
       toast({
@@ -621,9 +593,13 @@ export const EditProfilePage = () => {
           </div>
 
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Edit Team Member</h1>
+            <h1 className="text-2xl font-bold text-foreground">
+              {isSelfEdit ? "Edit Profile" : "Edit Team Member"}
+            </h1>
             <p className="text-muted-foreground text-sm">
-              Update your personal information
+              {isSelfEdit
+                ? "Update your personal information"
+                : "Update this team member's information"}
             </p>
           </div>
 
@@ -1050,97 +1026,131 @@ export const EditProfilePage = () => {
                 className="bg-green-600 text-white hover:bg-green-700"
               >
                 <Plus className="h-4 w-4 mr-1.5" />
-                Add
+                {isSelfEdit ? "Request Access" : "Add"}
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Existing assigned applications */}
-              {assignedApps.length === 0 && requestedApps.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                {isSelfEdit
+                  ? "Application access you add here is submitted for manager approval. It will not be granted until approved."
+                  : "Application access you add here is granted when you save this profile."}
+              </p>
+              {assignedApps.length === 0 && pendingApps.length === 0 && draftApps.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  No applications requested yet. Click "Add" to add one.
+                  No applications requested yet. Click "{isSelfEdit ? "Request Access" : "Add"}" to add one.
                 </p>
               ) : (
                 <>
                   {assignedApps.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {assignedApps.map((app) => (
-                        <div
-                          key={app.id}
-                          className="flex items-start justify-between gap-3 p-3 rounded-md border border-border bg-muted/30"
-                        >
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-medium text-sm text-foreground truncate">
-                                {app.name}
-                              </span>
-                              {app.essential && (
-                                <Shield className="h-3.5 w-3.5 text-warning shrink-0" />
-                              )}
-                            </div>
-                            {app.description && (
-                              <p className="text-xs text-muted-foreground truncate">
-                                {app.description}
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Granted access
+                      </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {assignedApps.map((app) => (
+                          <div
+                            key={app.key}
+                            className="flex items-start justify-between gap-3 p-3 rounded-md border border-border bg-muted/30"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-medium text-sm text-foreground truncate">
+                                  {app.applicationName}
+                                </span>
+                                {app.essential && (
+                                  <Shield className="h-3.5 w-3.5 text-warning shrink-0" />
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                {formatAccessLine(app)}
                               </p>
+                              <div className="flex flex-wrap gap-1.5 mt-2">
+                                <ApplicationStatusBadge status="COMPLETED" label="Granted" />
+                                {app.grantedDate && (
+                                  <Badge variant="outline" className="text-xs">
+                                    Granted: {formatDate(app.grantedDate)}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                            {!isSelfEdit && !app.essential && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => setAppToRemove(app)}
+                                className="text-muted-foreground hover:text-destructive shrink-0"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
                             )}
-                            <div className="flex flex-wrap gap-1.5 mt-2">
-                              <Badge variant="secondary" className="text-xs">
-                                {app.accessLevel}
-                              </Badge>
-                              {app.grantedDate && (
-                                <Badge variant="outline" className="text-xs">
-                                  Granted: {app.grantedDate}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {(pendingApps.length > 0 || draftApps.length > 0) && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Pending requests
+                      </p>
+                      <div className="space-y-2">
+                        {pendingApps.map((r) => (
+                          <div
+                            key={r.key}
+                            className="flex items-center justify-between p-3 rounded-md border border-border bg-muted/30"
+                          >
+                            <div className="min-w-0 space-y-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-medium text-sm text-foreground">
+                                  {r.applicationName}
+                                </span>
+                                <Badge variant="secondary" className="text-xs">
+                                  {formatAccessLine(r)}
                                 </Badge>
-                              )}
+                              </div>
+                              <ApplicationStatusBadge status={r.requestStatus} />
                             </div>
                           </div>
-                          {!app.essential && (
+                        ))}
+                        {draftApps.map((r, idx) => (
+                          <div
+                            key={r.key}
+                            className="flex items-center justify-between p-3 rounded-md border border-border bg-muted/30"
+                          >
+                            <div className="min-w-0 space-y-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-medium text-sm text-foreground">
+                                  {r.applicationName}
+                                </span>
+                                <Badge variant="secondary" className="text-xs">
+                                  {formatAccessLine(r)}
+                                </Badge>
+                              </div>
+                              <ApplicationStatusBadge
+                                status={isSelfEdit ? "PENDING" : "APPROVED"}
+                                label={
+                                  isSelfEdit
+                                    ? "Pending Approval"
+                                    : "Will be granted on save"
+                                }
+                              />
+                            </div>
                             <Button
                               type="button"
                               variant="ghost"
                               size="icon"
-                              onClick={() => setAppToRemove(app)}
-                              className="text-muted-foreground hover:text-destructive shrink-0"
+                              onClick={() =>
+                                setDraftApps((prev) => prev.filter((_, i) => i !== idx))
+                              }
+                              className="text-muted-foreground hover:text-destructive"
                             >
-                              <X className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Newly requested applications (pending) */}
-                  {requestedApps.length > 0 && (
-                    <div className="space-y-2">
-                      {requestedApps.map((r, idx) => (
-                        <div
-                          key={`${r.applicationId}-${r.projectKey}-${r.roleId}-${idx}`}
-                          className="flex items-center justify-between p-3 rounded-md border border-border bg-muted/30"
-                        >
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-medium text-sm text-foreground">
-                              {r.applicationName}
-                            </span>
-                            <Badge variant="secondary" className="text-xs">
-                              Project: {r.projectKey}
-                            </Badge>
-                            <Badge variant="secondary" className="text-xs">
-                              Role: {r.roleName}
-                            </Badge>
                           </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() =>
-                              setRequestedApps((prev) => prev.filter((_, i) => i !== idx))
-                            }
-                            className="text-muted-foreground hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   )}
                 </>
@@ -1152,9 +1162,34 @@ export const EditProfilePage = () => {
         <RequestedApplicationDialog
           open={showRequestDialog}
           onOpenChange={setShowRequestDialog}
-          onSubmitted={(entry) =>
-            setRequestedApps((prev) => [...prev, entry])
-          }
+          submitLabel={isSelfEdit ? "Add to Request" : "Add Access"}
+          onSubmitted={(entry: RequestedApplicationPayload) => {
+            const next: FlattenedApplicationAccess = {
+              key: `${entry.applicationId}|${entry.projectKey}|${entry.roleId}`,
+              applicationId: Number(entry.applicationId),
+              applicationName: entry.applicationName,
+              description: "",
+              essential: false,
+              grantedDate: "",
+              resourceName: entry.projectName || entry.projectKey,
+              resourceKey: entry.projectKey,
+              resourceId: entry.projectId,
+              roleName: entry.roleName,
+              roleId: entry.roleId,
+            };
+            const exists =
+              assignedApps.some((app) => app.key === next.key) ||
+              pendingApps.some((app) => app.key.endsWith(next.key)) ||
+              draftApps.some((app) => app.key === next.key);
+            if (exists) {
+              toast({
+                title: "Already added",
+                description: "This application access is already on the profile.",
+              });
+              return;
+            }
+            setDraftApps((prev) => [...prev, next]);
+          }}
         />
 
 
@@ -1163,7 +1198,7 @@ export const EditProfilePage = () => {
             <AlertDialogHeader>
               <AlertDialogTitle>Remove Application</AlertDialogTitle>
               <AlertDialogDescription>
-                Remove <strong>{appToRemove?.name}</strong> from this user's
+                Remove <strong>{appToRemove?.applicationName}</strong> from this user's
                 assigned applications?
               </AlertDialogDescription>
             </AlertDialogHeader>

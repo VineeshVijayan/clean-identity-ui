@@ -297,7 +297,9 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
     ];
   }
   else if (isUserOnly) {
-    menuItems = [];
+    menuItems = [
+      accessRequests,
+    ];
   }
   else {
     menuItems = [dashboardItem];
