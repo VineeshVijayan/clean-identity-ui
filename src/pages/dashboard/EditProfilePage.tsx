@@ -259,7 +259,7 @@ export const EditProfilePage = () => {
   }, [userId, toast]);
 
   const confirmRemoveApp = () => {
-    if (!appToRemove) return;
+    if (!appToRemove || appToRemove.essential) return;
     setAssignedApps((prev) => prev.filter((a) => a.key !== appToRemove.key));
     toast({
       title: "Application Removed",
@@ -1032,8 +1032,8 @@ export const EditProfilePage = () => {
             <CardContent className="space-y-4">
               <p className="text-xs text-muted-foreground">
                 {isSelfEdit
-                  ? "Application access you add here is submitted for manager approval. It will not be granted until approved."
-                  : "Application access you add here is granted when you save this profile."}
+                  ? "Application access you add here is submitted for manager approval. It will not be granted until approved. Essential and granted access can only be removed by a manager."
+                  : "Non-essential applications can be removed here. Essential applications stay locked. Save the profile to apply removals."}
               </p>
               {assignedApps.length === 0 && pendingApps.length === 0 && draftApps.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
@@ -1077,12 +1077,18 @@ export const EditProfilePage = () => {
                               <Button
                                 type="button"
                                 variant="ghost"
-                                size="icon"
+                                size="sm"
                                 onClick={() => setAppToRemove(app)}
                                 className="text-muted-foreground hover:text-destructive shrink-0"
                               >
-                                <X className="h-4 w-4" />
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                Remove
                               </Button>
+                            )}
+                            {!isSelfEdit && app.essential && (
+                              <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                                Cannot remove
+                              </span>
                             )}
                           </div>
                         ))}

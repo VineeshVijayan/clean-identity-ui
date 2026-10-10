@@ -9,10 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { ArrowLeft, Check, CheckCircle2, FolderOpen, Save, Shield, ShieldAlert, X } from "lucide-react";
+import { ArrowLeft, Check, CheckCircle2, FolderOpen, Plus, Save, Shield, ShieldAlert, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
+import { shouldOfferCreateJobTitle, toJobTitleOption } from "@/lib/job-title-picker";
 import { API_BASE_URL, applicationsListPath } from "@/services/api-config";
+import { createJobTitle } from "@/services/job-title-api";
 import { useNavigate } from "react-router-dom";
 // Mock applications data
 
@@ -52,6 +54,9 @@ export const NewRolePage = () => {
   const [applications, setApplications] =
     useState<any[]>([]);
   const [jobOptions, setJobOptions] = useState<{ label: string; value: string }[]>([]);
+  const [jobSearch, setJobSearch] = useState("");
+  const [jobTitleError, setJobTitleError] = useState("");
+  const [creatingJobTitle, setCreatingJobTitle] = useState(false);
   const [blueprintApps, setBlueprintApps] = useState<BlueprintApp[]>([]);
 
 
@@ -125,6 +130,48 @@ export const NewRolePage = () => {
         ? prev.filter((v) => v !== value)
         : [...prev, value]
     );
+  };
+
+  const handleCreateJobTitle = async () => {
+    const name = jobSearch.trim();
+    if (!name || creatingJobTitle) {
+      if (!name) {
+        setJobTitleError("Job title is required");
+      }
+      return;
+    }
+
+    setCreatingJobTitle(true);
+    setJobTitleError("");
+
+    try {
+      const created = await createJobTitle(name);
+      const option = toJobTitleOption(created);
+
+      setJobOptions((prev) =>
+        prev.some((job) => job.value === option.value)
+          ? prev
+          : [...prev, option]
+      );
+      setSelectedJobs((prev) =>
+        prev.includes(option.value) ? prev : [...prev, option.value]
+      );
+      setJobSearch("");
+      toast({
+        title: "Job title created",
+        description: `${created.name} is now available for this blueprint.`,
+      });
+    } catch (error) {
+      const message = getErrorFromCatch(error, "Failed to create job title");
+      setJobTitleError(message);
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setCreatingJobTitle(false);
+    }
   };
 
   const handleRemoveApp = (id: string) => {
@@ -241,10 +288,7 @@ export const NewRolePage = () => {
 
         const result = await response.json();
 
-        const formatted = result.data.map((job: any) => ({
-          label: job.name,
-          value: job.id,
-        }));
+        const formatted = (result.data || []).map((job: any) => toJobTitleOption(job));
 
         setJobOptions(formatted);
       } catch (error) {
@@ -448,8 +492,19 @@ export const NewRolePage = () => {
 
                 <PopoverContent className="w-full p-0">
                   <Command>
-                    <CommandInput placeholder="Search job roles..." />
-                    <CommandEmpty>No results found.</CommandEmpty>
+                    <CommandInput
+                      placeholder="Search job roles..."
+                      value={jobSearch}
+                      onValueChange={(value) => {
+                        setJobSearch(value);
+                        if (jobTitleError) setJobTitleError("");
+                      }}
+                    />
+                    <CommandEmpty>
+                      {shouldOfferCreateJobTitle(jobSearch, jobOptions)
+                        ? " "
+                        : "No results found."}
+                    </CommandEmpty>
 
                     <CommandGroup>
                       {jobOptions.map((job) => {
@@ -458,6 +513,7 @@ export const NewRolePage = () => {
                         return (
                           <CommandItem
                             key={job.value}
+                            value={job.label}
                             onSelect={() => toggleJob(job.value)}
                           >
                             <Check
@@ -468,10 +524,35 @@ export const NewRolePage = () => {
                           </CommandItem>
                         );
                       })}
+                      {shouldOfferCreateJobTitle(jobSearch, jobOptions) && (
+                        <CommandItem
+                          value={jobSearch.trim()}
+                          disabled={creatingJobTitle}
+                          onSelect={() => {
+                            void handleCreateJobTitle();
+                          }}
+                          className="mt-1 border-t border-border text-primary data-[selected=true]:bg-primary/10 data-[selected=true]:text-primary"
+                        >
+                          <span className="mr-2 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
+                            <Plus className="h-3.5 w-3.5" />
+                          </span>
+                          {creatingJobTitle ? (
+                            "Creating..."
+                          ) : (
+                            <span>
+                              Create New:{" "}
+                              <span className="font-medium">{jobSearch.trim()}</span>
+                            </span>
+                          )}
+                        </CommandItem>
+                      )}
                     </CommandGroup>
                   </Command>
                 </PopoverContent>
               </Popover>
+              {jobTitleError && (
+                <p className="text-sm text-red-500">{jobTitleError}</p>
+              )}
 
               {/* Selected badges */}
               <div className="flex flex-wrap gap-2 mt-2">

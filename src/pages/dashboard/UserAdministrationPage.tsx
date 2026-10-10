@@ -2,6 +2,14 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
+import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
@@ -33,6 +41,7 @@ import {
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { identityFetch } from "@/services/api-config";
 import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
+import { getUserDetails } from "@/services/jwt-service";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import {
@@ -48,6 +57,7 @@ import {
     MoreVertical,
     RefreshCw,
     Search,
+    Trash2,
     UserPlus
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -185,6 +195,11 @@ export const UserAdministrationPage = () => {
     const [companyFilter, setCompanyFilter] = useState("all");
     const [filterOpen, setFilterOpen] = useState(false);
     const [togglingUserId, setTogglingUserId] = useState<string | null>(null);
+    const [userToDelete, setUserToDelete] = useState<User | null>(null);
+    const [deleteStep, setDeleteStep] = useState<"confirm" | "password" | null>(null);
+    const [deletePassword, setDeletePassword] = useState("");
+    const [deletePasswordError, setDeletePasswordError] = useState("");
+    const [deleting, setDeleting] = useState(false);
     const PAGE_SIZE = 20;
 
     const activeFilterCount = [roleFilter, companyFilter].filter(
@@ -251,6 +266,78 @@ export const UserAdministrationPage = () => {
 
         loadUsers();
     }, [fetchType]);
+
+    const resetDeleteFlow = () => {
+        setUserToDelete(null);
+        setDeleteStep(null);
+        setDeletePassword("");
+        setDeletePasswordError("");
+        setDeleting(false);
+    };
+
+    const openDeleteConfirm = (user: User) => {
+        const currentUserId = getUserDetails()?.userId;
+        if (currentUserId && String(currentUserId) === String(user.id)) {
+            toast({
+                variant: "destructive",
+                title: "Cannot delete",
+                description: "You cannot delete your own account.",
+            });
+            return;
+        }
+        setUserToDelete(user);
+        setDeleteStep("confirm");
+        setDeletePassword("");
+        setDeletePasswordError("");
+    };
+
+    const confirmDeleteEmployee = async () => {
+        if (!userToDelete) return;
+
+        if (!deletePassword.trim()) {
+            setDeletePasswordError("Password is required.");
+            return;
+        }
+
+        setDeleting(true);
+        setDeletePasswordError("");
+
+        try {
+            const res = await identityFetch(`/users/${userToDelete.id}`, {
+                method: "DELETE",
+                body: JSON.stringify({ password: deletePassword }),
+            });
+
+            if (!res.ok) {
+                const body = await readResponseBody(res);
+                const message = getApiErrorMessage(body, "Failed to delete user");
+                setDeletePasswordError(message);
+                toast({
+                    variant: "destructive",
+                    title: "Error",
+                    description: message,
+                });
+                return;
+            }
+
+            setUsers((prev) => prev.filter((item) => item.id !== userToDelete.id));
+            toast({
+                title: "Employee removed",
+                description: `${userToDelete.firstName} ${userToDelete.lastName} was permanently removed from the system.`,
+            });
+            resetDeleteFlow();
+        } catch (err) {
+            const message = getErrorFromCatch(err, "Failed to delete user");
+            setDeletePasswordError(message);
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: message,
+            });
+        } finally {
+            setDeleting(false);
+        }
+    };
 
     const toggleUserStatus = async (user: User) => {
         const isActive = user.status !== "Active";
@@ -417,12 +504,26 @@ export const UserAdministrationPage = () => {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                             id="user-search"
-                            name="userSearch"
+                            name="user-directory-filter"
+                            type="search"
                             placeholder="Search users..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="pl-10"
                             autoComplete="off"
+                            autoCorrect="off"
+                            autoCapitalize="off"
+                            spellCheck={false}
+                            data-1p-ignore="true"
+                            data-lpignore="true"
+                            data-form-type="other"
+                            readOnly
+                            onFocus={(event) => {
+                                event.currentTarget.readOnly = false;
+                            }}
+                            onBlur={(event) => {
+                                event.currentTarget.readOnly = true;
+                            }}
                         />
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
@@ -569,9 +670,8 @@ export const UserAdministrationPage = () => {
                             paginatedUsers.map((user) => (
                                 <TableRow
                                     key={user.id}
-                                    className={`transition-opacity duration-300 ${
-                                        user.status === "Active" ? "opacity-100" : "opacity-50"
-                                    }`}
+                                    className={`transition-opacity duration-300 ${user.status === "Active" ? "opacity-100" : "opacity-50"
+                                        }`}
                                 >
                                     <TableCell>
                                         <div className="flex items-center gap-3">
@@ -593,11 +693,10 @@ export const UserAdministrationPage = () => {
 
                                     <TableCell>
                                         <span
-                                            className={`text-sm font-medium ${
-                                                user.status === "Active"
+                                            className={`text-sm font-medium ${user.status === "Active"
                                                     ? "text-green-500"
                                                     : "text-muted-foreground"
-                                            }`}
+                                                }`}
                                         >
                                             {user.status}
                                         </span>
@@ -655,6 +754,13 @@ export const UserAdministrationPage = () => {
                                                         <KeyRound className="h-4 w-4 mr-2" />
                                                         Reset Password
                                                     </DropdownMenuItem>
+
+                                                    <DropdownMenuItem
+                                                        className="text-destructive"
+                                                        onClick={() => openDeleteConfirm(user)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4 mr-2" /> Delete
+                                                    </DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </div>
@@ -695,6 +801,102 @@ export const UserAdministrationPage = () => {
                     </div>
                 </div>
             </div>
+
+            <Dialog
+                open={deleteStep !== null}
+                onOpenChange={(open) => {
+                    if (!open && !deleting) resetDeleteFlow();
+                }}
+            >
+                <DialogContent className="sm:max-w-md">
+                    {deleteStep === "confirm" ? (
+                        <>
+                            <DialogHeader>
+                                <DialogTitle>Remove employee</DialogTitle>
+                                <DialogDescription>
+                                    Are you sure you want to remove the employee from the system permanently?
+                                </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter>
+                                <Button type="button" variant="outline" onClick={resetDeleteFlow}>
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="destructive"
+                                    onClick={() => setDeleteStep("password")}
+                                >
+                                    Confirm
+                                </Button>
+                            </DialogFooter>
+                        </>
+                    ) : (
+                        <form
+                            autoComplete="on"
+                            onSubmit={(event) => {
+                                event.preventDefault();
+                                void confirmDeleteEmployee();
+                            }}
+                        >
+                            <DialogHeader>
+                                <DialogTitle>Confirm with your password</DialogTitle>
+                                <DialogDescription>
+                                    Enter your password to permanently remove{" "}
+                                    {userToDelete
+                                        ? `${userToDelete.firstName} ${userToDelete.lastName}`
+                                        : "this employee"}
+                                    .
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-2">
+                                <input
+                                    type="text"
+                                    name="username"
+                                    autoComplete="username"
+                                    defaultValue={getUserDetails()?.userName ?? ""}
+                                    tabIndex={-1}
+                                    aria-hidden="true"
+                                    className="pointer-events-none absolute h-0 w-0 opacity-0"
+                                />
+                                <Label htmlFor="delete-admin-password">Password</Label>
+                                <Input
+                                    id="delete-admin-password"
+                                    name="password"
+                                    type="password"
+                                    autoComplete="current-password"
+                                    autoFocus
+                                    value={deletePassword}
+                                    onChange={(event) => {
+                                        setDeletePassword(event.target.value);
+                                        if (deletePasswordError) setDeletePasswordError("");
+                                    }}
+                                    placeholder="Enter your password"
+                                />
+                                {deletePasswordError && (
+                                    <p className="text-xs text-destructive">{deletePasswordError}</p>
+                                )}
+                            </div>
+                            <DialogFooter className="mt-4">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={resetDeleteFlow}
+                                    disabled={deleting}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    variant="destructive"
+                                    disabled={deleting}
+                                >
+                                    {deleting ? "Removing..." : "Remove permanently"}
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    )}
+                </DialogContent>
+            </Dialog>
         </motion.div>
     );
 };

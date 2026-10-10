@@ -34,20 +34,6 @@ const authHeaders = () => {
   };
 };
 
-// ✅ Get departmentId from token
-const getDepartmentIdFromToken = () => {
-  const token = localStorage.getItem("auth-token");
-  if (!token) return null;
-
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    return payload?.departmentId; // ⚠️ change if key different
-  } catch (error) {
-    console.error("Invalid token");
-    return null;
-  }
-};
-
 const getStatusColor = (status: string) => {
   switch (status) {
     case "APPROVED":
@@ -71,15 +57,8 @@ export const MyApprovalPage = () => {
     try {
       setLoading(true);
 
-      const departmentId = getDepartmentIdFromToken();
-
-      if (!departmentId) {
-        toast.error("Department not found in token");
-        return;
-      }
-
       const res = await fetch(
-        `${API_BASE_URL}/delegates/requests?departmentId=${departmentId}`,
+        `${API_BASE_URL}/delegates/requests`,
         {
           method: "GET",
           headers: authHeaders(),

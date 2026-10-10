@@ -1,11 +1,14 @@
-import type {
-  ApplicationAccessRequest,
-  ApplicationAccessRequestItem,
-  ApplicationAccessRequestStatus,
-  ApplicationResourceDto,
-  FlattenedApplicationAccess,
-  UserApplicationDto,
+import {
+  isEssentialApplication,
+  type ApplicationAccessRequest,
+  type ApplicationAccessRequestItem,
+  type ApplicationAccessRequestStatus,
+  type ApplicationResourceDto,
+  type FlattenedApplicationAccess,
+  type UserApplicationDto,
 } from "@/services/application-api";
+
+export { isEssentialApplication };
 
 const OPEN_REQUEST_STATUSES: ApplicationAccessRequestStatus[] = [
   "PENDING",
@@ -128,7 +131,10 @@ export const flattenUserApplications = (
         applicationId: Number(applicationId),
         applicationName: app.name || "Application",
         description: app.description || "",
-        essential: Boolean(app.essential),
+        essential: isEssentialApplication({
+          name: app.name,
+          essential: app.essential,
+        }),
         grantedDate: app.grantedDate || "",
         resourceName: resource.resourceName || resourceKey,
         resourceKey,

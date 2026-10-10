@@ -96,18 +96,6 @@ export const AccessRequestsPage = () => {
   const [selectedRequest, setSelectedRequest] = useState<ApplicationAccessRequest | null>(null);
   const [detailsAllowActions, setDetailsAllowActions] = useState(false);
 
-  const getDeptId = () => {
-    const token = localStorage.getItem("auth-token");
-    if (!token) return null;
-
-    try {
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      return payload.departmentId;
-    } catch {
-      return null;
-    }
-  };
-
   const loadRequests = useCallback(async () => {
     setRequestsLoading(true);
     setRequestsError("");
@@ -139,6 +127,7 @@ export const AccessRequestsPage = () => {
           requestedAt: string;
           actionedAt?: string;
           actionedByName?: string;
+          targetApproverName?: string;
         }) => {
           const status = item.status;
           return {
@@ -155,6 +144,7 @@ export const AccessRequestsPage = () => {
                 ? item.actionedByName || "Unknown User"
                 : "Awaiting approval",
             requestType: "DELEGATE" as const,
+            approverName: item.targetApproverName || "Awaiting assignment",
           };
         }
       );
@@ -175,14 +165,10 @@ export const AccessRequestsPage = () => {
     setApprovalsError("");
 
     try {
-      const departmentId = getDeptId();
-
-      const delegatePromise = departmentId
-        ? identityFetch(`/delegates/requests?departmentId=${departmentId}`, {
-            headers: acceptJsonHeaders,
-            skipLoader: true,
-          }).then((res) => (res.ok ? res.json() : { data: [] }))
-        : Promise.resolve({ data: [] });
+      const delegatePromise = identityFetch("/delegates/requests", {
+        headers: acceptJsonHeaders,
+        skipLoader: true,
+      }).then((res) => (res.ok ? res.json() : { data: [] }));
 
       const [delegateResponse, applicationApprovals] = await Promise.all([
         delegatePromise,

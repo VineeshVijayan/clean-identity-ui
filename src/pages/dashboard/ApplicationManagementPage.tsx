@@ -831,10 +831,12 @@ export const ApplicationManagementPage = () => {
                                 <Shield className="h-4 w-4 text-warning" />
                               ) : (
                                 <button
+                                  type="button"
                                   onClick={() => handleCardRemove(app.id)}
-                                  className="p-1 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                                  className="inline-flex items-center gap-1 p-1 rounded-full hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                                 >
                                   <X className="h-4 w-4" />
+                                  <span className="text-xs">Remove</span>
                                 </button>
                               )}
                             </div>

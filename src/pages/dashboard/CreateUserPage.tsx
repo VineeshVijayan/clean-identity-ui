@@ -1,4 +1,8 @@
-import { RequestedApplicationDialog } from "@/components/dashboard/RequestedApplicationDialog";
+import {
+  RequestedApplicationDialog,
+  type RequestedApplicationPayload,
+} from "@/components/dashboard/RequestedApplicationDialog";
+import { ApplicationStatusBadge } from "@/components/dashboard/ApplicationStatusBadge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,11 +14,17 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
-import { AppWindow, ArrowLeft, Camera, Plus, Save, Trash2, Upload, User } from "lucide-react";
+import { AppWindow, ArrowLeft, Camera, Plus, Save, Shield, Trash2, Upload, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { identityFetch } from "@/services/api-config";
-import { getApiErrorMessage, getErrorFromCatch, mapBlueprintOptions, mapApiError, networkError, readResponseBody } from "@/lib/api-errors";
+import { getApiErrorMessage, getErrorFromCatch, mapBlueprintOptions, mapApiError, networkError, readResponseBody, unwrapApiData } from "@/lib/api-errors";
+import { formatAccessLine, toUserApplicationPayload } from "@/lib/application-access";
+import {
+  listEssentialApplications,
+  updateUserProfile,
+  type FlattenedApplicationAccess,
+} from "@/services/application-api";
 
 export const CreateUserPage = () => {
 
@@ -59,9 +69,7 @@ export const CreateUserPage = () => {
   const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
   const [showIDFRoles, setShowIDFRoles] = useState(false);
   const [showRequestDialog, setShowRequestDialog] = useState(false);
-  const [requestedApps, setRequestedApps] = useState<
-    { applicationId: string; applicationName: string; projectKey: string; roleId: string; roleName: string }[]
-  >([]);
+  const [requestedApps, setRequestedApps] = useState<FlattenedApplicationAccess[]>([]);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -207,6 +215,33 @@ export const CreateUserPage = () => {
         });
       });
 
+  }, []);
+
+  useEffect(() => {
+    listEssentialApplications({ skipLoader: true })
+      .then((apps) => {
+        setRequestedApps((prev) => {
+          const extra = prev.filter((app) => !app.essential);
+          const essential = apps.map((app) => ({
+            key: `${app.id}||`,
+            applicationId: app.id,
+            applicationName: app.name,
+            description: app.description || "",
+            essential: true,
+            grantedDate: "",
+            resourceName: "",
+            resourceKey: "",
+            resourceId: "",
+            roleName: "",
+            roleId: "",
+            integrationName: app.integrationName,
+          }));
+          return [...essential, ...extra];
+        });
+      })
+      .catch(() => {
+        /* Catalogue essential apps are optional on create if the list cannot be loaded. */
+      });
   }, []);
 
 
@@ -395,9 +430,57 @@ export const CreateUserPage = () => {
         return;
       }
 
+      const created = unwrapApiData<{ id?: number }>(response);
+      const createdUserId = created?.id;
+
+      if (createdUserId && requestedApps.length > 0) {
+        try {
+          await updateUserProfile(createdUserId, {
+            applications: toUserApplicationPayload(requestedApps),
+          });
+        } catch (err) {
+          const fallbackApps = requestedApps.filter(
+            (app) =>
+              !app.integrationName ||
+              Boolean(app.resourceKey) ||
+              Boolean(app.roleName)
+          );
+          try {
+            if (fallbackApps.length > 0) {
+              await updateUserProfile(createdUserId, {
+                applications: toUserApplicationPayload(fallbackApps),
+              });
+            }
+            toast({
+              variant: "destructive",
+              title: "User created",
+              description: getErrorFromCatch(
+                err,
+                "Some essential applications need a project or role. Add those from the user profile."
+              ),
+            });
+            navigate("/users");
+            return;
+          } catch {
+            toast({
+              variant: "destructive",
+              title: "User created",
+              description: getErrorFromCatch(
+                err,
+                "The user was created, but essential application access could not be assigned. A manager can add it from the profile."
+              ),
+            });
+            navigate("/users");
+            return;
+          }
+        }
+      }
+
       toast({
         title: "User Created",
-        description: `${formData.firstName} ${formData.lastName} created successfully`,
+        description: requestedApps.some((app) => app.essential)
+          ? `${formData.firstName} ${formData.lastName} created with essential applications.`
+          : `${formData.firstName} ${formData.lastName} created successfully`,
       });
 
       navigate("/users");
@@ -767,7 +850,11 @@ export const CreateUserPage = () => {
                 Add
               </Button>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Essential applications are added by default and cannot be removed.
+                Additional applications can be added before you save.
+              </p>
               {requestedApps.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   No applications requested yet. Click "Add" to add one.
@@ -776,31 +863,40 @@ export const CreateUserPage = () => {
                 <div className="space-y-2">
                   {requestedApps.map((r, idx) => (
                     <div
-                      key={`${r.applicationId}-${r.projectKey}-${r.roleId}-${idx}`}
+                      key={r.key}
                       className="flex items-center justify-between p-3 rounded-md border border-border bg-muted/30"
                     >
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium text-sm text-foreground">
-                          {r.applicationName}
-                        </span>
-                        <Badge variant="secondary" className="text-xs">
-                          Project: {r.projectKey}
-                        </Badge>
-                        <Badge variant="secondary" className="text-xs">
-                          Role: {r.roleName}
-                        </Badge>
+                      <div className="min-w-0 space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-medium text-sm text-foreground">
+                            {r.applicationName}
+                          </span>
+                          {r.essential ? (
+                            <Shield className="h-3.5 w-3.5 text-warning shrink-0" />
+                          ) : null}
+                          {r.resourceKey || r.roleName ? (
+                            <Badge variant="secondary" className="text-xs">
+                              {formatAccessLine(r)}
+                            </Badge>
+                          ) : null}
+                        </div>
+                        {r.essential ? (
+                          <ApplicationStatusBadge status="COMPLETED" label="Essential" />
+                        ) : null}
                       </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() =>
-                          setRequestedApps((prev) => prev.filter((_, i) => i !== idx))
-                        }
-                        className="text-muted-foreground hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {!r.essential && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() =>
+                            setRequestedApps((prev) => prev.filter((_, i) => i !== idx))
+                          }
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -812,9 +908,30 @@ export const CreateUserPage = () => {
         <RequestedApplicationDialog
           open={showRequestDialog}
           onOpenChange={setShowRequestDialog}
-          onSubmitted={(entry) =>
-            setRequestedApps((prev) => [...prev, entry])
-          }
+          onSubmitted={(entry: RequestedApplicationPayload) => {
+            const next: FlattenedApplicationAccess = {
+              key: `${entry.applicationId}|${entry.projectKey}|${entry.roleId}`,
+              applicationId: Number(entry.applicationId),
+              applicationName: entry.applicationName,
+              description: "",
+              essential: false,
+              grantedDate: "",
+              resourceName: entry.projectName || entry.projectKey,
+              resourceKey: entry.projectKey,
+              resourceId: entry.projectId,
+              roleName: entry.roleName,
+              roleId: entry.roleId,
+            };
+            setRequestedApps((prev) => {
+              const wasEssential = prev.some(
+                (app) => app.applicationId === next.applicationId && app.essential
+              );
+              return [
+                ...prev.filter((app) => app.applicationId !== next.applicationId),
+                { ...next, essential: wasEssential },
+              ];
+            });
+          }}
         />
 
         {/* Actions */}
