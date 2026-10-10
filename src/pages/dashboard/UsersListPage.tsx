@@ -541,9 +541,6 @@ const UserTable = ({
                       }>
                         <Edit className="h-4 w-4 mr-2" /> Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive">
-                        <Trash2 className="h-4 w-4 mr-2" /> Delete
-                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -868,9 +865,6 @@ const DelegateTable = ({
                       }>
                         <Edit className="h-4 w-4 mr-2" /> Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive">
-                        <Trash2 className="h-4 w-4 mr-2" /> Delete
-                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
@@ -921,13 +915,25 @@ export const UsersListPage = () => {
   const [delegateSearch, setDelegateSearch] = useState("");
   const [delegateModalOpen, setDelegateModalOpen] = useState(false);
   const [revokeModalOpen, setRevokeModalOpen] = useState(false);
-  const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [selectedManagerId, setSelectedManagerId] = useState("");
+  const [selectedManagerDepartment, setSelectedManagerDepartment] = useState("");
+  const [selectedManagerDepartmentId, setSelectedManagerDepartmentId] = useState("");
   const [delegateReason, setDelegateReason] = useState("");
   const [revokeDepartment, setRevokeDepartment] = useState("");
   const [revokeReason, setRevokeReason] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [fetchType, setFetchType] = useState<FetchType>("ALL");
-  const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
+  const [managers, setManagers] = useState<
+    {
+      id: string;
+      name: string;
+      email: string;
+      jobTitleName: string;
+      departmentId: string;
+      departmentName: string;
+    }[]
+  >([]);
+  const [managersLoading, setManagersLoading] = useState(false);
   const [teamLoading, setTeamLoading] = useState(false);
   const [delegateLoading, setDelegateLoading] = useState(false);
 
@@ -1016,28 +1022,66 @@ export const UsersListPage = () => {
     fetchUsers().catch((err) => console.error(err));
   }, [fetchType]);
 
-  useEffect(() => {
-    identityFetch("/departments", {
-      headers: acceptJsonHeaders,
-      skipLoader: true,
-    })
-      .then(async (res) => {
-        if (!res.ok) {
-          const body = await readResponseBody(res);
-          throw new Error(getApiErrorMessage(body, "Failed to fetch departments"));
-        }
-        return res.json();
-      })
-      .then((response) => {
-        const deptList = response.data.map((d: any) => ({
-          id: d.id,
-          name: d.name,
-        }));
-        setDepartments(deptList);
-      })
-      .catch((err) => console.error(err));
-  }, []);
+  const resetDelegateModal = () => {
+    setSelectedManagerId("");
+    setSelectedManagerDepartment("");
+    setSelectedManagerDepartmentId("");
+    setDelegateReason("");
+  };
 
+  const fetchManagers = async () => {
+    setManagersLoading(true);
+    try {
+      const res = await identityFetch("/users/managers?fetchType=ACTIVE", {
+        headers: acceptJsonHeaders,
+        skipLoader: true,
+      });
+
+      if (!res.ok) {
+        const body = await readResponseBody(res);
+        throw new Error(getApiErrorMessage(body, "Failed to fetch managers"));
+      }
+
+      const response = await res.json();
+      const currentUserId = getUserId();
+      const mapped = (response.data || []).flatMap((manager: any) => {
+        const id = manager.id != null ? String(manager.id) : "";
+        if (!id || (currentUserId && id === String(currentUserId))) {
+          return [];
+        }
+        if (manager.isActive === false || manager.active === false) {
+          return [];
+        }
+
+        const departmentId = manager.departmentId != null ? String(manager.departmentId) : "";
+        const departmentName = manager.departmentName || "";
+        if (!departmentId || !departmentName) {
+          return [];
+        }
+
+        const name = `${manager.firstName || ""} ${manager.lastName || ""}`.trim()
+          || manager.email
+          || "Manager";
+
+        return [{
+          id,
+          name,
+          email: manager.email || "",
+          jobTitleName: manager.jobTitleName || "",
+          departmentId,
+          departmentName,
+        }];
+      });
+
+      setManagers(mapped);
+    } catch (err) {
+      console.error(err);
+      toast.error(getErrorFromCatch(err, "Failed to fetch managers"));
+      setManagers([]);
+    } finally {
+      setManagersLoading(false);
+    }
+  };
 
   const teamUsers = users;
 
@@ -1060,17 +1104,6 @@ export const UsersListPage = () => {
 
   // delegateSearch is kept for future use
 
-  const getDeptId = () => {
-    const token = localStorage.getItem("auth-token");
-    if (!token) return null;
-    try {
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      return payload.departmentId;
-    } catch {
-      return null;
-    }
-  };
-
   const getUserId = () => {
     const token = localStorage.getItem("auth-token");
     if (!token) return null;
@@ -1082,8 +1115,20 @@ export const UsersListPage = () => {
     }
   };
 
+  const handleSelectManager = (managerId: string) => {
+    setSelectedManagerId(managerId);
+    const manager = managers.find((item) => item.id === managerId);
+    const departmentName = manager?.departmentName || "";
+    setSelectedManagerDepartment(departmentName);
+    setSelectedManagerDepartmentId(manager?.departmentId || "");
+    setDelegateReason(departmentName);
+  };
+
   const handleSendRequest = async () => {
-    if (!selectedDepartment) return;
+    if (!selectedManagerId) {
+      toast.error("Please select a manager");
+      return;
+    }
 
     try {
       const response = await identityFetch("/delegates/request", {
@@ -1091,8 +1136,11 @@ export const UsersListPage = () => {
         headers: acceptJsonHeaders,
         skipLoader: true,
         body: JSON.stringify({
-          targetDepartmentId: Number(selectedDepartment),
-          comments: delegateReason || "",
+          targetManagerId: Number(selectedManagerId),
+          targetDepartmentId: selectedManagerDepartmentId
+            ? Number(selectedManagerDepartmentId)
+            : undefined,
+          comments: delegateReason || selectedManagerDepartment || "",
         }),
       });
 
@@ -1102,13 +1150,9 @@ export const UsersListPage = () => {
         return;
       }
 
-      // ✅ Success
       toast.success("Request sent successfully");
-
-      // Reset
       setDelegateModalOpen(false);
-      setSelectedDepartment("");
-      setDelegateReason("");
+      resetDelegateModal();
     } catch (error) {
       console.error(error);
       toast.error(getErrorFromCatch(error, "Failed to send request"));
@@ -1250,7 +1294,12 @@ export const UsersListPage = () => {
                   Revoke
                 </Button>
               )}
-              <Button onClick={() => setDelegateModalOpen(true)}>
+              <Button
+                onClick={() => {
+                  setDelegateModalOpen(true);
+                  void fetchManagers();
+                }}
+              >
                 <Send className="h-4 w-4 mr-2" />
                 New Delegate
               </Button>
@@ -1294,30 +1343,50 @@ export const UsersListPage = () => {
       </Tabs>
 
       {/* New Delegate Modal */}
-      <Dialog open={delegateModalOpen} onOpenChange={setDelegateModalOpen}>
+      <Dialog
+        open={delegateModalOpen}
+        onOpenChange={(open) => {
+          setDelegateModalOpen(open);
+          if (!open) resetDelegateModal();
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>New Delegate Request</DialogTitle>
             <DialogDescription>
-              Select a department to send a delegate request.
+              Select a manager to send a delegate request.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div className="space-y-2">
-              <Label htmlFor="department">Department</Label>
-              <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-                <SelectTrigger id="department">
-                  <SelectValue placeholder="Select a department" />
+              <Label htmlFor="manager">Manager</Label>
+              <Select
+                value={selectedManagerId}
+                onValueChange={handleSelectManager}
+                disabled={managersLoading}
+              >
+                <SelectTrigger id="manager">
+                  <SelectValue
+                    placeholder={managersLoading ? "Loading managers..." : "Select a manager"}
+                  />
                 </SelectTrigger>
                 <SelectContent>
-                  {departments.map((dept) => (
-                    <SelectItem key={dept.id} value={dept.id}>
-                      {dept.name}
+                  {managers.map((manager) => (
+                    <SelectItem key={manager.id} value={manager.id}>
+                      {[manager.name, manager.jobTitleName, manager.departmentName]
+                        .filter(Boolean)
+                        .join(" · ")}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+            {selectedManagerDepartment ? (
+              <div className="space-y-1">
+                <Label>Department</Label>
+                <p className="text-sm text-muted-foreground">{selectedManagerDepartment}</p>
+              </div>
+            ) : null}
             <div className="space-y-2">
               <Label htmlFor="reason">Reason</Label>
               <Input
@@ -1330,7 +1399,7 @@ export const UsersListPage = () => {
             <Button
               className="w-full"
               onClick={handleSendRequest}
-              disabled={!selectedDepartment}
+              disabled={!selectedManagerId || managersLoading}
             >
               <Send className="h-4 w-4 mr-2" />
               Send Request

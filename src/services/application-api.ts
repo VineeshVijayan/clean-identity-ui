@@ -15,6 +15,7 @@ export type ApplicationDto = {
   appUrl: string | null;
   integrationName: string | null;
   active: boolean;
+  essential?: boolean | null;
 };
 
 export type ApplicationResourceDto = {
@@ -167,6 +168,29 @@ export type FlattenedApplicationAccess = {
   failureReason?: string | null;
   approverName?: string | null;
   requestedAt?: string | null;
+  integrationName?: string | null;
+};
+
+export const isEssentialApplication = (app: {
+  name?: string | null;
+  essential?: boolean | null;
+}): boolean => {
+  if (app.essential === true) return true;
+  const name = (app.name || "").trim().toLowerCase();
+  return name === "jira" || name === "slack";
+};
+
+export type BlueprintApplication = {
+  applicationId: number;
+  applicationName: string;
+  essential?: boolean | null;
+  roles?: string[] | null;
+};
+
+export type BlueprintRecord = {
+  id?: number;
+  name?: string;
+  applications?: BlueprintApplication[] | null;
 };
 
 export type ApplicationPage = {
@@ -242,6 +266,51 @@ export const listApplications = async (
 ): Promise<ApplicationPage> => {
   const body = await identityFetchJson(applicationsListPath, options);
   return asApplicationPage(unwrapApiData(body));
+};
+
+export const listBlueprints = async (
+  options?: ApiRequestOptions
+): Promise<BlueprintRecord[]> => {
+  const body = await identityFetchJson("/blueprints", options);
+  return unwrapApiList(body).filter(
+    (item): item is BlueprintRecord => item != null && typeof item === "object"
+  );
+};
+
+export const listEssentialApplications = async (
+  options?: ApiRequestOptions
+): Promise<ApplicationDto[]> => {
+  const [page, blueprints] = await Promise.all([
+    listApplications(options),
+    listBlueprints(options),
+  ]);
+
+  const byId = new Map<number, ApplicationDto>();
+
+  for (const app of page.content) {
+    if (app.active && isEssentialApplication(app)) {
+      byId.set(app.id, { ...app, essential: true });
+    }
+  }
+
+  for (const blueprint of blueprints) {
+    for (const app of blueprint.applications ?? []) {
+      if (!app.essential || app.applicationId == null) continue;
+      const catalog = page.content.find((item) => item.id === app.applicationId);
+      if (catalog && !catalog.active) continue;
+      byId.set(app.applicationId, {
+        id: app.applicationId,
+        name: catalog?.name || app.applicationName,
+        description: catalog?.description ?? null,
+        appUrl: catalog?.appUrl ?? null,
+        integrationName: catalog?.integrationName ?? null,
+        active: catalog?.active ?? true,
+        essential: true,
+      });
+    }
+  }
+
+  return [...byId.values()];
 };
 
 export const searchApplications = async (
