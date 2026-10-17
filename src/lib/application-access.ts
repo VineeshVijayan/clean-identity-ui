@@ -16,10 +16,74 @@ const OPEN_REQUEST_STATUSES: ApplicationAccessRequestStatus[] = [
   "PROVISIONING",
 ];
 
+export const GOOGLE_RESOURCE_TYPES = [
+  { id: "GROUP", label: "Google Group", placeholder: "group@example.com" },
+  { id: "SHARED_DRIVE", label: "Shared drive", placeholder: "Shared drive ID" },
+  { id: "CALENDAR", label: "Calendar", placeholder: "calendar@example.com" },
+  { id: "ORG_UNIT", label: "Organizational unit", placeholder: "/Engineering" },
+] as const;
+
+export const isGoogleIntegration = (integrationName?: string | null): boolean =>
+  (integrationName || "").trim().toLowerCase() === "google";
+
 export const resourceFieldLabel = (integrationName?: string | null): string => {
   const key = (integrationName || "").trim().toLowerCase();
   if (key === "jira") return "Project";
   return "Resource";
+};
+
+export const describeGoogleProjectsError = (message?: string | null): string => {
+  if (!message) return "";
+  if (/not configured|service-account/i.test(message)) {
+    return "Google Workspace is not connected. Enter a group, shared drive, calendar, or org unit to continue.";
+  }
+  return message;
+};
+
+/** Radix Select values cannot contain `:`, which Google Workspace ids use. */
+export const toSelectSafeValue = (value: string) => encodeURIComponent(value);
+
+export const fromSelectSafeValue = (value: string) => {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+};
+
+export const googleResourceTypeFromKey = (resourceKey?: string | null): string => {
+  if (!resourceKey) return "";
+  const separator = resourceKey.indexOf(":");
+  const type = (separator > 0 ? resourceKey.slice(0, separator) : resourceKey).trim().toUpperCase();
+  return GOOGLE_RESOURCE_TYPES.some((item) => item.id === type) ? type : "";
+};
+
+export const googleResourceIdFromKey = (resourceKey?: string | null): string => {
+  if (!resourceKey) return "";
+  const separator = resourceKey.indexOf(":");
+  return separator >= 0 ? resourceKey.slice(separator + 1).trim() : "";
+};
+
+export const buildGoogleResourceKey = (type: string, id: string): string =>
+  id.trim() ? `${type}:${id.trim()}` : `${type}:`;
+
+export const filterRolesForResource = <T extends { id: string }>(
+  roles: T[],
+  integrationName?: string | null,
+  resourceKey?: string | null
+): T[] => {
+  const integration = (integrationName || "").trim().toLowerCase();
+  if (integration !== "google") {
+    return roles;
+  }
+
+  const type = googleResourceTypeFromKey(resourceKey);
+  if (!type) {
+    return [];
+  }
+
+  const prefix = `${type}:`;
+  return roles.filter((role) => role.id.toUpperCase().startsWith(prefix));
 };
 
 export const formatRequestStatus = (status?: string | null): string => {

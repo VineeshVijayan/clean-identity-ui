@@ -1215,13 +1215,13 @@ export const UsersListPage = () => {
 
       const response = await res.json();
 
-      const mapped = response.data.map((u: any) => ({
+      const mapped = (response.data || []).map((u: any) => ({
         id: String(u.id),
         firstName: u.firstName || "",
         lastName: u.lastName || "",
         email: u.email || "",
         role: "Delegate",
-        status: u.status ? "Active" : "Inactive",
+        status: u.status === false || u.active === false ? "Inactive" : "Active",
         lastLogin: "—",
         departmentId: u.departmentId,
         departmentName: u.departmentName,

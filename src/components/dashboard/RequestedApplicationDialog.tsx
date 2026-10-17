@@ -15,7 +15,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { resourceFieldLabel } from "@/lib/application-access";
+import { GoogleResourceFields } from "@/components/dashboard/GoogleResourceFields";
+import {
+  describeGoogleProjectsError,
+  filterRolesForResource,
+  fromSelectSafeValue,
+  googleResourceIdFromKey,
+  googleResourceTypeFromKey,
+  isGoogleIntegration,
+  resourceFieldLabel,
+  toSelectSafeValue,
+} from "@/lib/application-access";
 import { getErrorFromCatch } from "@/lib/api-errors";
 import type { IntegrationProject } from "@/lib/integration-api";
 import {
@@ -62,6 +72,7 @@ export const RequestedApplicationDialog = ({
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [availableProjects, setAvailableProjects] = useState<IntegrationProject[]>([]);
   const [availableRoles, setAvailableRoles] = useState<IntegrationRole[]>([]);
+  const [projectsError, setProjectsError] = useState("");
 
   const [appId, setAppId] = useState("");
   const [projectKey, setProjectKey] = useState("");
@@ -71,6 +82,13 @@ export const RequestedApplicationDialog = ({
   const selectedApp = applications.find((app) => String(app.id) === appId);
   const hasIntegration = Boolean(selectedApp?.integrationName);
   const resourceLabel = resourceFieldLabel(selectedApp?.integrationName);
+  const isGoogle = isGoogleIntegration(selectedApp?.integrationName);
+  const useManualGoogleResource = isGoogle && !catalogLoading && availableProjects.length === 0;
+  const visibleRoles = filterRolesForResource(
+    availableRoles,
+    selectedApp?.integrationName,
+    projectKey
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -93,6 +111,7 @@ export const RequestedApplicationDialog = ({
     setRoleId("");
     setAvailableProjects([]);
     setAvailableRoles([]);
+    setProjectsError("");
     setErrors({});
     if (!appId || !selectedApp?.integrationName) return;
 
@@ -101,6 +120,15 @@ export const RequestedApplicationDialog = ({
       .then((catalog) => {
         setAvailableRoles(catalog.roles);
         setAvailableProjects(catalog.projects);
+        const projectsMessage = describeGoogleProjectsError(catalog.projectsError);
+        setProjectsError(projectsMessage);
+        if (catalog.projectsError && !/not configured|service-account/i.test(catalog.projectsError)) {
+          toast({
+            title: "Could not load resources",
+            description: projectsMessage,
+            variant: "destructive",
+          });
+        }
       })
       .catch((err) => {
         toast({
@@ -125,6 +153,9 @@ export const RequestedApplicationDialog = ({
     if (hasIntegration && !projectKey) {
       next.resource = `${resourceLabel} is required.`;
     }
+    if (hasIntegration && isGoogle && !googleResourceIdFromKey(projectKey)) {
+      next.resource = `${resourceLabel} is required.`;
+    }
     if (hasIntegration && !roleId) next.role = "Role is required.";
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -141,14 +172,14 @@ export const RequestedApplicationDialog = ({
     }
 
     const project = availableProjects.find((p) => p.key === projectKey);
-    const role = availableRoles.find((r) => r.id === roleId);
+    const role = visibleRoles.find((r) => r.id === roleId) || availableRoles.find((r) => r.id === roleId);
     onSubmitted?.({
       applicationId: appId,
       applicationName: selectedApp?.name || "",
       integrationName: selectedApp?.integrationName || "",
       projectKey,
-      projectName: project?.name || projectKey,
-      projectId: project?.id || "",
+      projectName: project?.name || googleResourceIdFromKey(projectKey) || projectKey,
+      projectId: project?.id || googleResourceIdFromKey(projectKey),
       roleId,
       roleName: role?.name || "",
     });
@@ -201,63 +232,93 @@ export const RequestedApplicationDialog = ({
 
           {hasIntegration ? (
             <>
-              <div className="space-y-2">
-                <Label>Select {resourceLabel}</Label>
-                <Select
-                  value={projectKey}
-                  onValueChange={setProjectKey}
+              {useManualGoogleResource ? (
+                <GoogleResourceFields
+                  resourceKey={projectKey}
+                  onResourceKeyChange={(key) => {
+                    const previousType = googleResourceTypeFromKey(projectKey);
+                    setProjectKey(key);
+                    if (previousType !== googleResourceTypeFromKey(key)) {
+                      setRoleId("");
+                    }
+                  }}
                   disabled={!appId || catalogLoading}
+                  helperText={
+                    projectsError ||
+                    "Enter the Workspace resource. Live listing needs a configured service account."
+                  }
+                  error={errors.resource}
+                />
+              ) : (
+                <div className="space-y-2">
+                  <Label>Select {resourceLabel}</Label>
+                  <Select
+                    value={projectKey ? toSelectSafeValue(projectKey) : ""}
+                    onValueChange={(value) => {
+                      setProjectKey(fromSelectSafeValue(value));
+                      setRoleId("");
+                    }}
+                    disabled={!appId || catalogLoading}
+                  >
+                    <SelectTrigger>
+                      <SelectValue
+                        placeholder={
+                          catalogLoading
+                            ? `Loading ${resourceLabel.toLowerCase()}s...`
+                            : `Choose a ${resourceLabel.toLowerCase()}...`
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                      {availableProjects.length === 0 && !catalogLoading ? (
+                        <div className="px-3 py-2 text-sm text-muted-foreground">
+                          {projectsError || `No ${resourceLabel.toLowerCase()}s available.`}
+                        </div>
+                      ) : (
+                        availableProjects.map((p) => (
+                          <SelectItem key={p.id || p.key} value={toSelectSafeValue(p.key)}>
+                            {p.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                  {errors.resource ? (
+                    <p className="text-xs text-destructive">{errors.resource}</p>
+                  ) : projectsError ? (
+                    <p className="text-xs text-destructive">{projectsError}</p>
+                  ) : null}
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label>Select Role</Label>
+                <Select
+                  value={roleId ? toSelectSafeValue(roleId) : ""}
+                  onValueChange={(value) => setRoleId(fromSelectSafeValue(value))}
+                  disabled={!appId || catalogLoading || (isGoogle && !googleResourceTypeFromKey(projectKey))}
                 >
                   <SelectTrigger>
                     <SelectValue
                       placeholder={
                         catalogLoading
-                          ? `Loading ${resourceLabel.toLowerCase()}s...`
-                          : `Choose a ${resourceLabel.toLowerCase()}...`
+                          ? "Loading roles..."
+                          : isGoogle && !googleResourceTypeFromKey(projectKey)
+                            ? "Select a resource type first"
+                            : "Choose a role..."
                       }
                     />
                   </SelectTrigger>
                   <SelectContent className="bg-popover border border-border shadow-lg z-50">
-                    {availableProjects.length === 0 && !catalogLoading ? (
+                    {visibleRoles.length === 0 && !catalogLoading ? (
                       <div className="px-3 py-2 text-sm text-muted-foreground">
-                        No {resourceLabel.toLowerCase()}s available.
+                        {isGoogle && !googleResourceTypeFromKey(projectKey)
+                          ? "Select a resource type to see roles."
+                          : "No roles available."}
                       </div>
                     ) : (
-                      availableProjects.map((p) => (
-                        <SelectItem key={p.id} value={p.key}>
-                          {p.name}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-                {errors.resource ? (
-                  <p className="text-xs text-destructive">{errors.resource}</p>
-                ) : null}
-              </div>
-
-              <div className="space-y-2">
-                <Label>Select Role</Label>
-                <Select
-                  value={roleId}
-                  onValueChange={setRoleId}
-                  disabled={!appId || catalogLoading}
-                >
-                  <SelectTrigger>
-                    <SelectValue
-                      placeholder={
-                        catalogLoading ? "Loading roles..." : "Choose a role..."
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border border-border shadow-lg z-50">
-                    {availableRoles.length === 0 && !catalogLoading ? (
-                      <div className="px-3 py-2 text-sm text-muted-foreground">
-                        No roles available.
-                      </div>
-                    ) : (
-                      availableRoles.map((r) => (
-                        <SelectItem key={r.id} value={r.id}>
+                      visibleRoles.map((r) => (
+                        <SelectItem key={r.id} value={toSelectSafeValue(r.id)}>
                           {r.name}
                         </SelectItem>
                       ))

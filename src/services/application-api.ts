@@ -1,11 +1,10 @@
-import { unwrapApiData, unwrapApiList } from "@/lib/api-errors";
+import { getErrorFromCatch, parseResponse, unwrapApiData, unwrapApiList } from "@/lib/api-errors";
 import {
   applicationsListPath,
   connectorFetch,
   identityFetchJson,
   type ApiRequestOptions,
 } from "@/services/api-config";
-import { parseResponse } from "@/lib/api-errors";
 import { mapIntegrationProjects, type IntegrationProject } from "@/lib/integration-api";
 
 export type ApplicationDto = {
@@ -147,6 +146,7 @@ export type IntegrationRole = {
 export type IntegrationCatalog = {
   projects: IntegrationProject[];
   roles: IntegrationRole[];
+  projectsError?: string;
 };
 
 export type FlattenedApplicationAccess = {
@@ -414,7 +414,7 @@ export const loadIntegrationCatalog = async (
   const base = `/integrations/${integrationName.toLowerCase()}`;
   const jsonHeaders = { Accept: "application/json" };
 
-  const [rolesBody, projectsBody] = await Promise.all([
+  const [rolesResult, projectsResult] = await Promise.allSettled([
     connectorFetch(`${base}/roles`, { ...options, headers: jsonHeaders }).then((res) =>
       parseResponse(res)
     ),
@@ -423,8 +423,17 @@ export const loadIntegrationCatalog = async (
     ),
   ]);
 
+  if (rolesResult.status === "rejected" && projectsResult.status === "rejected") {
+    throw rolesResult.reason;
+  }
+
   return {
-    roles: mapIntegrationRoles(rolesBody),
-    projects: mapIntegrationProjects(projectsBody),
+    roles: rolesResult.status === "fulfilled" ? mapIntegrationRoles(rolesResult.value) : [],
+    projects:
+      projectsResult.status === "fulfilled" ? mapIntegrationProjects(projectsResult.value) : [],
+    projectsError:
+      projectsResult.status === "rejected"
+        ? getErrorFromCatch(projectsResult.reason, "Failed to load resources")
+        : undefined,
   };
 };
