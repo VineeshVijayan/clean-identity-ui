@@ -36,11 +36,19 @@ import {
   X,
 } from "lucide-react";
 import { applicationsListPath, identityFetch } from "@/services/api-config";
+import { GoogleResourceFields } from "@/components/dashboard/GoogleResourceFields";
 import { type IntegrationProject } from "@/lib/integration-api";
 import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
 import {
+  describeGoogleProjectsError,
+  filterRolesForResource,
   flattenUserApplications,
+  fromSelectSafeValue,
+  googleResourceIdFromKey,
+  googleResourceTypeFromKey,
+  isGoogleIntegration,
   resourceFieldLabel,
+  toSelectSafeValue,
   toUserApplicationPayload,
 } from "@/lib/application-access";
 import {
@@ -255,6 +263,7 @@ export const ApplicationManagementPage = () => {
   const [applications, setApplications] = useState<Application[]>([]);
   const [availableProjects, setAvailableProjects] = useState<IntegrationProject[]>([]);
   const [availableRoles, setAvailableRoles] = useState<IntegrationRole[]>([]);
+  const [projectsError, setProjectsError] = useState("");
 
   // Request Access state
   const [reqSelectedUser, setReqSelectedUser] = useState<UserEntry | null>(null);
@@ -437,6 +446,7 @@ export const ApplicationManagementPage = () => {
     if (!reqApp) {
       setAvailableProjects([]);
       setAvailableRoles([]);
+      setProjectsError("");
       return;
     }
 
@@ -448,6 +458,15 @@ export const ApplicationManagementPage = () => {
         const catalog = await loadIntegrationCatalog(selectedApp.integrationName);
         setAvailableRoles(catalog.roles);
         setAvailableProjects(catalog.projects);
+        const projectsMessage = describeGoogleProjectsError(catalog.projectsError);
+        setProjectsError(projectsMessage);
+        if (catalog.projectsError && !/not configured|service-account/i.test(catalog.projectsError)) {
+          toast({
+            title: "Could not load resources",
+            description: projectsMessage,
+            variant: "destructive",
+          });
+        }
       } catch (error) {
         console.error("Failed to fetch integration data", error);
         toast({
@@ -467,7 +486,7 @@ export const ApplicationManagementPage = () => {
       toast({ title: "Validation Error", description: "Please select an employee.", variant: "destructive" });
       return;
     }
-    if (!reqApp || !reqProject || !reqRole) {
+    if (!reqApp || !reqProject || !reqRole || (isGoogleIntegration(applications.find((app) => app.id === reqApp)?.integrationName) && !googleResourceIdFromKey(reqProject))) {
       toast({ title: "Validation Error", description: "Please fill all application fields.", variant: "destructive" });
       return;
     }
@@ -494,9 +513,9 @@ export const ApplicationManagementPage = () => {
           description: selectedApp.description || "",
           essential: selectedApp.essential,
           grantedDate: "",
-          resourceName: selectedProject?.name || reqProject,
+          resourceName: selectedProject?.name || googleResourceIdFromKey(reqProject) || reqProject,
           resourceKey: reqProject,
-          resourceId: selectedProject?.id || "",
+          resourceId: selectedProject?.id || googleResourceIdFromKey(reqProject),
           roleName: selectedRole?.name || "",
           roleId: reqRole,
         });
@@ -621,7 +640,17 @@ export const ApplicationManagementPage = () => {
     submitLabel: string;
     submitIcon: React.ReactNode;
     submitClass?: string;
-  }) => (
+  }) => {
+    const selectedIntegration = applications.find((app) => app.id === appValue)?.integrationName;
+    const isGoogle = isGoogleIntegration(selectedIntegration);
+    const useManualGoogleResource = isGoogle && availableProjects.length === 0;
+    const visibleRoles = filterRolesForResource(
+      availableRoles,
+      selectedIntegration,
+      projectValue
+    );
+
+    return (
     <Card>
       <CardHeader className="pb-4">
         <CardTitle className="text-base flex items-center gap-2">
@@ -648,31 +677,64 @@ export const ApplicationManagementPage = () => {
           </Select>
         </div>
 
-        <div className="space-y-2">
-          <Label>Select {resourceFieldLabel(applications.find((app) => app.id === appValue)?.integrationName)}</Label>
-          <Select value={projectValue} onValueChange={setProject}>
-            <SelectTrigger>
-              <SelectValue placeholder="Choose a project..." />
-            </SelectTrigger>
-            <SelectContent className="bg-popover border border-border shadow-lg z-50">
-              {availableProjects.map((p) => (
-                <SelectItem key={p.id} value={p.key}>
-                  {p.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {useManualGoogleResource ? (
+          <GoogleResourceFields
+            resourceKey={projectValue}
+            onResourceKeyChange={(key) => {
+              const previousType = googleResourceTypeFromKey(projectValue);
+              setProject(key);
+              if (previousType !== googleResourceTypeFromKey(key)) {
+                setRole("");
+              }
+            }}
+            helperText={
+              projectsError ||
+              "Enter the Workspace resource. Live listing needs a configured service account."
+            }
+          />
+        ) : (
+          <div className="space-y-2">
+            <Label>Select {resourceFieldLabel(selectedIntegration)}</Label>
+            <Select
+              value={projectValue ? toSelectSafeValue(projectValue) : ""}
+              onValueChange={(value) => {
+                setProject(fromSelectSafeValue(value));
+                setRole("");
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Choose a project..." />
+              </SelectTrigger>
+              <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                {availableProjects.map((p) => (
+                  <SelectItem key={p.id || p.key} value={toSelectSafeValue(p.key)}>
+                    {p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label>Select Role</Label>
-          <Select value={roleValue} onValueChange={setRole}>
+          <Select
+            value={roleValue ? toSelectSafeValue(roleValue) : ""}
+            onValueChange={(value) => setRole(fromSelectSafeValue(value))}
+            disabled={isGoogle && !googleResourceTypeFromKey(projectValue)}
+          >
             <SelectTrigger>
-              <SelectValue placeholder="Choose a role..." />
+              <SelectValue
+                placeholder={
+                  isGoogle && !googleResourceTypeFromKey(projectValue)
+                    ? "Select a resource type first"
+                    : "Choose a role..."
+                }
+              />
             </SelectTrigger>
             <SelectContent className="bg-popover border border-border shadow-lg z-50">
-              {availableRoles.map((r) => (
-                <SelectItem key={r.id} value={r.id}>
+              {visibleRoles.map((r) => (
+                <SelectItem key={r.id} value={toSelectSafeValue(r.id)}>
                   {r.name}
                 </SelectItem>
               ))}
@@ -688,7 +750,8 @@ export const ApplicationManagementPage = () => {
         </div>
       </CardContent>
     </Card>
-  );
+    );
+  };
 
   return (
     <motion.div initial="hidden" animate="visible" variants={containerVariants} className="space-y-6">
