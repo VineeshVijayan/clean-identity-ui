@@ -38,6 +38,9 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { ManageDelegatesDialog } from "@/components/dashboard/ManageDelegatesDialog";
+import { DEFAULT_COMPANY_NAME, getUniqueManagers } from "@/lib/delegate-users";
+import { fetchDelegatedUsers } from "@/services/delegate-api";
 import { motion } from "framer-motion";
 import {
   ArrowDown,
@@ -52,7 +55,7 @@ import {
   MoreVertical,
   Search,
   Send,
-  Trash2,
+  Settings2,
   UserCheck,
   UserPlus,
   Users
@@ -98,8 +101,9 @@ type User = {
   lastLogin: string;
   departmentId: string;
   departmentName: string;
+  managerName: string;
   companyName: string;
-  subordinates: Subordinate[];
+  subordinates?: Subordinate[];
 };
 
 const getStatusColor = (status: string) => {
@@ -130,7 +134,7 @@ type UserSortField =
 type DelegateSortField =
   | "firstName"
   | "lastName"
-  | "departmentName"
+  | "managerName"
   | "email"
   | "companyName";
 
@@ -224,16 +228,6 @@ const getUniqueCompanies = (users: User[]) => {
     }
   });
   return Array.from(companies).sort((a, b) => a.localeCompare(b));
-};
-
-const getUniqueDepartments = (users: User[]) => {
-  const departments = new Set<string>();
-  users.forEach((user) => {
-    if (user.departmentName && user.departmentName !== "—") {
-      departments.add(user.departmentName);
-    }
-  });
-  return Array.from(departments).sort((a, b) => a.localeCompare(b));
 };
 
 const UserTable = ({
@@ -598,15 +592,15 @@ const DelegateTable = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<DelegateSortField>("firstName");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
-  const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [managerFilter, setManagerFilter] = useState("all");
   const [companyFilter, setCompanyFilter] = useState("all");
   const [filterOpen, setFilterOpen] = useState(false);
 
-  const activeFilterCount = [departmentFilter, companyFilter].filter(
+  const activeFilterCount = [managerFilter, companyFilter].filter(
     (value) => value !== "all"
   ).length;
 
-  const availableDepartments = useMemo(() => getUniqueDepartments(users), [users]);
+  const availableManagers = useMemo(() => getUniqueManagers(users), [users]);
   const availableCompanies = useMemo(() => getUniqueCompanies(users), [users]);
 
   const searchFilteredUsers = useMemo(() => {
@@ -614,22 +608,23 @@ const DelegateTable = ({
     return users.filter(
       (user) =>
         `${user.firstName} ${user.lastName}`.toLowerCase().includes(query) ||
-        user.email.toLowerCase().includes(query)
+        user.email.toLowerCase().includes(query) ||
+        user.managerName.toLowerCase().includes(query)
     );
   }, [users, searchQuery]);
 
   const filteredUsers = useMemo(
     () =>
       searchFilteredUsers.filter((user) => {
-        const matchesDepartment =
-          departmentFilter === "all" || user.departmentName === departmentFilter;
+        const matchesManager =
+          managerFilter === "all" || user.managerName === managerFilter;
 
         const matchesCompany =
           companyFilter === "all" || user.companyName === companyFilter;
 
-        return matchesDepartment && matchesCompany;
+        return matchesManager && matchesCompany;
       }),
-    [searchFilteredUsers, departmentFilter, companyFilter]
+    [searchFilteredUsers, managerFilter, companyFilter]
   );
 
   const handleSort = (field: DelegateSortField) => {
@@ -655,11 +650,11 @@ const DelegateTable = ({
 
     const dateStamp = new Date().toISOString().slice(0, 10);
     downloadCsv(
-      "First Name,Last Name,Department,Status,Email,Company\n",
+      "First Name,Last Name,Manager,Status,Email,Company\n",
       sortedUsers.map((user) => [
         user.firstName,
         user.lastName,
-        user.departmentName,
+        user.managerName,
         user.status,
         user.email,
         user.companyName,
@@ -673,7 +668,7 @@ const DelegateTable = ({
   };
 
   const clearFilters = () => {
-    setDepartmentFilter("all");
+    setManagerFilter("all");
     setCompanyFilter("all");
   };
 
@@ -684,7 +679,7 @@ const DelegateTable = ({
   );
   useEffect(
     () => setCurrentPage(1),
-    [searchQuery, sortField, sortDirection, departmentFilter, companyFilter]
+    [searchQuery, sortField, sortDirection, managerFilter, companyFilter]
   );
   useEffect(() => {
     if (currentPage > totalPages) setCurrentPage(totalPages);
@@ -720,16 +715,16 @@ const DelegateTable = ({
               </PopoverTrigger>
               <PopoverContent align="end" className="w-80 space-y-4">
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">Department</Label>
-                  <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                  <Label className="text-sm font-medium">Manager</Label>
+                  <Select value={managerFilter} onValueChange={setManagerFilter}>
                     <SelectTrigger>
-                      <SelectValue placeholder="All departments" />
+                      <SelectValue placeholder="All managers" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All departments</SelectItem>
-                      {availableDepartments.map((department) => (
-                        <SelectItem key={department} value={department}>
-                          {department}
+                      <SelectItem value="all">All managers</SelectItem>
+                      {availableManagers.map((manager) => (
+                        <SelectItem key={manager} value={manager}>
+                          {manager}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -798,10 +793,10 @@ const DelegateTable = ({
                 onSort={() => handleSort("lastName")}
               />
               <SortableTableHead
-                label="Department"
-                active={sortField === "departmentName"}
+                label="Manager"
+                active={sortField === "managerName"}
                 direction={sortDirection}
-                onSort={() => handleSort("departmentName")}
+                onSort={() => handleSort("managerName")}
               />
               <SortableTableHead
                 label="Email"
@@ -842,7 +837,11 @@ const DelegateTable = ({
                 </TableCell>
                 <TableCell>{user.lastName}</TableCell>
                 <TableCell>
-                  <Badge variant="outline">{user.departmentName}</Badge>
+                  {user.managerName && user.managerName !== "—" ? (
+                    <Badge variant="outline">{user.managerName}</Badge>
+                  ) : (
+                    "—"
+                  )}
                 </TableCell>
                 <TableCell className="hidden sm:table-cell text-muted-foreground">
                   {user.email}
@@ -914,13 +913,11 @@ export const UsersListPage = () => {
   const [teamSearch, setTeamSearch] = useState("");
   const [delegateSearch, setDelegateSearch] = useState("");
   const [delegateModalOpen, setDelegateModalOpen] = useState(false);
-  const [revokeModalOpen, setRevokeModalOpen] = useState(false);
+  const [manageDelegatesOpen, setManageDelegatesOpen] = useState(false);
   const [selectedManagerId, setSelectedManagerId] = useState("");
   const [selectedManagerDepartment, setSelectedManagerDepartment] = useState("");
   const [selectedManagerDepartmentId, setSelectedManagerDepartmentId] = useState("");
   const [delegateReason, setDelegateReason] = useState("");
-  const [revokeDepartment, setRevokeDepartment] = useState("");
-  const [revokeReason, setRevokeReason] = useState("");
   const [syncing, setSyncing] = useState(false);
   const [fetchType, setFetchType] = useState<FetchType>("ALL");
   const [managers, setManagers] = useState<
@@ -1004,12 +1001,13 @@ export const UsersListPage = () => {
         lastLogin: "—",
         departmentId: "",
         departmentName: "",
+        managerName: u.managerName || "—",
         companyName:
           u.companyName ||
           u.company?.name ||
           u.company ||
           u.organizationName ||
-          "—",
+          DEFAULT_COMPANY_NAME,
       }));
 
       setUsers(mappedUsers);
@@ -1085,15 +1083,6 @@ export const UsersListPage = () => {
 
   const teamUsers = users;
 
-  type AccessRequest = {
-    id: string;
-    requesterName: string;
-    departmentName: string;
-    status: string;
-    comments: string;
-    requestedAt: string;
-  };
-
   const [delegateUsers, setDelegateUsers] = useState<User[]>([]);
 
   const filteredTeam = teamUsers.filter(
@@ -1101,8 +1090,6 @@ export const UsersListPage = () => {
       `${u.firstName} ${u.lastName}`.toLowerCase().includes(teamSearch.toLowerCase()) ||
       u.email.toLowerCase().includes(teamSearch.toLowerCase())
   );
-
-  // delegateSearch is kept for future use
 
   const getUserId = () => {
     const token = localStorage.getItem("auth-token");
@@ -1159,40 +1146,6 @@ export const UsersListPage = () => {
     }
   };
 
-  const handleRevokeRequest = async () => {
-    if (!revokeDepartment) return;
-
-    try {
-      const userId = getUserId();
-      const response = await identityFetch("/delegates/revoke", {
-        method: "POST",
-        headers: acceptJsonHeaders,
-        skipLoader: true,
-        body: JSON.stringify({
-          requesterId: userId,
-          targetDepartmentId: Number(revokeDepartment),
-          comments: revokeReason || "",
-        }),
-      });
-
-      if (!response.ok) {
-        const body = await readResponseBody(response);
-        toast.error(getApiErrorMessage(body, "Failed to send revoke request"));
-        return;
-      }
-
-      toast.success("Revoke request sent successfully");
-
-      setRevokeModalOpen(false);
-      setRevokeDepartment("");
-      setRevokeReason("");
-      await fetchDelegateUsers(); // 🔥 refresh table
-    } catch (error) {
-      console.error(error);
-      toast.error(getErrorFromCatch(error, "Failed to send revoke request"));
-    }
-  };
-
   useEffect(() => {
     if (activeTab !== "delegate") return;
 
@@ -1203,52 +1156,14 @@ export const UsersListPage = () => {
     setDelegateLoading(true);
 
     try {
-      const res = await identityFetch("/delegates/users", {
-        headers: acceptJsonHeaders,
-        skipLoader: true,
-      });
-
-      if (!res.ok) {
-        const body = await readResponseBody(res);
-        throw new Error(getApiErrorMessage(body, "Failed to fetch delegate users"));
-      }
-
-      const response = await res.json();
-
-      const mapped = (response.data || []).map((u: any) => ({
-        id: String(u.id),
-        firstName: u.firstName || "",
-        lastName: u.lastName || "",
-        email: u.email || "",
-        role: "Delegate",
-        status: u.status === false || u.active === false ? "Inactive" : "Active",
-        lastLogin: "—",
-        departmentId: u.departmentId,
-        departmentName: u.departmentName,
-        companyName:
-          u.companyName ||
-          u.company?.name ||
-          u.company ||
-          u.organizationName ||
-          "—",
-      }));
-
-      setDelegateUsers(mapped);
+      setDelegateUsers(await fetchDelegatedUsers());
     } catch (err) {
       console.error(err);
+      toast.error(getErrorFromCatch(err, "Failed to fetch delegate users"));
     } finally {
       setDelegateLoading(false);
     }
   };
-
-  const delegatedDepartments = Array.from(
-    new Map(
-      delegateUsers.map((u) => [
-        u.departmentId,
-        { id: u.departmentId, name: u.departmentName },
-      ])
-    ).values()
-  );
 
   return (
     <motion.div
@@ -1288,12 +1203,10 @@ export const UsersListPage = () => {
             </Button>
           ) : (
             <>
-              {delegateUsers.length > 0 && (
-                <Button variant="outline" onClick={() => setRevokeModalOpen(true)}>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Revoke
-                </Button>
-              )}
+              <Button variant="outline" onClick={() => setManageDelegatesOpen(true)}>
+                <Settings2 className="h-4 w-4 mr-2" />
+                Manage Delegates
+              </Button>
               <Button
                 onClick={() => {
                   setDelegateModalOpen(true);
@@ -1408,53 +1321,13 @@ export const UsersListPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Revoke Delegate Modal */}
-      <Dialog open={revokeModalOpen} onOpenChange={setRevokeModalOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Revoke Delegate</DialogTitle>
-            <DialogDescription>
-              Select a department and provide a reason to revoke delegate access.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div className="space-y-2">
-              <Label htmlFor="revoke-department">Department</Label>
-              <Select value={revokeDepartment} onValueChange={setRevokeDepartment}>
-                <SelectTrigger id="revoke-department">
-                  <SelectValue placeholder="Select a department" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectContent>
-                    {delegatedDepartments.map((dept) => (
-                      <SelectItem key={dept.id} value={dept.id}>
-                        {dept.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="revoke-reason">Reason</Label>
-              <Input
-                id="revoke-reason"
-                placeholder="Enter reason for revoke"
-                value={revokeReason}
-                onChange={(e) => setRevokeReason(e.target.value)}
-              />
-            </div>
-            <Button
-              className="w-full"
-              onClick={handleRevokeRequest}
-              disabled={!revokeDepartment}
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Revoke
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <ManageDelegatesDialog
+        open={manageDelegatesOpen}
+        onOpenChange={setManageDelegatesOpen}
+        onDelegationsChanged={() => {
+          void fetchDelegateUsers();
+        }}
+      />
     </motion.div>
   );
 };

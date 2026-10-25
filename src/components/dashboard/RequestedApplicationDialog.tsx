@@ -83,7 +83,6 @@ export const RequestedApplicationDialog = ({
   const hasIntegration = Boolean(selectedApp?.integrationName);
   const resourceLabel = resourceFieldLabel(selectedApp?.integrationName);
   const isGoogle = isGoogleIntegration(selectedApp?.integrationName);
-  const useManualGoogleResource = isGoogle && !catalogLoading && availableProjects.length === 0;
   const visibleRoles = filterRolesForResource(
     availableRoles,
     selectedApp?.integrationName,
@@ -232,7 +231,7 @@ export const RequestedApplicationDialog = ({
 
           {hasIntegration ? (
             <>
-              {useManualGoogleResource ? (
+              {isGoogle ? (
                 <GoogleResourceFields
                   resourceKey={projectKey}
                   onResourceKeyChange={(key) => {
@@ -242,11 +241,9 @@ export const RequestedApplicationDialog = ({
                       setRoleId("");
                     }
                   }}
+                  projects={availableProjects}
                   disabled={!appId || catalogLoading}
-                  helperText={
-                    projectsError ||
-                    "Enter the Workspace resource. Live listing needs a configured service account."
-                  }
+                  helperText={projectsError}
                   error={errors.resource}
                 />
               ) : (

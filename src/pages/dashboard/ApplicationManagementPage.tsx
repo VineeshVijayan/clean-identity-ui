@@ -643,7 +643,6 @@ export const ApplicationManagementPage = () => {
   }) => {
     const selectedIntegration = applications.find((app) => app.id === appValue)?.integrationName;
     const isGoogle = isGoogleIntegration(selectedIntegration);
-    const useManualGoogleResource = isGoogle && availableProjects.length === 0;
     const visibleRoles = filterRolesForResource(
       availableRoles,
       selectedIntegration,
@@ -677,7 +676,7 @@ export const ApplicationManagementPage = () => {
           </Select>
         </div>
 
-        {useManualGoogleResource ? (
+        {isGoogle ? (
           <GoogleResourceFields
             resourceKey={projectValue}
             onResourceKeyChange={(key) => {
@@ -687,10 +686,8 @@ export const ApplicationManagementPage = () => {
                 setRole("");
               }
             }}
-            helperText={
-              projectsError ||
-              "Enter the Workspace resource. Live listing needs a configured service account."
-            }
+            projects={availableProjects}
+            helperText={projectsError}
           />
         ) : (
           <div className="space-y-2">
