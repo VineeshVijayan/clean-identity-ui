@@ -6,7 +6,10 @@ import { tokenStorage } from "@/services/token-storage";
 let refreshPromise: Promise<boolean> | null = null;
 
 const isAuthExemptRequest = (url: string) =>
-  url.includes("/auth/refresh") || url.includes("/authenticate");
+  url.includes("/auth/refresh") ||
+  url.includes("/authenticate") ||
+  url.includes("/auth/forgot-password") ||
+  url.includes("/auth/reset-password");
 
 export const refreshAccessToken = async (): Promise<boolean> => {
   if (refreshPromise) {

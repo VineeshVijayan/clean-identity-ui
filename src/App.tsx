@@ -39,8 +39,10 @@ import { UsersListPage } from "./pages/dashboard/UsersListPage";
 import DocsPage from "./pages/DocsPage";
 import FeaturesPage from "./pages/FeaturesPage";
 import Index from "./pages/Index";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import ResetPasswordWithTokenPage from "./pages/ResetPasswordWithTokenPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import Register from "./pages/Register";
 import SecurityPage from "./pages/SecurityPage";
@@ -59,6 +61,8 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordWithTokenPage />} />
           <Route path="/register" element={<Register />} />
           <Route path="/features" element={<FeaturesPage />} />
           <Route path="/docs" element={<DocsPage />} />

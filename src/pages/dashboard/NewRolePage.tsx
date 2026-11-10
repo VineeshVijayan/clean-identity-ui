@@ -5,15 +5,17 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { ArrowLeft, Check, CheckCircle2, FolderOpen, Plus, Save, Shield, ShieldAlert, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
+import { composeBlueprintName, isEnabledCompany, resolveCompanyPrefix, stripRepeatedPrefix } from "@/lib/company-prefix";
 import { shouldOfferCreateJobTitle, toJobTitleOption } from "@/lib/job-title-picker";
-import { API_BASE_URL, applicationsListPath } from "@/services/api-config";
+import { API_BASE_URL, applicationsListPath, identityFetch } from "@/services/api-config";
 import { createJobTitle } from "@/services/job-title-api";
 import { useNavigate } from "react-router-dom";
 // Mock applications data
@@ -33,14 +35,35 @@ type IntegrationRole = {
   description?: string;
 };
 
+type BlueprintType = "global" | "company";
+
+type CompanyOption = {
+  id: number;
+  name: string;
+  code?: string | null;
+};
+
 export const NewRolePage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [blueprintType, setBlueprintType] = useState<BlueprintType>("global");
+  const [companies, setCompanies] = useState<CompanyOption[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState("");
+  const [companyError, setCompanyError] = useState("");
   const [roleName, setRoleName] = useState("");
   const [roleNameError, setRoleNameError] = useState("");
+  const selectedCompany = useMemo(
+    () => companies.find((company) => String(company.id) === selectedCompanyId),
+    [companies, selectedCompanyId]
+  );
+  const companyPrefix =
+    blueprintType === "company" && selectedCompany
+      ? resolveCompanyPrefix(selectedCompany)
+      : "";
   const validateRoleName = (value: string) => {
-    if (!value.trim()) return "Blueprint name is required";
-    if (!/^[A-Za-z0-9][A-Za-z0-9\s_-]*$/.test(value.trim()))
+    const entered = companyPrefix ? stripRepeatedPrefix(value, companyPrefix) : value;
+    if (!entered.trim()) return "Blueprint name is required";
+    if (!/^[A-Za-z0-9][A-Za-z0-9\s_-]*$/.test(entered.trim()))
       return "Enter a valid blueprint name";
     return "";
   };
@@ -181,7 +204,20 @@ export const NewRolePage = () => {
   };
 
   const handleSaveRole = async () => {
-    const nameErr = validateRoleName(roleName);
+    if (blueprintType === "company" && !selectedCompanyId) {
+      setCompanyError("Select a company");
+      toast({
+        title: "Error",
+        description: "Company-specific blueprints require a company",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const enteredName = companyPrefix
+      ? stripRepeatedPrefix(roleName, companyPrefix)
+      : roleName;
+    const nameErr = validateRoleName(enteredName);
     if (nameErr) {
       setRoleNameError(nameErr);
       document.getElementById("roleName")?.focus();
@@ -207,7 +243,10 @@ export const NewRolePage = () => {
       const token = localStorage.getItem("auth-token");
 
       const payload = {
-        name: roleName,
+        name: enteredName,
+        ...(blueprintType === "company" && selectedCompanyId
+          ? { companyId: Number(selectedCompanyId) }
+          : {}),
         jobTitleIds: selectedJobs.map((id) => Number(id)), // ✅ convert to Long
         applications:
           blueprintApps.map((app) => ({
@@ -297,6 +336,33 @@ export const NewRolePage = () => {
     };
 
     fetchJobTitles();
+  }, []);
+
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        const response = await identityFetch("/companies?fetchType=ACTIVE");
+        if (!response.ok) {
+          const body = await readResponseBody(response);
+          console.error("Failed to fetch companies", getApiErrorMessage(body, "Failed to fetch companies"));
+          return;
+        }
+        const result = await response.json();
+        const list = Array.isArray(result) ? result : result.data || [];
+        const mapped = list
+          .filter((company: { enabled?: boolean; isEnabled?: boolean }) => isEnabledCompany(company))
+          .map((company: { id: number; name: string; code?: string | null }) => ({
+            id: company.id,
+            name: company.name,
+            code: company.code,
+          }));
+        setCompanies(mapped);
+      } catch (error) {
+        console.error("Failed to fetch companies", error);
+      }
+    };
+
+    fetchCompanies();
   }, []);
 
   const [availableApplications, setAvailableAppsToAdd] = useState<any[]>([]);
@@ -457,20 +523,95 @@ export const NewRolePage = () => {
           <CardDescription>Assign job role to new Blueprint</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>Blueprint Type *</Label>
+            <RadioGroup
+              value={blueprintType}
+              onValueChange={(value) => {
+                const nextType = value as BlueprintType;
+                setBlueprintType(nextType);
+                if (nextType === "global") {
+                  setSelectedCompanyId("");
+                  setCompanyError("");
+                }
+              }}
+              className="flex flex-col sm:flex-row gap-3 sm:gap-6"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="global" id="blueprint-type-global" />
+                <Label htmlFor="blueprint-type-global" className="font-normal">
+                  Global Blueprint
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="company" id="blueprint-type-company" />
+                <Label htmlFor="blueprint-type-company" className="font-normal">
+                  Company-Specific Blueprint
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+          {blueprintType === "company" && (
+            <div className="space-y-2">
+              <Label htmlFor="blueprintCompany">Company *</Label>
+              <Select
+                value={selectedCompanyId}
+                onValueChange={(value) => {
+                  const nextCompany = companies.find((company) => String(company.id) === value);
+                  const nextPrefix = nextCompany ? resolveCompanyPrefix(nextCompany) : "";
+                  setSelectedCompanyId(value);
+                  setCompanyError("");
+                  if (nextPrefix) {
+                    setRoleName((current) => stripRepeatedPrefix(current, nextPrefix));
+                  }
+                }}
+              >
+                <SelectTrigger id="blueprintCompany" aria-invalid={!!companyError}>
+                  <SelectValue placeholder="Select a company" />
+                </SelectTrigger>
+                <SelectContent>
+                  {companies.map((company) => (
+                    <SelectItem key={company.id} value={String(company.id)}>
+                      {company.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {companyError && (
+                <p className="text-sm text-red-500">{companyError}</p>
+              )}
+            </div>
+          )}
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="roleName">Blueprint Name *</Label>
-              <Input
-                id="roleName"
-                placeholder="e.g., Content Manager"
-                value={roleName}
-                onChange={(e) => {
-                  setRoleName(e.target.value);
-                  if (roleNameError) setRoleNameError(validateRoleName(e.target.value));
-                }}
-                onBlur={() => setRoleNameError(validateRoleName(roleName))}
-                aria-invalid={!!roleNameError}
-              />
+              <div className="flex">
+                {companyPrefix && (
+                  <span className="inline-flex items-center rounded-l-md border border-r-0 border-input bg-muted px-3 text-sm font-medium text-muted-foreground">
+                    {companyPrefix}-
+                  </span>
+                )}
+                <Input
+                  id="roleName"
+                  placeholder="e.g., Content Manager"
+                  value={roleName}
+                  onChange={(e) => {
+                    const nextValue = companyPrefix
+                      ? stripRepeatedPrefix(e.target.value, companyPrefix)
+                      : e.target.value;
+                    setRoleName(nextValue);
+                    if (roleNameError) setRoleNameError(validateRoleName(nextValue));
+                  }}
+                  onBlur={() => setRoleNameError(validateRoleName(roleName))}
+                  aria-invalid={!!roleNameError}
+                  className={companyPrefix ? "rounded-l-none" : undefined}
+                />
+              </div>
+              {companyPrefix && roleName.trim() && (
+                <p className="text-xs text-muted-foreground">
+                  Saved as {composeBlueprintName(companyPrefix, roleName)}
+                </p>
+              )}
               {roleNameError && (
                 <p className="text-sm text-red-500">{roleNameError}</p>
               )}

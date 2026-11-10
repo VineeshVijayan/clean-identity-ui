@@ -1,4 +1,3 @@
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -32,19 +31,6 @@ const authHeaders = () => {
     Accept: "application/json",
     "Content-Type": "application/json",
   };
-};
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case "APPROVED":
-      return "bg-green-500/10 text-green-500 border-green-500/20";
-    case "REJECTED":
-      return "bg-red-500/10 text-red-500 border-red-500/20";
-    case "PENDING":
-      return "bg-amber-500/10 text-amber-500 border-amber-500/20";
-    default:
-      return "bg-muted text-muted-foreground";
-  }
 };
 
 export const MyApprovalPage = () => {
@@ -154,10 +140,7 @@ export const MyApprovalPage = () => {
             <TableRow>
               <TableHead>Requester Name</TableHead>
               {/* <TableHead>Department Name</TableHead> */}
-              <TableHead>Status</TableHead>
-              <TableHead className="hidden md:table-cell">
-                Comments
-              </TableHead>
+              <TableHead>Reason</TableHead>
               <TableHead className="hidden sm:table-cell">
                 Requested At
               </TableHead>
@@ -170,13 +153,13 @@ export const MyApprovalPage = () => {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-6">
+                <TableCell colSpan={4} className="text-center py-6">
                   Loading...
                 </TableCell>
               </TableRow>
             ) : requests.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-6">
+                <TableCell colSpan={4} className="text-center py-6">
                   No requests found
                 </TableCell>
               </TableRow>
@@ -191,17 +174,11 @@ export const MyApprovalPage = () => {
                     {request.departmentName}
                   </TableCell> */}
 
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={getStatusColor(request.status)}
-                    >
-                      {request.status}
-                    </Badge>
-                  </TableCell>
-
-                  <TableCell className="hidden md:table-cell text-muted-foreground max-w-[200px] truncate">
-                    {request.comments}
+                  <TableCell
+                    className="text-muted-foreground max-w-[240px] truncate"
+                    title={request.comments || undefined}
+                  >
+                    {request.comments?.trim() ? request.comments : "—"}
                   </TableCell>
 
                   <TableCell className="hidden sm:table-cell text-muted-foreground">

@@ -3,6 +3,7 @@ import {
   getApiErrorMessage,
   getErrorFromCatch,
   readResponseBody,
+  unwrapApiData,
 } from "@/lib/api-errors";
 import type {
   AuthResponse,
@@ -18,9 +19,17 @@ const PROACTIVE_REFRESH_BUFFER_MS = 60_000;
 let proactiveRefreshTimer: ReturnType<typeof setTimeout> | null = null;
 let isLoggingOut = false;
 
-const isLoginRoute = () =>
-  window.location.pathname === "/login" ||
-  window.location.pathname.startsWith("/login/");
+const isPublicAuthRoute = () => {
+  const path = window.location.pathname;
+  return (
+    path === "/login" ||
+    path.startsWith("/login/") ||
+    path === "/forgot-password" ||
+    path.startsWith("/forgot-password/") ||
+    path === "/reset-password" ||
+    path.startsWith("/reset-password/")
+  );
+};
 
 const resolveUserIdForLogout = (): string | null => {
   const accessToken = tokenStorage.getAccessToken();
@@ -61,14 +70,14 @@ export const clearAuthState = (): void => {
 export const clearSessionAndRedirect = (): void => {
   if (isLoggingOut) return;
 
-  if (!tokenStorage.hasSession() && isLoginRoute()) {
+  if (!tokenStorage.hasSession() && isPublicAuthRoute()) {
     return;
   }
 
   isLoggingOut = true;
   clearAuthState();
 
-  if (!isLoginRoute()) {
+  if (!isPublicAuthRoute()) {
     window.location.replace("/login");
     return;
   }
@@ -166,6 +175,54 @@ export const login = async (
   return data;
 };
 
+const GENERIC_RESET_MESSAGE =
+  "If an account exists for that email, we sent password reset instructions.";
+
+export const requestPasswordReset = async (email: string): Promise<string> => {
+  const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({ email }),
+  });
+
+  const body = await readResponseBody(response);
+  if (!response.ok) {
+    throw new Error(getApiErrorMessage(body, "Unable to send reset instructions"));
+  }
+
+  const data = unwrapApiData<string>(body);
+  return typeof data === "string" && data.trim() ? data : GENERIC_RESET_MESSAGE;
+};
+
+export const confirmPasswordReset = async (
+  token: string,
+  newPassword: string
+): Promise<string> => {
+  const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({ token, newPassword }),
+  });
+
+  const body = await readResponseBody(response);
+  if (!response.ok) {
+    throw new Error(
+      getApiErrorMessage(body, "This reset link is invalid or has expired. Request a new one.")
+    );
+  }
+
+  const data = unwrapApiData<string>(body);
+  return typeof data === "string" && data.trim()
+    ? data
+    : "Password updated. You can now sign in.";
+};
+
 export const ensureValidAccessToken = async (): Promise<boolean> => {
   if (tokenStorage.getAccessToken() && !tokenStorage.isAccessTokenExpired()) {
     return true;
@@ -197,7 +254,7 @@ export const logout = async (): Promise<void> => {
 
   clearAuthState();
 
-  if (!isLoginRoute()) {
+  if (!isPublicAuthRoute()) {
     window.location.replace("/login");
     return;
   }

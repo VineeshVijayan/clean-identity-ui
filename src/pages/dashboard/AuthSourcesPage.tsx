@@ -1,19 +1,3 @@
-import { motion } from "framer-motion";
-import {
-  AppWindow,
-  CheckCircle,
-  Cloud,
-  Database,
-  MoreHorizontal,
-  Plus,
-  RefreshCw,
-  Search,
-  Settings,
-  Trash2,
-  XCircle,
-} from "lucide-react";
-import { useState } from "react";
-
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,78 +5,109 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { getErrorFromCatch } from "@/lib/api-errors";
+import {
+  listPlatformIntegrations,
+  previewHrEmployees,
+  testPlatformIntegration,
+  type HrEmployeePreview,
+  type PlatformIntegration,
+} from "@/services/platform-api";
+import { motion } from "framer-motion";
+import { Cloud, Database, Eye, PlugZap, RefreshCw } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-/* ---------------- MOCK DATA ---------------- */
-const mockAuthSources = [
-  {
-    id: 1,
-    name: "Active Directory",
-    type: "LDAP",
-    icon: Database,
-    status: "active",
-    users: 1250,
-    lastSync: "2024-01-19 08:30",
-    priority: 1,
-    description: "Corporate Active Directory",
-  },
-  {
-    id: 2,
-    name: "Azure AD",
-    type: "OAuth 2.0",
-    icon: Cloud,
-    status: "active",
-    users: 850,
-    lastSync: "2024-01-19 09:15",
-    priority: 2,
-    description: "Microsoft Azure Active Directory",
-  },
-];
+const typeLabel = (type: PlatformIntegration["type"]) =>
+  type === "DIRECTORY" ? "Identity directory" : "HR source";
 
-const authTypes = [
-  { value: "ldap", label: "LDAP / Active Directory" },
-  { value: "oauth", label: "OAuth 2.0" },
-  { value: "saml", label: "SAML 2.0" },
-];
-
-/* ---------------- COMPONENT ---------------- */
 export const AuthSourcesPage = () => {
   const { toast } = useToast();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [authSources] = useState(mockAuthSources);
-  const [sourceName, setSourceName] = useState("");
+  const navigate = useNavigate();
+  const [integrations, setIntegrations] = useState<PlatformIntegration[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [testingKey, setTestingKey] = useState<string | null>(null);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewRows, setPreviewRows] = useState<HrEmployeePreview[]>([]);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewProvider, setPreviewProvider] = useState<string | null>(null);
 
-  const [errors, setErrors] = useState({
-    sourceName: "",
-  });
-  const filteredSources = authSources.filter(
-    (s) =>
-      s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.type.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const loadIntegrations = useCallback(async () => {
+    try {
+      setLoading(true);
+      setIntegrations(await listPlatformIntegrations());
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Unable to load integrations",
+        description: getErrorFromCatch(error, "Failed to load identity and HR integrations"),
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    void loadIntegrations();
+  }, [loadIntegrations]);
+
+  const handleTest = async (integration: PlatformIntegration) => {
+    try {
+      setTestingKey(integration.key);
+      const result = await testPlatformIntegration(integration.key);
+      toast({
+        variant: result.success ? "default" : "destructive",
+        title: result.success ? "Connection succeeded" : "Connection failed",
+        description: result.message,
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Connection test failed",
+        description: getErrorFromCatch(error, "Failed to test the integration"),
+      });
+    } finally {
+      setTestingKey(null);
+    }
+  };
+
+  const handlePreview = async (integration: PlatformIntegration) => {
+    try {
+      setPreviewProvider(integration.displayName);
+      setPreviewOpen(true);
+      setPreviewLoading(true);
+      setPreviewRows(await previewHrEmployees(integration.key));
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Preview failed",
+        description: getErrorFromCatch(error, "Failed to preview HR employees"),
+      });
+      setPreviewOpen(false);
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const handleOpenSync = (integration: PlatformIntegration) => {
+    if (integration.type === "DIRECTORY") {
+      navigate("/admin/user-sync");
+      return;
+    }
+    navigate("/users");
+  };
 
   return (
     <motion.div
@@ -100,236 +115,129 @@ export const AuthSourcesPage = () => {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
-      {/* HEADER — SAME AS ApplicationManagementPage */}
       <div className="flex items-center gap-3">
         <div className="p-2 rounded-lg bg-primary/10">
-          <AppWindow className="h-6 w-6 text-primary" />
+          <PlugZap className="h-6 w-6 text-primary" />
         </div>
         <div className="flex-1">
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-            Authoritative Sources
+            Identity & HR integrations
           </h1>
           <p className="text-muted-foreground">
-            Configure and manage authentication providers
+            Sign-in stays on local email and password. Azure Entra is the user directory.
+            Odoo remains the HR employee source.
           </p>
         </div>
-
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add Source
-            </Button>
-          </DialogTrigger>
-
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>Add Authentication Source</DialogTitle>
-              <DialogDescription>
-                Configure a new identity provider
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Source Name</Label>
-                <Input
-                  placeholder="Corporate LDAP"
-                  value={sourceName}
-                  onChange={(e) => {
-                    setSourceName(e.target.value);
-
-                    setErrors((prev) => ({
-                      ...prev,
-                      sourceName: e.target.value.trim()
-                        ? ""
-                        : "Source Name is required",
-                    }));
-                  }}
-                />
-
-                {errors.sourceName && (
-                  <p className="text-sm text-red-500">
-                    {errors.sourceName}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label>Authentication Type</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {authTypes.map((t) => (
-                      <SelectItem key={t.value} value={t.value}>
-                        {t.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Server URL</Label>
-                <Input placeholder="ldap://ldap.company.com" />
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                onClick={() => {
-                  if (!sourceName.trim()) {
-                    setErrors((prev) => ({
-                      ...prev,
-                      sourceName: "Source Name is required",
-                    }));
-                    return;
-                  }
-
-                  toast({ title: "Source Added" });
-
-                  setSourceName("");
-                  setErrors({ sourceName: "" });
-                  setIsDialogOpen(false);
-                }}
-              >
-                Add Source
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+        <Button variant="outline" onClick={() => void loadIntegrations()} disabled={loading}>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Refresh
+        </Button>
       </div>
 
-      {/* STATS — SAME STYLE */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {loading ? (
+        <p className="text-muted-foreground">Loading integrations…</p>
+      ) : integrations.length === 0 ? (
         <Card>
-          <CardContent className="pt-6 text-center">
-            <p className="text-3xl font-bold">{authSources.length}</p>
-            <p className="text-sm text-muted-foreground">Total Sources</p>
-          </CardContent>
+          <CardHeader>
+            <CardTitle>No providers registered</CardTitle>
+            <CardDescription>
+              The hub did not report a directory or HR provider.
+            </CardDescription>
+          </CardHeader>
         </Card>
-
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <p className="text-3xl font-bold">
-              {authSources.filter((s) => s.status === "active").length}
-            </p>
-            <p className="text-sm text-muted-foreground">Active</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <p className="text-3xl font-bold">
-              {authSources.filter((s) => s.status === "inactive").length}
-            </p>
-            <p className="text-sm text-muted-foreground">Inactive</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* MAIN CARD — SAME STRUCTURE */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Authentication Sources</CardTitle>
-          <CardDescription>
-            Manage identity providers in priority order
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent>
-          {/* SEARCH */}
-          <div className="relative mb-6">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search sources..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-
-          {/* LIST */}
-          <div className="space-y-4">
-            {filteredSources.map((source) => {
-              const Icon = source.icon;
-              return (
-                <Card key={source.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-lg bg-primary/10">
-                          <Icon className="h-6 w-6 text-primary" />
-                        </div>
-
-                        <div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="font-semibold">{source.name}</h4>
-                            <Badge variant="outline">Priority {source.priority}</Badge>
-
-                            {source.status === "active" ? (
-                              <Badge className="bg-success/10 text-success border-success/30">
-                                <CheckCircle className="w-3 h-3 mr-1" />
-                                Active
-                              </Badge>
-                            ) : (
-                              <Badge variant="secondary">
-                                <XCircle className="w-3 h-3 mr-1" />
-                                Inactive
-                              </Badge>
-                            )}
-                          </div>
-
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {source.description}
-                          </p>
-
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Type: {source.type} • {source.users} users • Last sync: {source.lastSync}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <Switch checked={source.status === "active"} />
-
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                              <RefreshCw className="h-4 w-4 mr-2" />
-                              Sync Now
-                            </DropdownMenuItem>
-                            <DropdownMenuItem>
-                              <Settings className="h-4 w-4 mr-2" />
-                              Configure
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive">
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          {integrations.map((integration) => {
+            const Icon = integration.type === "DIRECTORY" ? Cloud : Database;
+            return (
+              <Card key={`${integration.type}-${integration.key}`}>
+                <CardHeader className="flex flex-row items-start justify-between space-y-0">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-primary/10">
+                      <Icon className="h-5 w-5 text-primary" />
                     </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+                    <div>
+                      <CardTitle>{integration.displayName}</CardTitle>
+                      <CardDescription>
+                        {typeLabel(integration.type)} · {integration.key}
+                      </CardDescription>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    {integration.primary && <Badge>Primary</Badge>}
+                    <Badge variant={integration.configured ? "default" : "secondary"}>
+                      {integration.configured ? "Configured" : "Not configured"}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => void handleTest(integration)}
+                    disabled={testingKey === integration.key}
+                  >
+                    {testingKey === integration.key ? "Testing…" : "Test connection"}
+                  </Button>
+                  {integration.type === "HR" && (
+                    <Button variant="outline" onClick={() => void handlePreview(integration)}>
+                      <Eye className="h-4 w-4 mr-2" />
+                      Preview employees
+                    </Button>
+                  )}
+                  <Button onClick={() => handleOpenSync(integration)}>
+                    {integration.type === "DIRECTORY" ? "Open directory sync" : "Open HR sync"}
+                  </Button>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>HR employee preview</DialogTitle>
+            <DialogDescription>
+              {previewProvider
+                ? `Employees currently visible in ${previewProvider}. This does not write users.`
+                : "Employees currently visible in the HR source. This does not write users."}
+            </DialogDescription>
+          </DialogHeader>
+          {previewLoading ? (
+            <p className="text-muted-foreground">Loading preview…</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Job title</TableHead>
+                  <TableHead>Department</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {previewRows.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-muted-foreground">
+                      No employees returned.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  previewRows.map((row) => (
+                    <TableRow key={`${row.externalId}-${row.email}`}>
+                      <TableCell>{row.name ?? "—"}</TableCell>
+                      <TableCell>{row.email ?? "—"}</TableCell>
+                      <TableCell>{row.jobTitle ?? "—"}</TableCell>
+                      <TableCell>{row.departmentName ?? "—"}</TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 };

@@ -1066,6 +1066,15 @@ export const EditProfilePage = () => {
                               </p>
                               <div className="flex flex-wrap gap-1.5 mt-2">
                                 <ApplicationStatusBadge status="COMPLETED" label="Granted" />
+                                {app.essential && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs bg-warning/10 text-warning border-warning/30"
+                                  >
+                                    <Shield className="h-3 w-3 mr-1" />
+                                    Essential
+                                  </Badge>
+                                )}
                                 {app.grantedDate && (
                                   <Badge variant="outline" className="text-xs">
                                     Granted: {formatDate(app.grantedDate)}

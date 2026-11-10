@@ -20,6 +20,7 @@ import { getErrorFromCatch } from "@/lib/api-errors";
 import { resourceFieldLabel } from "@/lib/application-access";
 import {
   getApplicationById,
+  isEssentialApplication,
   listApplications,
   loadIntegrationCatalog,
   type ApplicationDto,
@@ -27,7 +28,7 @@ import {
 } from "@/services/application-api";
 import type { IntegrationProject } from "@/lib/integration-api";
 import { motion } from "framer-motion";
-import { AppWindow, ExternalLink, Globe, Loader2, Search } from "lucide-react";
+import { AppWindow, ExternalLink, Globe, Loader2, Search, Shield } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 type StatusFilter = "all" | "active" | "inactive";
@@ -225,12 +226,12 @@ export const ManageApplicationPage = () => {
                             </p>
                           </div>
                         </div>
-                        <Badge
-                          variant={app.active ? "default" : "secondary"}
-                          className="shrink-0"
-                        >
-                          {app.active ? "Active" : "Inactive"}
-                        </Badge>
+                        <div className="flex flex-col items-end gap-1.5 shrink-0">
+                          <Badge variant={app.active ? "default" : "secondary"}>
+                            {app.active ? "Active" : "Inactive"}
+                          </Badge>
+                          <EssentialBadge essential={isEssentialApplication(app)} />
+                        </div>
                       </div>
 
                       <p className="text-sm text-muted-foreground line-clamp-2">
@@ -283,6 +284,10 @@ export const ManageApplicationPage = () => {
                       status={details.active ? "COMPLETED" : "REJECTED"}
                       label={details.active ? "Active" : "Inactive"}
                     />
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Essential</p>
+                    <EssentialBadge essential={isEssentialApplication(details)} />
                   </div>
                   <div>
                     <p className="text-muted-foreground">Application URL</p>
@@ -375,6 +380,26 @@ export const ManageApplicationPage = () => {
     </motion.div>
   );
 };
+
+const EssentialBadge = ({ essential }: { essential: boolean }) => (
+  <Badge
+    variant="outline"
+    className={
+      essential
+        ? "bg-warning/10 text-warning border-warning/30"
+        : "text-muted-foreground"
+    }
+  >
+    {essential ? (
+      <>
+        <Shield className="h-3 w-3 mr-1" />
+        Essential
+      </>
+    ) : (
+      "Non-essential"
+    )}
+  </Badge>
+);
 
 const DetailField = ({
   label,

@@ -25,7 +25,7 @@ export const IDFAdministrationPage = () => {
             Connector Administration
           </h1>
           <p className="text-muted-foreground">
-            Manage authentication sources and outbound connectors
+            Manage the Azure directory, Odoo HR source, and outbound application connectors
           </p>
         </div>
       </div>
@@ -35,7 +35,7 @@ export const IDFAdministrationPage = () => {
         <TabsList className="w-full sm:w-auto">
           <TabsTrigger value="auth-sources" className="gap-2">
             <LinkIcon className="h-4 w-4" />
-            Auth Sources
+            Identity & HR
           </TabsTrigger>
           <TabsTrigger value="connectors" className="gap-2">
             <Database className="h-4 w-4" />

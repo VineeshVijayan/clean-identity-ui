@@ -455,7 +455,7 @@ export const AccessRequestsPage = () => {
                   <TableHead>Requester</TableHead>
                   <TableHead>Target User</TableHead>
                   <TableHead>Application / Details</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Reason</TableHead>
                   <TableHead>Requested At</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -487,8 +487,8 @@ export const AccessRequestsPage = () => {
                           ? r.applicationsSummary
                           : r.departmentName || "—"}
                       </TableCell>
-                      <TableCell>
-                        <ApplicationStatusBadge status={r.status} />
+                      <TableCell className="max-w-[240px] truncate" title={r.comments || undefined}>
+                        {r.comments?.trim() ? r.comments : "—"}
                       </TableCell>
                       <TableCell>{r.requestedAt}</TableCell>
                       <TableCell>
