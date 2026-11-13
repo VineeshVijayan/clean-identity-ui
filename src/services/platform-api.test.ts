@@ -32,6 +32,10 @@ describe("platform-api", () => {
               configured: true,
               primary: true,
               capabilities: ["CREATE_USER"],
+              configuration: [
+                { label: "Tenant ID", value: "contoso-tenant" },
+                { label: "Client secret", value: "Configured" },
+              ],
             },
           ],
         }),
@@ -45,6 +49,10 @@ describe("platform-api", () => {
         configured: true,
         primary: true,
         capabilities: ["CREATE_USER"],
+        configuration: [
+          { label: "Tenant ID", value: "contoso-tenant" },
+          { label: "Client secret", value: "Configured" },
+        ],
       },
     ]);
     expect(identityFetch).toHaveBeenCalledWith("/platform/integrations");

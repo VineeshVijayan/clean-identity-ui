@@ -4,7 +4,7 @@ import { GlobalApiLoader } from "@/components/GlobalApiLoader";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { DashboardHome } from "./components/dashboard/DashboardHome";
 import { DashboardLayout } from "./components/dashboard/DashboardLayout";
 import AboutPage from "./pages/AboutPage";
@@ -16,7 +16,6 @@ import { ApplicationManagementPage } from "./pages/dashboard/ApplicationManageme
 import { AuthSourcesPage } from "./pages/dashboard/AuthSourcesPage";
 import { ChangePasswordPage } from "./pages/dashboard/ChangePasswordPage";
 import { CheckoutPage } from "./pages/dashboard/CheckoutPage";
-import { ConnectorsPage } from "./pages/dashboard/ConnectorsPage";
 import { CreateCompanyPage } from "./pages/dashboard/CreateCompanyPage";
 import { CreateUserPage } from "./pages/dashboard/CreateUserPage";
 import { DetailedReportPage } from "./pages/dashboard/DetailedReportPage";
@@ -101,7 +100,7 @@ const App = () => (
           <Route path="/admin" element={<DashboardLayout />}>
             <Route path="users" element={<UsersListPage />} />
             <Route path="auth-sources" element={<AuthSourcesPage />} />
-            <Route path="connectors" element={<ConnectorsPage />} />
+            <Route path="connectors" element={<Navigate to="/admin/idf-administration" replace />} />
             <Route path="idf-administration" element={<IDFAdministrationPage />} />
             <Route path="manage-application" element={<ManageApplicationPage />} />
             <Route path="settings" element={<IDFSettingsPage />} />

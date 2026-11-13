@@ -1,6 +1,5 @@
 import { getErrorFromCatch, parseResponse, unwrapApiData, unwrapApiList } from "@/lib/api-errors";
 import {
-  applicationsListPath,
   connectorFetch,
   identityFetchJson,
   type ApiRequestOptions,
@@ -10,11 +9,75 @@ import { mapIntegrationProjects, type IntegrationProject } from "@/lib/integrati
 export type ApplicationDto = {
   id: number;
   name: string;
+  code?: string | null;
   description: string | null;
+  category?: string | null;
+  icon?: string | null;
   appUrl: string | null;
   integrationName: string | null;
   active: boolean;
   essential?: boolean | null;
+  configured?: boolean;
+  provisioningSupported?: boolean;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  lastTestedAt?: string | null;
+  lastTestSuccess?: boolean | null;
+  lastTestMessage?: string | null;
+};
+
+export type ApplicationConfigField = {
+  key: string;
+  label: string;
+  type?: string;
+  inputType?: string;
+  required?: boolean;
+  sensitive?: boolean;
+  defaultValue?: string | null;
+  helpText?: string | null;
+  editableAfterOnboarding?: boolean;
+  options?: string[] | null;
+};
+
+export type ConnectorDescriptor = {
+  code: string;
+  displayName: string;
+  provisioningSupported: boolean;
+  connectionTestSupported: boolean;
+  schema: ApplicationConfigField[];
+};
+
+export type ApplicationConfigurationResponse = {
+  applicationId: number;
+  applicationCode?: string | null;
+  integrationName?: string | null;
+  schema: ApplicationConfigField[];
+  configuration: Record<string, string>;
+  secretsConfigured: Record<string, boolean>;
+  configured: boolean;
+  provisioningSupported: boolean;
+};
+
+export type ConnectionTestResult = {
+  success: boolean;
+  supported: boolean;
+  message: string;
+  testedAt?: string | null;
+};
+
+export type ApplicationWritePayload = {
+  name: string;
+  code?: string;
+  description?: string;
+  category?: string;
+  icon?: string;
+  appUrl?: string;
+  integrationName?: string | null;
+  active?: boolean;
+  essential?: boolean;
+  schema?: ApplicationConfigField[];
+  configuration?: Record<string, string>;
+  secrets?: Record<string, string>;
 };
 
 export type ApplicationResourceDto = {
@@ -172,13 +235,8 @@ export type FlattenedApplicationAccess = {
 };
 
 export const isEssentialApplication = (app: {
-  name?: string | null;
   essential?: boolean | null;
-}): boolean => {
-  if (app.essential === true) return true;
-  const name = (app.name || "").trim().toLowerCase();
-  return name === "jira" || name === "slack";
-};
+}): boolean => app.essential === true;
 
 export type BlueprintApplication = {
   applicationId: number;
@@ -261,10 +319,28 @@ const mapIntegrationRoles = (data: unknown): IntegrationRole[] =>
     })
     .filter((role) => role.id && role.name);
 
+export type ApplicationListQuery = {
+  page?: number;
+  size?: number;
+  search?: string;
+  active?: boolean;
+  essential?: boolean;
+  integrationName?: string;
+  sort?: string;
+};
+
 export const listApplications = async (
-  options?: ApiRequestOptions
+  options?: ApiRequestOptions & ApplicationListQuery
 ): Promise<ApplicationPage> => {
-  const body = await identityFetchJson(applicationsListPath, options);
+  const params = new URLSearchParams();
+  params.set("page", String(options?.page ?? 0));
+  params.set("size", String(options?.size ?? 100));
+  if (options?.search) params.set("search", options.search);
+  if (typeof options?.active === "boolean") params.set("active", String(options.active));
+  if (typeof options?.essential === "boolean") params.set("essential", String(options.essential));
+  if (options?.integrationName) params.set("integrationName", options.integrationName);
+  if (options?.sort) params.set("sort", options.sort);
+  const body = await identityFetchJson(`/applications?${params.toString()}`, options);
   return asApplicationPage(unwrapApiData(body));
 };
 
@@ -405,6 +481,111 @@ export const rejectApplicationAccessRequest = async (
     body: JSON.stringify({ comments: comments || null }),
   });
   return unwrapApiData<ApplicationAccessRequest>(body);
+};
+
+export const listApplicationConnectors = async (
+  options?: ApiRequestOptions
+): Promise<ConnectorDescriptor[]> => {
+  const body = await identityFetchJson("/applications/connectors", options);
+  const data = unwrapApiData<ConnectorDescriptor[]>(body);
+  return Array.isArray(data) ? data : [];
+};
+
+export const createApplication = async (
+  payload: ApplicationWritePayload,
+  options?: ApiRequestOptions
+): Promise<ApplicationDto> => {
+  const body = await identityFetchJson("/applications", {
+    ...options,
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return unwrapApiData<ApplicationDto>(body);
+};
+
+export const updateApplication = async (
+  id: number | string,
+  payload: ApplicationWritePayload,
+  options?: ApiRequestOptions
+): Promise<ApplicationDto> => {
+  const body = await identityFetchJson(`/applications/${id}`, {
+    ...options,
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+  return unwrapApiData<ApplicationDto>(body);
+};
+
+export const updateApplicationStatus = async (
+  id: number | string,
+  active: boolean,
+  options?: ApiRequestOptions
+): Promise<ApplicationDto> => {
+  const body = await identityFetchJson(`/applications/${id}/status`, {
+    ...options,
+    method: "PATCH",
+    body: JSON.stringify({ active }),
+  });
+  return unwrapApiData<ApplicationDto>(body);
+};
+
+export const updateApplicationEssential = async (
+  id: number | string,
+  essential: boolean,
+  options?: ApiRequestOptions
+): Promise<ApplicationDto> => {
+  const body = await identityFetchJson(`/applications/${id}/essential`, {
+    ...options,
+    method: "PATCH",
+    body: JSON.stringify({ essential }),
+  });
+  return unwrapApiData<ApplicationDto>(body);
+};
+
+export const deleteApplication = async (
+  id: number | string,
+  options?: ApiRequestOptions
+): Promise<void> => {
+  await identityFetchJson(`/applications/${id}`, {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getApplicationConfiguration = async (
+  id: number | string,
+  options?: ApiRequestOptions
+): Promise<ApplicationConfigurationResponse> => {
+  const body = await identityFetchJson(`/applications/${id}/configuration`, options);
+  return unwrapApiData<ApplicationConfigurationResponse>(body);
+};
+
+export const updateApplicationConfiguration = async (
+  id: number | string,
+  payload: {
+    schema?: ApplicationConfigField[];
+    configuration?: Record<string, string>;
+    secrets?: Record<string, string>;
+  },
+  options?: ApiRequestOptions
+): Promise<ApplicationConfigurationResponse> => {
+  const body = await identityFetchJson(`/applications/${id}/configuration`, {
+    ...options,
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+  return unwrapApiData<ApplicationConfigurationResponse>(body);
+};
+
+export const testApplicationConnection = async (
+  id: number | string,
+  options?: ApiRequestOptions
+): Promise<ConnectionTestResult> => {
+  const body = await identityFetchJson(`/applications/${id}/test-connection`, {
+    ...options,
+    method: "POST",
+  });
+  return unwrapApiData<ConnectionTestResult>(body);
 };
 
 export const loadIntegrationCatalog = async (

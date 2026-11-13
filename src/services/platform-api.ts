@@ -3,6 +3,11 @@ import { identityFetch } from "@/services/api-config";
 
 export type IntegrationType = "DIRECTORY" | "HR";
 
+export type IntegrationConfigItem = {
+  label: string;
+  value: string;
+};
+
 export type PlatformIntegration = {
   key: string;
   displayName: string;
@@ -10,6 +15,7 @@ export type PlatformIntegration = {
   configured: boolean;
   primary: boolean;
   capabilities: string[];
+  configuration?: IntegrationConfigItem[];
 };
 
 export type IntegrationTestResult = {

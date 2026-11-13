@@ -1,13 +1,38 @@
+import {
+  ApplicationConfigForm,
+  ApplicationSchemaEditor,
+} from "@/components/dashboard/ApplicationConfigForm";
 import { ApplicationStatusBadge } from "@/components/dashboard/ApplicationStatusBadge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -15,58 +40,121 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { getErrorFromCatch } from "@/lib/api-errors";
-import { resourceFieldLabel } from "@/lib/application-access";
 import {
-  getApplicationById,
+  configurationStatusLabel,
+  formatTimestamp,
+  initialConfigValues,
+  splitConfigurationValues,
+} from "@/lib/application-admin";
+import {
+  createApplication,
+  deleteApplication,
+  getApplicationConfiguration,
   isEssentialApplication,
+  listApplicationConnectors,
   listApplications,
-  loadIntegrationCatalog,
+  testApplicationConnection,
+  updateApplication,
+  updateApplicationConfiguration,
+  updateApplicationEssential,
+  updateApplicationStatus,
+  type ApplicationConfigField,
   type ApplicationDto,
-  type IntegrationRole,
+  type ConnectorDescriptor,
 } from "@/services/application-api";
-import type { IntegrationProject } from "@/lib/integration-api";
 import { motion } from "framer-motion";
-import { AppWindow, ExternalLink, Globe, Loader2, Search, Shield } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import {
+  AppWindow,
+  Loader2,
+  MoreHorizontal,
+  Plus,
+  Search,
+  Shield,
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 
 type StatusFilter = "all" | "active" | "inactive";
+type EssentialFilter = "all" | "essential" | "nonessential";
+type EditorMode = "create" | "edit" | "configure" | "view";
+const PAGE_SIZE = 10;
+
+const emptyForm = {
+  name: "",
+  code: "",
+  description: "",
+  category: "",
+  icon: "",
+  appUrl: "",
+  integrationName: "custom",
+  active: false,
+  essential: false,
+};
 
 export const ManageApplicationPage = () => {
   const { toast } = useToast();
   const [applications, setApplications] = useState<ApplicationDto[]>([]);
+  const [connectors, setConnectors] = useState<ConnectorDescriptor[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [details, setDetails] = useState<ApplicationDto | null>(null);
-  const [detailsLoading, setDetailsLoading] = useState(false);
-  const [resources, setResources] = useState<IntegrationProject[]>([]);
-  const [roles, setRoles] = useState<IntegrationRole[]>([]);
-  const [catalogError, setCatalogError] = useState("");
+  const [essentialFilter, setEssentialFilter] = useState<EssentialFilter>("all");
+  const [sort, setSort] = useState("name,asc");
+  const [page, setPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalElements, setTotalElements] = useState(0);
 
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim();
-    return applications.filter((app) => {
-      if (statusFilter === "active" && !app.active) return false;
-      if (statusFilter === "inactive" && app.active) return false;
-      if (!q) return true;
-      return (
-        app.name?.toLowerCase().includes(q) ||
-        app.description?.toLowerCase().includes(q) ||
-        app.integrationName?.toLowerCase().includes(q) ||
-        app.appUrl?.toLowerCase().includes(q)
-      );
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editorMode, setEditorMode] = useState<EditorMode>("create");
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState(emptyForm);
+  const [schema, setSchema] = useState<ApplicationConfigField[]>([]);
+  const [configValues, setConfigValues] = useState<Record<string, string>>({});
+  const [secretsConfigured, setSecretsConfigured] = useState<Record<string, boolean>>({});
+  const [editingId, setEditingId] = useState<number | null>(null);
+
+  const [deactivateApp, setDeactivateApp] = useState<ApplicationDto | null>(null);
+  const [deleteApp, setDeleteApp] = useState<ApplicationDto | null>(null);
+
+  const selectedConnector = connectors.find((connector) => connector.code === form.integrationName);
+  const isCustomIntegration = form.integrationName === "custom" || !form.integrationName;
+
+  const refresh = useCallback(async () => {
+    const result = await listApplications({
+      search: search.trim() || undefined,
+      sort,
+      size: PAGE_SIZE,
+      page,
+      active: statusFilter === "all" ? undefined : statusFilter === "active",
+      essential: essentialFilter === "all" ? undefined : essentialFilter === "essential",
     });
-  }, [applications, search, statusFilter]);
+    setApplications(result.content);
+    setTotalPages(Math.max(1, result.totalPages || 1));
+    setTotalElements(result.totalElements ?? result.content.length);
+  }, [search, sort, page, statusFilter, essentialFilter]);
 
   useEffect(() => {
-    const fetchApplications = async () => {
+    listApplicationConnectors()
+      .then(setConnectors)
+      .catch(() => setConnectors([]));
+  }, []);
+
+  useEffect(() => {
+    const load = async () => {
       try {
-        const page = await listApplications();
-        setApplications(page.content);
+        await refresh();
         setLoadError("");
       } catch (err) {
         setLoadError(getErrorFromCatch(err, "Failed to load applications"));
@@ -79,68 +167,182 @@ export const ManageApplicationPage = () => {
         setLoaded(true);
       }
     };
+    load();
+  }, [refresh, toast]);
 
-    fetchApplications();
-  }, [toast]);
+  const openCreate = () => {
+    setEditorMode("create");
+    setEditingId(null);
+    setForm(emptyForm);
+    setSchema([]);
+    setConfigValues({});
+    setSecretsConfigured({});
+    setEditorOpen(true);
+  };
 
-  useEffect(() => {
-    if (selectedId == null) {
-      setDetails(null);
-      setResources([]);
-      setRoles([]);
-      setCatalogError("");
-      return;
-    }
-
-    let cancelled = false;
-    setDetailsLoading(true);
-    setCatalogError("");
-
-    const loadDetails = async () => {
-      try {
-        const app = await getApplicationById(selectedId, { skipLoader: true });
-        if (cancelled) return;
-        setDetails(app);
-
-        if (app.integrationName) {
-          try {
-            const catalog = await loadIntegrationCatalog(app.integrationName, {
-              skipLoader: true,
-            });
-            if (cancelled) return;
-            setResources(catalog.projects);
-            setRoles(catalog.roles);
-          } catch (err) {
-            if (cancelled) return;
-            setResources([]);
-            setRoles([]);
-            setCatalogError(
-              getErrorFromCatch(err, "Failed to load application resources")
-            );
-          }
-        }
-      } catch (err) {
-        if (cancelled) return;
+  const openEdit = async (app: ApplicationDto, mode: EditorMode) => {
+    setEditorMode(mode);
+    setEditingId(app.id);
+    setForm({
+      name: app.name || "",
+      code: app.code || "",
+      description: app.description || "",
+      category: app.category || "",
+      icon: app.icon || "",
+      appUrl: app.appUrl || "",
+      integrationName: app.integrationName || "custom",
+      active: app.active,
+      essential: isEssentialApplication(app),
+    });
+    try {
+      const config = await getApplicationConfiguration(app.id, { skipLoader: true });
+      setSchema(config.schema || []);
+      setSecretsConfigured(config.secretsConfigured || {});
+      setConfigValues(initialConfigValues(config.schema || [], config.configuration || {}, config.secretsConfigured || {}));
+    } catch (err) {
+      setSchema([]);
+      setConfigValues({});
+      if (mode !== "view") {
         toast({
           title: "Error",
-          description: getErrorFromCatch(err, "Failed to load application details"),
+          description: getErrorFromCatch(err, "Failed to load configuration"),
           variant: "destructive",
         });
-        setSelectedId(null);
-      } finally {
-        if (!cancelled) setDetailsLoading(false);
+        return;
       }
-    };
+    }
+    setEditorOpen(true);
+  };
 
-    loadDetails();
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedId, toast]);
+  const applyConnectorSchema = (code: string) => {
+    setForm((current) => ({ ...current, integrationName: code }));
+    const connector = connectors.find((item) => item.code === code);
+    const nextSchema = connector?.schema || [];
+    setSchema(nextSchema);
+    setConfigValues(initialConfigValues(nextSchema, {}, {}));
+    setSecretsConfigured({});
+  };
 
-  const emptyMessage = search || statusFilter !== "all"
-    ? "Try adjusting your search or filters"
-    : "No applications configured.";
+  const persist = async () => {
+    if (!form.name.trim()) {
+      toast({ title: "Error", description: "Application name is required", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    const { configuration, secrets } = splitConfigurationValues(schema, configValues);
+    const payload = {
+      name: form.name.trim(),
+      code: form.code.trim() || undefined,
+      description: form.description.trim() || undefined,
+      category: form.category.trim() || undefined,
+      icon: form.icon.trim() || undefined,
+      appUrl: form.appUrl.trim() || undefined,
+      integrationName: form.integrationName === "custom" ? null : form.integrationName,
+      active: form.active,
+      essential: form.essential,
+      schema,
+      configuration,
+      secrets,
+    };
+    try {
+      if (editorMode === "create") {
+        await createApplication(payload);
+        toast({ title: "Success", description: "Application created" });
+      } else if (editingId != null && editorMode === "configure") {
+        await updateApplicationConfiguration(editingId, { schema, configuration, secrets });
+        toast({ title: "Success", description: "Configuration saved. Existing secrets were kept unless replaced." });
+      } else if (editingId != null) {
+        await updateApplication(editingId, payload);
+        toast({ title: "Success", description: "Application updated" });
+      }
+      setEditorOpen(false);
+      setConfigValues({});
+      await refresh();
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: getErrorFromCatch(err, "Failed to save application"),
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleStatus = async (app: ApplicationDto, active: boolean) => {
+    try {
+      await updateApplicationStatus(app.id, active);
+      toast({
+        title: "Success",
+        description: active
+          ? `${app.name} is active`
+          : `${app.name} is inactive. Existing user access was not revoked.`,
+      });
+      await refresh();
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: getErrorFromCatch(err, "Failed to update application status"),
+        variant: "destructive",
+      });
+    }
+  };
+
+  const toggleEssential = async (app: ApplicationDto) => {
+    try {
+      await updateApplicationEssential(app.id, !isEssentialApplication(app));
+      await refresh();
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: getErrorFromCatch(err, "Failed to update essential flag"),
+        variant: "destructive",
+      });
+    }
+  };
+
+  const runConnectionTest = async (app: ApplicationDto) => {
+    try {
+      const result = await testApplicationConnection(app.id);
+      toast({
+        title: result.success ? "Connected" : "Connection failed",
+        description: result.message,
+        variant: result.success ? "default" : "destructive",
+      });
+      await refresh();
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: getErrorFromCatch(err, "Connection test failed"),
+        variant: "destructive",
+      });
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteApp) return;
+    try {
+      await deleteApplication(deleteApp.id);
+      toast({ title: "Success", description: `${deleteApp.name} deleted` });
+      setDeleteApp(null);
+      await refresh();
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: getErrorFromCatch(err, "Failed to delete application"),
+        variant: "destructive",
+      });
+    }
+  };
+
+  const editorTitle =
+    editorMode === "create"
+      ? "Add Application"
+      : editorMode === "configure"
+        ? "Configure Integration"
+        : editorMode === "view"
+          ? "Application Details"
+          : "Edit Application";
 
   return (
     <motion.div
@@ -156,27 +358,37 @@ export const ManageApplicationPage = () => {
           <div>
             <h1 className="text-2xl font-bold">Manage Applications</h1>
             <p className="text-muted-foreground">
-              View all available applications in your organization
+              Onboard, configure, and control application lifecycle without exposing credentials
             </p>
           </div>
         </div>
+        <Button onClick={openCreate}>
+          <Plus className="h-4 w-4 mr-2" />
+          Add Application
+        </Button>
       </div>
 
       <Card className="glass-card">
         <CardContent className="p-6 space-y-6">
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col lg:flex-row gap-3">
             <div className="relative max-w-md flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search applications..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setPage(0);
+                  setSearch(e.target.value);
+                }}
                 className="pl-10"
               />
             </div>
             <Select
               value={statusFilter}
-              onValueChange={(value) => setStatusFilter(value as StatusFilter)}
+              onValueChange={(value) => {
+                setPage(0);
+                setStatusFilter(value as StatusFilter);
+              }}
             >
               <SelectTrigger className="w-full sm:w-40">
                 <SelectValue placeholder="Status" />
@@ -187,6 +399,38 @@ export const ManageApplicationPage = () => {
                 <SelectItem value="inactive">Inactive</SelectItem>
               </SelectContent>
             </Select>
+            <Select
+              value={essentialFilter}
+              onValueChange={(value) => {
+                setPage(0);
+                setEssentialFilter(value as EssentialFilter);
+              }}
+            >
+              <SelectTrigger className="w-full sm:w-44">
+                <SelectValue placeholder="Essential" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All types</SelectItem>
+                <SelectItem value="essential">Essential</SelectItem>
+                <SelectItem value="nonessential">Non-essential</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={sort}
+              onValueChange={(value) => {
+                setPage(0);
+                setSort(value);
+              }}
+            >
+              <SelectTrigger className="w-full sm:w-44">
+                <SelectValue placeholder="Sort" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name,asc">Name A-Z</SelectItem>
+                <SelectItem value="name,desc">Name Z-A</SelectItem>
+                <SelectItem value="updatedAt,desc">Recently updated</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {!loaded ? (
@@ -195,188 +439,310 @@ export const ManageApplicationPage = () => {
             </div>
           ) : loadError ? (
             <div className="text-center text-destructive py-12">{loadError}</div>
-          ) : filtered.length === 0 ? (
+          ) : applications.length === 0 ? (
             <div className="text-center text-muted-foreground py-12">
               <AppWindow className="h-12 w-12 mx-auto mb-3 opacity-30" />
-              <p className="text-lg font-medium">No applications configured.</p>
-              <p className="text-sm">{emptyMessage}</p>
+              <p className="text-lg font-medium">No applications found</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filtered.map((app) => (
-                <button
-                  key={app.id}
-                  type="button"
-                  onClick={() => setSelectedId(app.id)}
-                  className="text-left"
-                >
-                  <Card className="group border border-border hover:border-primary/30 transition-colors h-full">
-                    <CardContent className="p-5 space-y-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="p-2 rounded-lg bg-primary/10 shrink-0">
-                            <Globe className="h-5 w-5 text-primary" />
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Application</TableHead>
+                  <TableHead>Code</TableHead>
+                  <TableHead>Integration</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Essential</TableHead>
+                  <TableHead>Configuration</TableHead>
+                  <TableHead>Provisioning</TableHead>
+                  <TableHead>Updated</TableHead>
+                  <TableHead className="w-12" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {applications.map((app) => (
+                  <TableRow key={app.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        {app.icon ? (
+                          <img src={app.icon} alt="" className="h-8 w-8 rounded object-cover" />
+                        ) : (
+                          <div className="flex h-8 w-8 items-center justify-center rounded bg-primary/10">
+                            <AppWindow className="h-4 w-4 text-primary" />
                           </div>
-                          <div className="min-w-0">
-                            <h3 className="font-semibold text-foreground truncate">
-                              {app.name}
-                            </h3>
-                            <p className="text-xs text-muted-foreground capitalize">
-                              {app.integrationName || "No integration"}
-                            </p>
+                        )}
+                        <div>
+                          <div className="font-medium">{app.name}</div>
+                          <div className="text-xs text-muted-foreground line-clamp-1">
+                            {app.description || app.category || "No description"}
                           </div>
-                        </div>
-                        <div className="flex flex-col items-end gap-1.5 shrink-0">
-                          <Badge variant={app.active ? "default" : "secondary"}>
-                            {app.active ? "Active" : "Inactive"}
-                          </Badge>
-                          <EssentialBadge essential={isEssentialApplication(app)} />
                         </div>
                       </div>
-
-                      <p className="text-sm text-muted-foreground line-clamp-2">
-                        {app.description || "No description"}
-                      </p>
-                      {app.appUrl ? (
-                        <p className="text-xs text-muted-foreground truncate">
-                          {app.appUrl}
-                        </p>
-                      ) : null}
-                    </CardContent>
-                  </Card>
-                </button>
-              ))}
-            </div>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">{app.code || "—"}</TableCell>
+                    <TableCell className="capitalize">{app.integrationName || "Custom"}</TableCell>
+                    <TableCell>
+                      <Badge variant={app.active ? "default" : "secondary"}>
+                        {app.active ? "Active" : "Inactive"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <EssentialBadge essential={isEssentialApplication(app)} />
+                    </TableCell>
+                    <TableCell>
+                      <ApplicationStatusBadge
+                        status={app.configured ? "COMPLETED" : "PENDING"}
+                        label={configurationStatusLabel(app)}
+                      />
+                    </TableCell>
+                    <TableCell>{app.provisioningSupported ? "Supported" : "Metadata only"}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{formatTimestamp(app.updatedAt)}</TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" aria-label={`Actions for ${app.name}`}>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openEdit(app, "view")}>View details</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openEdit(app, "edit")}>Edit application</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          {app.active ? (
+                            <DropdownMenuItem onClick={() => setDeactivateApp(app)}>Deactivate</DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem onClick={() => toggleStatus(app, true)}>Activate</DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem onClick={() => toggleEssential(app)}>
+                            {isEssentialApplication(app) ? "Mark non-essential" : "Mark essential"}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-destructive" onClick={() => setDeleteApp(app)}>
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
+          {loaded && !loadError && totalElements > 0 ? (
+            <div className="flex items-center justify-between pt-2">
+              <p className="text-sm text-muted-foreground">
+                Page {page + 1} of {totalPages} · {totalElements} applications
+              </p>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((current) => Math.max(0, current - 1))}>
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page + 1 >= totalPages}
+                  onClick={() => setPage((current) => current + 1)}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 
-      <Dialog
-        open={selectedId != null}
-        onOpenChange={(open) => {
-          if (!open) setSelectedId(null);
-        }}
-      >
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <Dialog open={editorOpen} onOpenChange={setEditorOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{details?.name || "Application details"}</DialogTitle>
+            <DialogTitle>{editorTitle}</DialogTitle>
+            <DialogDescription>
+              Sensitive credentials are stored encrypted and are never shown after save.
+            </DialogDescription>
           </DialogHeader>
-
-          {detailsLoading || !details ? (
-            <div className="flex justify-center py-10">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : (
-            <div className="space-y-6 text-sm">
-              <section className="space-y-3">
-                <h3 className="font-semibold">Application</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <DetailField label="Name" value={details.name} />
-                  <DetailField label="Code" value={details.integrationName || details.name} />
-                  <DetailField
-                    label="Description"
-                    value={details.description || "—"}
-                    className="sm:col-span-2"
+          <div className="space-y-6">
+            {editorMode !== "configure" && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="app-name">Application Name *</Label>
+                  <Input
+                    id="app-name"
+                    value={form.name}
+                    disabled={editorMode === "view"}
+                    onChange={(e) => setForm((current) => ({ ...current, name: e.target.value }))}
                   />
-                  <div>
-                    <p className="text-muted-foreground">Status</p>
-                    <ApplicationStatusBadge
-                      status={details.active ? "COMPLETED" : "REJECTED"}
-                      label={details.active ? "Active" : "Inactive"}
-                    />
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Essential</p>
-                    <EssentialBadge essential={isEssentialApplication(details)} />
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Application URL</p>
-                    {details.appUrl ? (
-                      <a
-                        href={details.appUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 text-primary hover:underline break-all"
-                      >
-                        {details.appUrl}
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </a>
-                    ) : (
-                      <p>—</p>
-                    )}
-                  </div>
                 </div>
-              </section>
-
-              <section className="space-y-3">
-                <h3 className="font-semibold">Integration</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <DetailField
-                    label="Provider"
-                    value={details.integrationName || "None"}
+                <div className="space-y-2">
+                  <Label htmlFor="app-code">Application Code</Label>
+                  <Input
+                    id="app-code"
+                    value={form.code}
+                    disabled={editorMode === "view"}
+                    placeholder="Derived from the name if left blank"
+                    onChange={(e) => setForm((current) => ({ ...current, code: e.target.value }))}
                   />
-                  <DetailField
-                    label="Integration type"
-                    value={details.integrationName || "Not connected"}
-                  />
-                  <div>
-                    <p className="text-muted-foreground">Configuration status</p>
-                    <ApplicationStatusBadge
-                      status={details.integrationName ? "COMPLETED" : "PENDING"}
-                      label={details.integrationName ? "Configured" : "Not configured"}
-                    />
-                  </div>
                 </div>
-              </section>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="app-description">Description</Label>
+                  <Textarea
+                    id="app-description"
+                    value={form.description}
+                    disabled={editorMode === "view"}
+                    onChange={(e) => setForm((current) => ({ ...current, description: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="app-category">Category</Label>
+                  <Input
+                    id="app-category"
+                    value={form.category}
+                    disabled={editorMode === "view"}
+                    onChange={(e) => setForm((current) => ({ ...current, category: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="app-icon">Icon / Logo URL</Label>
+                  <Input
+                    id="app-icon"
+                    value={form.icon}
+                    disabled={editorMode === "view"}
+                    onChange={(e) => setForm((current) => ({ ...current, icon: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="app-url">Application Base URL</Label>
+                  <Input
+                    id="app-url"
+                    value={form.appUrl}
+                    disabled={editorMode === "view"}
+                    onChange={(e) => setForm((current) => ({ ...current, appUrl: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Integration Type</Label>
+                  <Select
+                    value={form.integrationName}
+                    disabled={editorMode === "view"}
+                    onValueChange={applyConnectorSchema}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select integration" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(connectors.length ? connectors : [{ code: "custom", displayName: "Custom / Other" }]).map((connector) => (
+                        <SelectItem key={connector.code} value={connector.code}>
+                          {connector.displayName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center justify-between rounded-md border px-3 py-2">
+                  <div>
+                    <p className="text-sm font-medium">Active</p>
+                    <p className="text-xs text-muted-foreground">Requires complete configuration</p>
+                  </div>
+                  <Switch
+                    checked={form.active}
+                    disabled={editorMode === "view"}
+                    onCheckedChange={(checked) => setForm((current) => ({ ...current, active: checked }))}
+                  />
+                </div>
+                <div className="flex items-center justify-between rounded-md border px-3 py-2">
+                  <div>
+                    <p className="text-sm font-medium">Essential application</p>
+                    <p className="text-xs text-muted-foreground">Reprovisioned when a user is reactivated</p>
+                  </div>
+                  <Switch
+                    checked={form.essential}
+                    disabled={editorMode === "view"}
+                    onCheckedChange={(checked) => setForm((current) => ({ ...current, essential: checked }))}
+                  />
+                </div>
+              </div>
+            )}
 
-              {details.integrationName ? (
-                <section className="space-y-3">
-                  <h3 className="font-semibold">Resources / Access</h3>
-                  {catalogError ? (
-                    <p className="text-destructive">{catalogError}</p>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-muted-foreground mb-2">
-                          Available {resourceFieldLabel(details.integrationName).toLowerCase()}s
-                        </p>
-                        {resources.length === 0 ? (
-                          <p className="text-muted-foreground">None returned by the backend.</p>
-                        ) : (
-                          <ul className="space-y-1 max-h-48 overflow-y-auto">
-                            {resources.map((resource) => (
-                              <li key={resource.id} className="rounded-md border px-3 py-2">
-                                {resource.name}
-                                {resource.key !== resource.name ? (
-                                  <span className="text-muted-foreground"> ({resource.key})</span>
-                                ) : null}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground mb-2">Roles</p>
-                        {roles.length === 0 ? (
-                          <p className="text-muted-foreground">None returned by the backend.</p>
-                        ) : (
-                          <ul className="space-y-1 max-h-48 overflow-y-auto">
-                            {roles.map((role) => (
-                              <li key={role.id} className="rounded-md border px-3 py-2">
-                                {role.name}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </section>
+            {selectedConnector && !selectedConnector.provisioningSupported && form.integrationName !== "custom" ? (
+              <p className="text-sm text-muted-foreground">
+                This integration can store credentials, but provisioning requires a registered connector.
+              </p>
+            ) : null}
+
+            <div className="space-y-3">
+              <h3 className="font-semibold">Integration configuration</h3>
+              {isCustomIntegration && editorMode !== "view" ? (
+                <ApplicationSchemaEditor
+                  schema={schema}
+                  onChange={(next) => {
+                    setSchema(next);
+                    setConfigValues((current) => {
+                      const retained: Record<string, string> = {};
+                      for (const field of next) {
+                        retained[field.key] = current[field.key] ?? "";
+                      }
+                      return retained;
+                    });
+                  }}
+                />
               ) : null}
+              <ApplicationConfigForm
+                schema={schema}
+                values={configValues}
+                secretsConfigured={secretsConfigured}
+                disabled={editorMode === "view"}
+                onChange={(key, value) => setConfigValues((current) => ({ ...current, [key]: value }))}
+              />
             </div>
-          )}
+          </div>
+          {editorMode !== "view" ? (
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditorOpen(false)}>Cancel</Button>
+              <Button onClick={persist} disabled={saving}>
+                {saving ? "Saving..." : "Save"}
+              </Button>
+            </DialogFooter>
+          ) : null}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deactivateApp} onOpenChange={(open) => !open && setDeactivateApp(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Deactivate {deactivateApp?.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              New provisioning will stop for this application. Existing users keep their current access.
+              Deactivation does not deprovision anyone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deactivateApp) {
+                  toggleStatus(deactivateApp, false);
+                  setDeactivateApp(null);
+                }
+              }}
+            >
+              Deactivate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!deleteApp} onOpenChange={(open) => !open && setDeleteApp(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {deleteApp?.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This is only allowed when the application has no user access history. Prefer deactivation if people already use it.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 };
@@ -384,11 +750,7 @@ export const ManageApplicationPage = () => {
 const EssentialBadge = ({ essential }: { essential: boolean }) => (
   <Badge
     variant="outline"
-    className={
-      essential
-        ? "bg-warning/10 text-warning border-warning/30"
-        : "text-muted-foreground"
-    }
+    className={essential ? "bg-warning/10 text-warning border-warning/30" : "text-muted-foreground"}
   >
     {essential ? (
       <>
@@ -399,19 +761,4 @@ const EssentialBadge = ({ essential }: { essential: boolean }) => (
       "Non-essential"
     )}
   </Badge>
-);
-
-const DetailField = ({
-  label,
-  value,
-  className,
-}: {
-  label: string;
-  value: string;
-  className?: string;
-}) => (
-  <div className={className}>
-    <p className="text-muted-foreground">{label}</p>
-    <p className="font-medium break-words">{value}</p>
-  </div>
 );

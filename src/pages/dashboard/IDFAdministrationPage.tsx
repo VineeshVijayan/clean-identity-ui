@@ -1,13 +1,12 @@
+import { Cloud, Database, LinkIcon } from "lucide-react";
 import { motion } from "framer-motion";
-import { Database, LinkIcon, AppWindow } from "lucide-react";
 import { useState } from "react";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AuthSourcesPage } from "./AuthSourcesPage";
-import { ConnectorsPage } from "./ConnectorsPage";
 
 export const IDFAdministrationPage = () => {
-  const [activeTab, setActiveTab] = useState("auth-sources");
+  const [activeTab, setActiveTab] = useState("auth-source");
 
   return (
     <motion.div
@@ -15,40 +14,38 @@ export const IDFAdministrationPage = () => {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
-      {/* Header */}
       <div className="flex items-center gap-3">
         <div className="p-2 rounded-lg bg-primary/10">
-          <AppWindow className="h-6 w-6 text-primary" />
+          <LinkIcon className="h-6 w-6 text-primary" />
         </div>
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-            Connector Administration
+            Connectors
           </h1>
           <p className="text-muted-foreground">
-            Manage the Azure directory, Odoo HR source, and outbound application connectors
+            Manage the identity directory used for authentication and the HR source used for employee data
           </p>
         </div>
       </div>
 
-      {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="w-full sm:w-auto">
-          <TabsTrigger value="auth-sources" className="gap-2">
-            <LinkIcon className="h-4 w-4" />
-            Identity & HR
+          <TabsTrigger value="auth-source" className="gap-2">
+            <Cloud className="h-4 w-4" />
+            Auth Source
           </TabsTrigger>
-          <TabsTrigger value="connectors" className="gap-2">
+          <TabsTrigger value="hr-tool" className="gap-2">
             <Database className="h-4 w-4" />
-            Outbound
+            HR Tool
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="auth-sources" className="mt-6">
-          <AuthSourcesPage />
+        <TabsContent value="auth-source" className="mt-6">
+          <AuthSourcesPage type="DIRECTORY" embedded />
         </TabsContent>
 
-        <TabsContent value="connectors" className="mt-6">
-          <ConnectorsPage />
+        <TabsContent value="hr-tool" className="mt-6">
+          <AuthSourcesPage type="HR" embedded />
         </TabsContent>
       </Tabs>
     </motion.div>
