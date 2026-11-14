@@ -1,4 +1,6 @@
 import { Header } from "@/components/layout/Header";
+import { isSettingEnabled, useSettings } from "@/context/SettingsContext";
+import { SETTING_KEYS, settingString } from "@/lib/platform-settings";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -18,6 +20,9 @@ const Register = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { settings } = useSettings();
+  const platformName = settingString(settings, SETTING_KEYS.displayName, "Identity Framework");
+  const allowSelfRegistration = isSettingEnabled(settings?.[SETTING_KEYS.allowSelfRegistration], true);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,22 +83,31 @@ const Register = () => {
                 <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
                 <img
                   src="/assets/Identity.png"
-                  alt="Identity Framework"
+                  alt={platformName}
                   className="relative w-16 h-16 rounded-2xl object-contain border border-primary/20 bg-white p-2"
                 />
               </div>
             </div>
 
 
-            {/* Header */}
             <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold mb-2">Create an account</h1>
+              <h1 className="text-2xl font-bold mb-2">
+                {allowSelfRegistration ? "Create an account" : "Registration is closed"}
+              </h1>
               <p className="text-muted-foreground">
-                Start securing your application today
+                {allowSelfRegistration
+                  ? `Start using ${platformName} today. An administrator still creates the live account.`
+                  : `${platformName} is not accepting self-service registration. Ask an administrator to create your account.`}
               </p>
             </div>
 
-            {/* Form */}
+            {!allowSelfRegistration ? (
+              <Button variant="hero" className="w-full" asChild>
+                <Link to="/login">Back to sign in</Link>
+              </Button>
+            ) : null}
+
+            {allowSelfRegistration && (
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
@@ -202,6 +216,7 @@ const Register = () => {
                 )}
               </Button>
             </form>
+            )}
 
             {/* Footer */}
             <p className="text-center text-sm text-muted-foreground mt-6">

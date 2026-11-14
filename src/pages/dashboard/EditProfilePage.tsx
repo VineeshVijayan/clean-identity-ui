@@ -20,6 +20,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CountryCodeSelect } from "@/components/ui/country-code-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { isSettingEnabled, useSettings } from "@/context/SettingsContext";
+import { SETTING_KEYS } from "@/lib/platform-settings";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { AppWindow, ArrowLeft, Camera, Plus, Save, Shield, Trash2, Upload, User, X } from "lucide-react";
@@ -143,6 +145,16 @@ export const EditProfilePage = () => {
   const isSuperAdmin = getUserRoles().some(
     (role) => role?.toLowerCase() === "super_admin"
   );
+  const { settings } = useSettings();
+  const roles = getUserRoles().map((role) => (role || "").toLowerCase());
+  const canAlwaysEditProfile = roles.some((role) =>
+    ["super_admin", "administration", "manager"].includes(role)
+  );
+  const allowSelfProfileUpdate = isSettingEnabled(
+    settings?.[SETTING_KEYS.allowProfileUpdate],
+    true
+  );
+  const profileLocked = isSelfEdit && !canAlwaysEditProfile && !allowSelfProfileUpdate;
   const userEmail = passedUser?.email || tokenUser?.sub;
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -500,6 +512,14 @@ export const EditProfilePage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
 
     e.preventDefault();
+    if (profileLocked) {
+      toast({
+        title: "Profile updates disabled",
+        description: "An administrator has turned off self-service profile updates.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     if (!validate()) {
       toast({
@@ -1233,8 +1253,13 @@ export const EditProfilePage = () => {
 
 
 
-        <motion.div variants={itemVariants} className="flex justify-end gap-3">
-          <Button type="submit" disabled={isLoading}>
+        <motion.div variants={itemVariants} className="flex flex-col items-end gap-2">
+          {profileLocked && (
+            <p className="text-sm text-muted-foreground">
+              Profile updates are disabled by the administrator.
+            </p>
+          )}
+          <Button type="submit" disabled={isLoading || profileLocked}>
             <Save className="h-4 w-4 mr-2" />
             {isLoading ? "Saving..." : "Save Profile"}
           </Button>

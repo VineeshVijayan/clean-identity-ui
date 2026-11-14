@@ -13,6 +13,11 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Check, CheckCircle2, FolderOpen, Plus, Save, Shield, ShieldAlert, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
+import {
+  buildCreateBlueprintPayload,
+  requiresJobTitles,
+  type BlueprintType,
+} from "@/lib/blueprint-create";
 import { composeBlueprintName, isEnabledCompany, resolveCompanyPrefix, stripRepeatedPrefix } from "@/lib/company-prefix";
 import { shouldOfferCreateJobTitle, toJobTitleOption } from "@/lib/job-title-picker";
 import { API_BASE_URL, applicationsListPath, identityFetch } from "@/services/api-config";
@@ -34,8 +39,6 @@ type IntegrationRole = {
   name: string;
   description?: string;
 };
-
-type BlueprintType = "global" | "company";
 
 type CompanyOption = {
   id: number;
@@ -230,6 +233,16 @@ export const NewRolePage = () => {
     }
 
 
+    if (requiresJobTitles(blueprintType) && selectedJobs.length === 0) {
+      setJobTitleError("Job title is required");
+      toast({
+        title: "Error",
+        description: "Select at least one job title",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (blueprintApps.length === 0) {
       toast({
         title: "Error",
@@ -242,20 +255,16 @@ export const NewRolePage = () => {
     try {
       const token = localStorage.getItem("auth-token");
 
-      const payload = {
+      const payload = buildCreateBlueprintPayload({
         name: enteredName,
-        ...(blueprintType === "company" && selectedCompanyId
-          ? { companyId: Number(selectedCompanyId) }
-          : {}),
-        jobTitleIds: selectedJobs.map((id) => Number(id)), // ✅ convert to Long
-        applications:
-          blueprintApps.map((app) => ({
-            applicationId:
-              Number(app.id),
-
-            roles: app.roles,
-          })),
-      };
+        blueprintType,
+        companyId: selectedCompanyId,
+        jobTitleIds: selectedJobs.map((id) => Number(id)),
+        applications: blueprintApps.map((app) => ({
+          applicationId: Number(app.id),
+          roles: app.roles,
+        })),
+      });
 
       const res = await fetch(`${API_BASE_URL}/blueprints`, {
         method: "POST",
@@ -533,6 +542,8 @@ export const NewRolePage = () => {
                 if (nextType === "global") {
                   setSelectedCompanyId("");
                   setCompanyError("");
+                } else {
+                  setJobTitleError("");
                 }
               }}
               className="flex flex-col sm:flex-row gap-3 sm:gap-6"
@@ -582,7 +593,7 @@ export const NewRolePage = () => {
               )}
             </div>
           )}
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className={blueprintType === "global" ? "grid gap-4 sm:grid-cols-2" : "grid gap-4"}>
             <div className="space-y-2">
               <Label htmlFor="roleName">Blueprint Name *</Label>
               <div className="flex">
@@ -616,6 +627,7 @@ export const NewRolePage = () => {
                 <p className="text-sm text-red-500">{roleNameError}</p>
               )}
             </div>
+            {blueprintType === "global" && (
             <div className="space-y-2">
               <Label>Job Titles</Label>
 
@@ -713,6 +725,7 @@ export const NewRolePage = () => {
                 })}
               </div>
             </div>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="roleDescription">Description</Label>

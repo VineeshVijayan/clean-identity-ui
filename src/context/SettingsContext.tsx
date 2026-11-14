@@ -1,5 +1,6 @@
 import { identityFetch } from "@/services/api-config";
 import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
+import { SETTING_KEYS, settingString } from "@/lib/platform-settings";
 import { createContext, useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -23,34 +24,49 @@ export const isSettingEnabled = (value: unknown, defaultValue = true): boolean =
 
 const SettingsContext = createContext<any>(null);
 
+const applyDocumentTitle = (settings: Record<string, unknown>) => {
+  const name = settingString(settings, SETTING_KEYS.displayName, "Identity Framework");
+  if (typeof document !== "undefined") {
+    document.title = name;
+  }
+};
+
 export const SettingsProvider = ({ children }: any) => {
   const [settings, setSettings] = useState<any>({});
   const [loading, setLoading] = useState(true);
 
-  const fetchSettings = async () => {
-    const res = await identityFetch("/settings");
-
+  const fetchPublicSettings = async () => {
+    const res = await identityFetch("/settings/public", { skipAuth: true, skipLoader: true });
     if (!res.ok) {
       const body = await readResponseBody(res);
       throw new Error(getApiErrorMessage(body, "Failed to load settings"));
     }
-
     const data = await res.json();
-
-    setSettings(normalizeSettings(data));
-
     return normalizeSettings(data);
   };
 
-  useEffect(() => {
-
+  const fetchSettings = async () => {
+    const publicSettings = await fetchPublicSettings().catch(() => ({}));
     const token = localStorage.getItem("auth-token");
-
     if (!token) {
-      setLoading(false);
-      return;
+      setSettings(publicSettings);
+      applyDocumentTitle(publicSettings);
+      return publicSettings;
     }
 
+    const res = await identityFetch("/settings");
+    if (!res.ok) {
+      const body = await readResponseBody(res);
+      throw new Error(getApiErrorMessage(body, "Failed to load settings"));
+    }
+    const data = await res.json();
+    const merged = { ...publicSettings, ...normalizeSettings(data) };
+    setSettings(merged);
+    applyDocumentTitle(merged);
+    return merged;
+  };
+
+  useEffect(() => {
     const loadSettings = async () => {
       try {
         await fetchSettings();
@@ -63,7 +79,6 @@ export const SettingsProvider = ({ children }: any) => {
     };
 
     loadSettings();
-
   }, []);
 
   return (

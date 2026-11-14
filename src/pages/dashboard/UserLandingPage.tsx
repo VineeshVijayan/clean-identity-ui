@@ -1,7 +1,16 @@
+import { useSettings } from "@/context/SettingsContext";
+import { SETTING_KEYS, settingString } from "@/lib/platform-settings";
 import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 
 export const UserLandingPage = () => {
+  const { settings } = useSettings();
+  const welcome = settingString(
+    settings,
+    SETTING_KEYS.welcomeMessage,
+    "This is your personal landing page. More features and updates will be available here soon."
+  );
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -13,10 +22,7 @@ export const UserLandingPage = () => {
           <Sparkles className="h-7 w-7 text-primary" />
         </div>
         <h1 className="text-3xl font-bold">Welcome</h1>
-        <p className="text-muted-foreground">
-          This is your personal landing page. More features and updates will be
-          available here soon.
-        </p>
+        <p className="text-muted-foreground">{welcome}</p>
       </div>
     </motion.div>
   );

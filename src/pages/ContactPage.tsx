@@ -22,8 +22,10 @@ import {
 } from "@/components/ui/select";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useSettings } from "@/context/SettingsContext";
+import { SETTING_KEYS, settingString } from "@/lib/platform-settings";
 
-const contactInfo = [
+const defaultContactInfo = [
   {
     icon: Mail,
     title: "Email Us",
@@ -54,6 +56,12 @@ const offices = [
 export const ContactPage = () => {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { settings } = useSettings();
+  const platformName = settingString(settings, SETTING_KEYS.displayName, "Identity Framework");
+  const supportEmail = settingString(settings, SETTING_KEYS.supportEmail, "support@identityframework.com");
+  const contactInfo = defaultContactInfo.map((item, index) =>
+    index === 0 ? { ...item, details: supportEmail || item.details } : item
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,7 +90,7 @@ export const ContactPage = () => {
               Get in <span className="text-primary">Touch</span>
             </h1>
             <p className="text-lg text-muted-foreground">
-              Have questions about Identity Framework? We're here to help.
+              Have questions about {platformName}? We're here to help.
               Reach out and we'll get back to you as soon as possible.
             </p>
           </motion.div>

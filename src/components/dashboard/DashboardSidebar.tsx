@@ -9,6 +9,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useSettings, isSettingEnabled } from "@/context/SettingsContext";
+import { parseSidebarIcons, SETTING_KEYS, settingString, splitBrandName } from "@/lib/platform-settings";
+import { sidebarIcon } from "@/lib/sidebar-icons";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -73,6 +75,8 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [customLogo, setCustomLogo] = useState<string | null>(null);
   const { settings } = useSettings();
+  const brand = splitBrandName(settingString(settings, SETTING_KEYS.displayName, "Identity Framework"));
+  const savedIcons = parseSidebarIcons(settings);
 
   useEffect(() => {
     // Load saved logo on mount
@@ -119,7 +123,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
   // Base menu items
   const dashboardItem: MenuItem = {
     label: "Dashboard",
-    icon: LayoutDashboard,
+    icon: sidebarIcon(savedIcons.dashboard, LayoutDashboard),
     href: "/dashboard",
   };
 
@@ -132,7 +136,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
 
   const userManagementItem: MenuItem = {
     label: "My Team",
-    icon: Home,
+    icon: sidebarIcon(savedIcons.users, Home),
     href: "/users",
     // submenu: [
     //   { label: "My Team", href: "/users", icon: Users },
@@ -144,7 +148,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
 
   const userManagementBasic: MenuItem = {
     label: "My Team",
-    icon: Home,
+    icon: sidebarIcon(savedIcons.users, Home),
     href: "/users",
     // submenu: [
     //   { label: "My Team", href: "/users", icon: Users },
@@ -154,7 +158,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
 
   const roleBasedAccess: MenuItem = {
     label: "Position Blueprints",
-    icon: ShieldCheck,
+    icon: sidebarIcon(savedIcons.roles, ShieldCheck),
     submenu: [
       { label: "New Blueprint", href: "/roles/new", icon: Key },
       { label: "Manage Blueprints", href: "/roles/manage", icon: Settings },
@@ -163,7 +167,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
 
   const idfAdministration: MenuItem = {
     label: "Toolbox",
-    icon: Database,
+    icon: sidebarIcon(savedIcons.admin, Database),
     submenu: [
       { label: "User Administration", href: "/admin/user-administration", icon: ShieldCheck },
       { label: "User Sync", href: "/admin/user-sync", icon: RefreshCw },
@@ -175,7 +179,7 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
 
   const reporting: MenuItem = {
     label: "Reports",
-    icon: ClipboardList,
+    icon: sidebarIcon(savedIcons.reports, ClipboardList),
     href: "/reports",
     // submenu: [
     //   { label: "View Reports", href: "/reports", icon: ClipboardList },
@@ -353,11 +357,12 @@ export const DashboardSidebar = ({ open, onClose, roles, onLogout }: SidebarProp
           <Link to="/dashboard" className="flex items-center gap-3">
             <img
               src={customLogo || "/assets/Identity.png"}
-              alt="Identity Framework"
+              alt={brand.lead + brand.accent}
               className="w-8 h-8 object-contain rounded"
             />
             <span className="text-lg font-bold text-white">
-              Identity<span className="text-sidebar-primary">Framework</span>
+              {brand.lead}
+              {brand.accent ? <span className="text-sidebar-primary">{brand.accent}</span> : null}
             </span>
           </Link>
 

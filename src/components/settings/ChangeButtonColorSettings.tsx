@@ -4,11 +4,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/hooks/use-toast";
+import { getErrorFromCatch } from "@/lib/api-errors";
+import {
+  BUTTON_COLOR_KEYS,
+  buttonColorSelections,
+  DEFAULT_BUTTON_COLORS,
+  appearanceButtonColorsJson,
+  parseButtonColors,
+  SETTING_KEYS,
+  setPendingButtonColor,
+  setPendingButtonColors,
+  writeLocalButtonConfigs,
+  type ButtonColorConfig,
+  type ButtonColorKey,
+} from "@/lib/platform-settings";
+import { saveUiSettings } from "@/services/settings-api";
 import { Check, Palette, RotateCcw } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-/* ---------- Color Presets ---------- */
 const colorPresets = [
   { id: 1, name: "Identity Blue", primary: "#333366", border: "#333366" },
   { id: 2, name: "Ocean", primary: "#005d90", border: "#005d90" },
@@ -18,40 +33,27 @@ const colorPresets = [
   { id: 6, name: "Slate", primary: "#334155", border: "#334155" },
 ];
 
-interface ButtonConfig {
-  bgColor: string;
-  borderColor: string;
-  borderRadius: number[];
-}
-
-const defaultConfigs: Record<string, ButtonConfig> = {
-  btn1: { bgColor: "#333366", borderColor: "#333366", borderRadius: [8] },
-  btn2: { bgColor: "#f58b1f", borderColor: "#f58b1f", borderRadius: [8] },
-  btn3: { bgColor: "#cf2027", borderColor: "#cf2027", borderRadius: [8] },
-};
-
-const BUTTON_LABELS: Record<string, string> = {
+const BUTTON_LABELS: Record<ButtonColorKey, string> = {
   btn1: "Button One – Create User",
   btn2: "Button Two – My Requests",
   btn3: "Button Three – My Approvals",
 };
 
-const loadConfig = (key: string): ButtonConfig => {
-  try {
-    const saved = localStorage.getItem(`buttonConfig_${key}`);
-    if (saved) return JSON.parse(saved);
-  } catch { /* ignore */ }
-  return defaultConfigs[key];
-};
-
-const saveConfig = (key: string, config: ButtonConfig) => {
-  localStorage.setItem(`buttonConfig_${key}`, JSON.stringify(config));
-};
-
-/* ---------- Single Button Editor ---------- */
-const ButtonEditor = ({ btnKey }: { btnKey: string }) => {
-  const { toast } = useToast();
-  const [config, setConfig] = useState<ButtonConfig>(() => loadConfig(btnKey));
+const ButtonEditor = ({
+  btnKey,
+  config,
+  saving,
+  onChange,
+  onApply,
+  onReset,
+}: {
+  btnKey: ButtonColorKey;
+  config: ButtonColorConfig;
+  saving: boolean;
+  onChange: (config: ButtonColorConfig) => void;
+  onApply: () => void;
+  onReset: () => void;
+}) => {
   const [selectedPreset, setSelectedPreset] = useState<number | null>(null);
 
   useEffect(() => {
@@ -61,32 +63,14 @@ const ButtonEditor = ({ btnKey }: { btnKey: string }) => {
     setSelectedPreset(match ? match.id : null);
   }, [config.bgColor]);
 
-  const handlePresetSelect = (preset: typeof colorPresets[0]) => {
+  const handlePresetSelect = (preset: (typeof colorPresets)[0]) => {
     setSelectedPreset(preset.id);
-    setConfig((prev) => ({ ...prev, bgColor: preset.primary, borderColor: preset.border }));
-  };
-
-  const handleApply = () => {
-    saveConfig(btnKey, config);
-    window.dispatchEvent(new Event("buttonStyleChanged"));
-    toast({
-      title: "Changes Applied",
-      description: `${BUTTON_LABELS[btnKey]} styles updated.`,
-    });
-  };
-
-  const handleReset = () => {
-    const def = defaultConfigs[btnKey];
-    setConfig(def);
-    saveConfig(btnKey, def);
-    window.dispatchEvent(new Event("buttonStyleChanged"));
-    toast({ title: "Reset Successful", description: `${BUTTON_LABELS[btnKey]} reset to defaults.` });
+    onChange({ ...config, bgColor: preset.primary, borderColor: preset.border });
   };
 
   return (
     <div className="space-y-6">
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Color Presets */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Color Presets</CardTitle>
@@ -119,52 +103,48 @@ const ButtonEditor = ({ btnKey }: { btnKey: string }) => {
           </CardContent>
         </Card>
 
-        {/* Custom Styling */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Button Styling</CardTitle>
             <CardDescription>Customize colors and shape</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
-            {/* Background Color */}
             <div className="space-y-2">
               <Label>Background Color</Label>
               <div className="flex gap-3 items-center">
                 <input
                   type="color"
                   value={config.bgColor}
-                  onChange={(e) => setConfig((prev) => ({ ...prev, bgColor: e.target.value }))}
+                  onChange={(e) => onChange({ ...config, bgColor: e.target.value })}
                   className="w-10 h-9 rounded cursor-pointer border border-border"
                 />
                 <Input
                   value={config.bgColor}
-                  onChange={(e) => setConfig((prev) => ({ ...prev, bgColor: e.target.value }))}
+                  onChange={(e) => onChange({ ...config, bgColor: e.target.value })}
                   placeholder="#333366"
                   className="flex-1"
                 />
               </div>
             </div>
 
-            {/* Border Color */}
             <div className="space-y-2">
               <Label>Border Color</Label>
               <div className="flex gap-3 items-center">
                 <input
                   type="color"
                   value={config.borderColor}
-                  onChange={(e) => setConfig((prev) => ({ ...prev, borderColor: e.target.value }))}
+                  onChange={(e) => onChange({ ...config, borderColor: e.target.value })}
                   className="w-10 h-9 rounded cursor-pointer border border-border"
                 />
                 <Input
                   value={config.borderColor}
-                  onChange={(e) => setConfig((prev) => ({ ...prev, borderColor: e.target.value }))}
+                  onChange={(e) => onChange({ ...config, borderColor: e.target.value })}
                   placeholder="#333366"
                   className="flex-1"
                 />
               </div>
             </div>
 
-            {/* Border Radius */}
             <div className="space-y-2">
               <div className="flex justify-between">
                 <Label>Border Radius</Label>
@@ -172,13 +152,12 @@ const ButtonEditor = ({ btnKey }: { btnKey: string }) => {
               </div>
               <Slider
                 value={config.borderRadius}
-                onValueChange={(val) => setConfig((prev) => ({ ...prev, borderRadius: val }))}
+                onValueChange={(val) => onChange({ ...config, borderRadius: val })}
                 max={24}
                 step={1}
               />
             </div>
 
-            {/* Preview */}
             <div className="space-y-2">
               <Label>Preview</Label>
               <div className="flex gap-3 p-4 bg-muted rounded-lg">
@@ -210,13 +189,12 @@ const ButtonEditor = ({ btnKey }: { btnKey: string }) => {
         </Card>
       </div>
 
-      {/* Actions */}
       <div className="flex gap-3">
-        <Button onClick={handleApply}>
+        <Button onClick={onApply} disabled={saving}>
           <Check className="h-4 w-4 mr-2" />
           Apply Changes
         </Button>
-        <Button variant="outline" onClick={handleReset}>
+        <Button variant="outline" onClick={onReset} disabled={saving}>
           <RotateCcw className="h-4 w-4 mr-2" />
           Reset to Default
         </Button>
@@ -225,11 +203,72 @@ const ButtonEditor = ({ btnKey }: { btnKey: string }) => {
   );
 };
 
-/* ---------- Main Component ---------- */
 export const ChangeButtonColorSettings = () => {
+  const { settings, setSettings, fetchSettings } = useSettings();
+  const { toast } = useToast();
+  const [saving, setSaving] = useState(false);
+  const hydrated = useRef(false);
+  const [configs, setConfigs] = useState<Record<ButtonColorKey, ButtonColorConfig>>(() =>
+    buttonColorSelections(settings)
+  );
+
+  useEffect(() => {
+    if (hydrated.current) return;
+    if (!settings || Object.keys(settings).length === 0) return;
+    setConfigs(buttonColorSelections(settings));
+    hydrated.current = true;
+  }, [settings]);
+
+  const updateConfig = (btnKey: ButtonColorKey, config: ButtonColorConfig) => {
+    setConfigs((prev) => ({ ...prev, [btnKey]: config }));
+    setPendingButtonColor(btnKey, config);
+  };
+
+  const persist = async (
+    next: Partial<Record<ButtonColorKey, ButtonColorConfig>>,
+    description: string
+  ) => {
+    setSaving(true);
+    try {
+      const payload = JSON.stringify(next);
+      writeLocalButtonConfigs(next);
+      setPendingButtonColors(next);
+      await saveUiSettings({ [SETTING_KEYS.buttonColors]: payload });
+      setSettings((prev: Record<string, unknown>) => ({
+        ...prev,
+        [SETTING_KEYS.buttonColors]: payload,
+      }));
+      window.dispatchEvent(new Event("buttonStyleChanged"));
+      await fetchSettings?.();
+      toast({ title: "Changes Applied", description });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: getErrorFromCatch(err, "Failed to save button colors"),
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleApply = (btnKey: ButtonColorKey) => {
+    setPendingButtonColor(btnKey, configs[btnKey]);
+    const next = parseButtonColors({
+      [SETTING_KEYS.buttonColors]: appearanceButtonColorsJson(settings),
+    });
+    void persist(next, `${BUTTON_LABELS[btnKey]} styles updated.`);
+  };
+
+  const handleReset = (btnKey: ButtonColorKey) => {
+    const resetConfig = DEFAULT_BUTTON_COLORS[btnKey];
+    setConfigs((prev) => ({ ...prev, [btnKey]: resetConfig }));
+    const next = { ...parseButtonColors(settings), [btnKey]: resetConfig };
+    void persist(next, `${BUTTON_LABELS[btnKey]} reset to defaults.`);
+  };
+
   return (
     <div className="space-y-6">
-      {/* Page Title */}
       <div>
         <div className="flex items-center gap-3">
           <Palette className="h-6 w-6 text-primary" />
@@ -240,22 +279,26 @@ export const ChangeButtonColorSettings = () => {
         </p>
       </div>
 
-      {/* Tabs per button */}
       <Tabs defaultValue="btn1" className="w-full">
         <TabsList className="mb-4">
-          <TabsTrigger value="btn1">Button One</TabsTrigger>
-          <TabsTrigger value="btn2">Button Two</TabsTrigger>
-          <TabsTrigger value="btn3">Button Three</TabsTrigger>
+          {BUTTON_COLOR_KEYS.map((key) => (
+            <TabsTrigger key={key} value={key}>
+              {key === "btn1" ? "Button One" : key === "btn2" ? "Button Two" : "Button Three"}
+            </TabsTrigger>
+          ))}
         </TabsList>
-        <TabsContent value="btn1">
-          <ButtonEditor btnKey="btn1" />
-        </TabsContent>
-        <TabsContent value="btn2">
-          <ButtonEditor btnKey="btn2" />
-        </TabsContent>
-        <TabsContent value="btn3">
-          <ButtonEditor btnKey="btn3" />
-        </TabsContent>
+        {BUTTON_COLOR_KEYS.map((key) => (
+          <TabsContent key={key} value={key}>
+            <ButtonEditor
+              btnKey={key}
+              config={configs[key]}
+              saving={saving}
+              onChange={(config) => updateConfig(key, config)}
+              onApply={() => handleApply(key)}
+              onReset={() => handleReset(key)}
+            />
+          </TabsContent>
+        ))}
       </Tabs>
     </div>
   );

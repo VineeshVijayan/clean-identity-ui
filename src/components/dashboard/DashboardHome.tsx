@@ -1,7 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import { useSettings } from "@/context/SettingsContext";
 import { getErrorFromCatch } from "@/lib/api-errors";
+import {
+  parseButtonColors,
+  readLocalButtonConfig,
+  SETTING_KEYS,
+  type ButtonColorConfig,
+  type ButtonColorKey,
+} from "@/lib/platform-settings";
 import {
   getAccessTrend,
   getActivity,
@@ -45,25 +53,31 @@ const tooltipStyle = {
   borderRadius: "8px",
 };
 
-/** Read per-button config from localStorage (set via IDF Settings) */
-interface BtnConfig { bgColor: string; borderColor: string; borderRadius: number[] }
-const DEFAULT_CONFIGS: Record<string, BtnConfig> = {
+const FALLBACK_BUTTON_COLORS: Record<ButtonColorKey, ButtonColorConfig> = {
   btn1: { bgColor: "hsl(220, 26%, 20%)", borderColor: "hsl(220, 26%, 20%)", borderRadius: [8] },
   btn2: { bgColor: "hsl(36, 80%, 48%)", borderColor: "hsl(36, 80%, 48%)", borderRadius: [8] },
   btn3: { bgColor: "hsl(0, 72%, 51%)", borderColor: "hsl(0, 72%, 51%)", borderRadius: [8] },
 };
-const loadBtnStyle = (key: string): React.CSSProperties => {
-  try {
-    const saved = localStorage.getItem(`buttonConfig_${key}`);
-    if (saved) {
-      const c: BtnConfig = JSON.parse(saved);
-      return { backgroundColor: c.bgColor, borderColor: c.borderColor, borderRadius: `${c.borderRadius[0]}px`, borderWidth: "2px", borderStyle: "solid" };
-    }
-  } catch { /* ignore */ }
-  const def = DEFAULT_CONFIGS[key];
-  return { backgroundColor: def.bgColor, borderColor: def.borderColor, borderRadius: `${def.borderRadius[0]}px` };
-};
-const getAllBtnStyles = () => ({ btn1: loadBtnStyle("btn1"), btn2: loadBtnStyle("btn2"), btn3: loadBtnStyle("btn3") });
+
+const toBtnStyle = (config: ButtonColorConfig): React.CSSProperties => ({
+  backgroundColor: config.bgColor,
+  borderColor: config.borderColor,
+  borderRadius: `${config.borderRadius[0]}px`,
+  borderWidth: "2px",
+  borderStyle: "solid",
+});
+
+const resolveBtnConfig = (
+  settings: Record<string, unknown> | undefined,
+  key: ButtonColorKey
+): ButtonColorConfig =>
+  parseButtonColors(settings)[key] ?? readLocalButtonConfig(key) ?? FALLBACK_BUTTON_COLORS[key];
+
+const getAllBtnStyles = (settings?: Record<string, unknown>) => ({
+  btn1: toBtnStyle(resolveBtnConfig(settings, "btn1")),
+  btn2: toBtnStyle(resolveBtnConfig(settings, "btn2")),
+  btn3: toBtnStyle(resolveBtnConfig(settings, "btn3")),
+});
 
 const formatCount = (value: number) => value.toLocaleString();
 
@@ -115,7 +129,8 @@ const AccessMetric = ({
 export const DashboardHome = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [btnStyles, setBtnStyles] = useState(getAllBtnStyles());
+  const { settings } = useSettings();
+  const [btnStyles, setBtnStyles] = useState(() => getAllBtnStyles(settings));
   const [loading, setLoading] = useState(true);
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
   const [trend, setTrend] = useState<AccessTrendPoint[]>([]);
@@ -123,10 +138,14 @@ export const DashboardHome = () => {
   const [activity, setActivity] = useState<ActivityEvent[]>([]);
 
   useEffect(() => {
-    const handler = () => setBtnStyles(getAllBtnStyles());
+    setBtnStyles(getAllBtnStyles(settings));
+  }, [settings?.[SETTING_KEYS.buttonColors]]);
+
+  useEffect(() => {
+    const handler = () => setBtnStyles(getAllBtnStyles(settings));
     window.addEventListener("buttonStyleChanged", handler);
     return () => window.removeEventListener("buttonStyleChanged", handler);
-  }, []);
+  }, [settings]);
 
   useEffect(() => {
     let cancelled = false;

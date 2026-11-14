@@ -1,4 +1,6 @@
 import { Button } from "@/components/ui/button";
+import { isSettingEnabled, useSettings } from "@/context/SettingsContext";
+import { SETTING_KEYS, settingString, splitBrandName } from "@/lib/platform-settings";
 import { motion } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
@@ -14,6 +16,9 @@ const navLinks = [
 export const Header = () => {
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { settings } = useSettings();
+  const brand = splitBrandName(settingString(settings, SETTING_KEYS.displayName, "Identity Framework"));
+  const allowSelfRegistration = isSettingEnabled(settings?.[SETTING_KEYS.allowSelfRegistration], true);
 
   const isAuthPage =
     location.pathname === "/login" ||
@@ -34,14 +39,15 @@ export const Header = () => {
           <Link to="/" className="flex items-center gap-2 group">
             <div className="relative">
               <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full group-hover:bg-primary/30 transition-colors" />
-              <img
+                <img
                 src="/assets/Identity.png"
-                alt="Identity Framework"
+                alt={brand.lead + brand.accent}
                 className="relative h-8 w-8 object-contain rounded"
               />
             </div>
             <span className="text-xl font-bold tracking-tight">
-              Identity<span className="text-primary">Framework</span>
+              {brand.lead}
+              {brand.accent ? <span className="text-primary">{brand.accent}</span> : null}
             </span>
           </Link>
 
@@ -83,9 +89,11 @@ export const Header = () => {
                 <Button variant="ghost" asChild>
                   <Link to="/login">Sign In</Link>
                 </Button>
-                <Button variant="hero" size="sm" asChild>
-                  <Link to="/register">Get Started</Link>
-                </Button>
+                {allowSelfRegistration && (
+                  <Button variant="hero" size="sm" asChild>
+                    <Link to="/register">Get Started</Link>
+                  </Button>
+                )}
               </div>
             </>
           )}
@@ -125,9 +133,11 @@ export const Header = () => {
               <Button variant="ghost" asChild>
                 <Link to="/login" onClick={() => setMobileMenuOpen(false)}>Sign In</Link>
               </Button>
-              <Button variant="hero" asChild>
-                <Link to="/register" onClick={() => setMobileMenuOpen(false)}>Get Started</Link>
-              </Button>
+              {allowSelfRegistration && (
+                <Button variant="hero" asChild>
+                  <Link to="/register" onClick={() => setMobileMenuOpen(false)}>Get Started</Link>
+                </Button>
+              )}
             </div>
           </nav>
         </motion.div>

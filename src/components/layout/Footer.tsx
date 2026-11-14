@@ -1,3 +1,5 @@
+import { useSettings } from "@/context/SettingsContext";
+import { SETTING_KEYS, settingString, splitBrandName } from "@/lib/platform-settings";
 import { Github, Linkedin, Shield, Twitter } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -31,6 +33,9 @@ const footerLinks = {
 };
 
 export const Footer = () => {
+  const { settings } = useSettings();
+  const platformName = settingString(settings, SETTING_KEYS.displayName, "Identity Framework");
+  const brand = splitBrandName(platformName);
   return (
     <footer className="border-t border-border bg-card/30">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -40,7 +45,8 @@ export const Footer = () => {
             <Link to="/" className="flex items-center gap-2 mb-4">
               <Shield className="h-7 w-7 text-primary" />
               <span className="text-lg font-bold">
-                Identity<span className="text-primary">Framework</span>
+                {brand.lead}
+                {brand.accent ? <span className="text-primary">{brand.accent}</span> : null}
               </span>
             </Link>
             <p className="text-sm text-muted-foreground mb-4">
@@ -113,7 +119,7 @@ export const Footer = () => {
 
         <div className="border-t border-border mt-12 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            © 2025 Identity Framework. All rights reserved.
+            © 2025 {platformName}. All rights reserved.
           </p>
           <span className="footer-text crafted-by">
             Crafted by

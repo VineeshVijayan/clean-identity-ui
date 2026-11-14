@@ -8,60 +8,21 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useSettings } from "@/context/SettingsContext";
+import { isSettingEnabled, useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/hooks/use-toast";
-import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
-import type { LucideIcon } from "lucide-react";
+import { getErrorFromCatch } from "@/lib/api-errors";
 import {
-  BarChart3,
-  Bell,
-  Briefcase,
-  Calendar,
-  Check,
-  Database,
-  FileText,
-  Folder,
-  Globe,
-  Heart,
-  Home,
-  Image,
-  Key,
-  Layers,
-  Lock,
-  Mail,
-  Settings,
-  Shield,
-  Upload,
-  UserCog,
-  Users,
-  X,
-  Zap,
-} from "lucide-react";
-import { API_BASE_URL } from "@/services/api-config";
-import { useRef, useState } from "react";
+  DEFAULT_SIDEBAR_ICONS,
+  SETTING_KEYS,
+  sidebarIconSelections,
+} from "@/lib/platform-settings";
+import { SIDEBAR_ICON_OPTIONS, sidebarIcon } from "@/lib/sidebar-icons";
+import { saveUiSettings } from "@/services/settings-api";
+import type { LucideIcon } from "lucide-react";
+import { Check, Home, Image, Upload, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
-/* ---------- Available Icons ---------- */
-const availableIcons: { name: string; icon: LucideIcon }[] = [
-  { name: "Home", icon: Home },
-  { name: "Users", icon: Users },
-  { name: "Shield", icon: Shield },
-  { name: "Settings", icon: Settings },
-  { name: "FileText", icon: FileText },
-  { name: "Database", icon: Database },
-  { name: "Key", icon: Key },
-  { name: "BarChart3", icon: BarChart3 },
-  { name: "Briefcase", icon: Briefcase },
-  { name: "Globe", icon: Globe },
-  { name: "Lock", icon: Lock },
-  { name: "UserCog", icon: UserCog },
-  { name: "Folder", icon: Folder },
-  { name: "Bell", icon: Bell },
-  { name: "Mail", icon: Mail },
-  { name: "Calendar", icon: Calendar },
-  { name: "Layers", icon: Layers },
-  { name: "Zap", icon: Zap },
-  { name: "Heart", icon: Heart },
-];
+const availableIcons = SIDEBAR_ICON_OPTIONS;
 
 /* ---------- Sidebar Items ---------- */
 const sidebarItems = [
@@ -74,37 +35,44 @@ const sidebarItems = [
 
 export const ChangeSidebarIconSettings = () => {
 
-  const { settings, setSettings } = useSettings();
+  const { settings, setSettings, fetchSettings } = useSettings();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("sidebar-icons");
+  const [saving, setSaving] = useState(false);
+  const hydrated = useRef(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedItem, setSelectedItem] = useState<string | null>(null);
+  const [iconSelections, setIconSelections] = useState<Record<string, string>>(
+    () => sidebarIconSelections(settings)
+  );
+
+  useEffect(() => {
+    if (hydrated.current) return;
+    if (!settings || Object.keys(settings).length === 0) return;
+    setIconSelections(sidebarIconSelections(settings));
+    hydrated.current = true;
+  }, [settings]);
+
+  const persistIcons = (icons: Record<string, string>) => {
+    const payload = JSON.stringify(icons);
+    setSettings((prev: Record<string, unknown>) => ({
+      ...prev,
+      [SETTING_KEYS.sidebarIcons]: payload,
+    }));
+  };
 
   const handleSaveAll = async () => {
-    const token = localStorage.getItem("auth-token");
+    setSaving(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/settings`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: token ? `Bearer ${token}` : "",
-        },
-        body: JSON.stringify({
-          SHOW_COMPANY_MENU: String(settings.SHOW_COMPANY_MENU),
-        }),
+      await saveUiSettings({
+        SHOW_COMPANY_MENU: String(isSettingEnabled(settings.SHOW_COMPANY_MENU, true)),
+        [SETTING_KEYS.sidebarIcons]: JSON.stringify(iconSelections),
       });
-
-      if (!res.ok) {
-        const body = await readResponseBody(res);
-        toast({
-          title: "Error",
-          description: getApiErrorMessage(body, "Failed to save settings"),
-          variant: "destructive",
-        });
-        return;
-      }
-
+      persistIcons(iconSelections);
+      await fetchSettings?.();
       toast({
         title: "Settings Saved",
-        description: "All IDF settings have been saved successfully.",
+        description: "Sidebar icons have been saved.",
       });
     } catch (err) {
       toast({
@@ -112,17 +80,10 @@ export const ChangeSidebarIconSettings = () => {
         description: getErrorFromCatch(err, "Failed to save settings"),
         variant: "destructive",
       });
+    } finally {
+      setSaving(false);
     }
   };
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const [selectedItem, setSelectedItem] = useState<string | null>(null);
-  const [iconSelections, setIconSelections] = useState<Record<string, string>>(
-    () =>
-      Object.fromEntries(
-        sidebarItems.map((item) => [item.id, item.defaultIcon])
-      )
-  );
 
   // Custom logo state
   const [customLogo, setCustomLogo] = useState<string | null>(() => {
@@ -131,14 +92,14 @@ export const ChangeSidebarIconSettings = () => {
   const [logoUrl, setLogoUrl] = useState("");
   const [previewLogo, setPreviewLogo] = useState<string | null>(null);
 
-  const getIconComponent = (iconName: string): LucideIcon =>
-    availableIcons.find((i) => i.name === iconName)?.icon || Home;
+  const getIconComponent = (iconName: string): LucideIcon => sidebarIcon(iconName, Home);
 
   const handleIconChange = (itemId: string, iconName: string) => {
-    setIconSelections((prev) => ({
-      ...prev,
-      [itemId]: iconName,
-    }));
+    setIconSelections((prev) => {
+      const next = { ...prev, [itemId]: iconName };
+      persistIcons(next);
+      return next;
+    });
   };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -198,25 +159,31 @@ export const ChangeSidebarIconSettings = () => {
     });
   };
 
-  const handleSave = () => {
-    toast({
-      title: "Sidebar Icon Updated",
-      description: "Your sidebar icon settings have been saved.",
-    });
-  };
-
-  const handleReset = () => {
-    setIconSelections(
-      Object.fromEntries(
-        sidebarItems.map((item) => [item.id, item.defaultIcon])
-      )
-    );
+  const handleReset = async () => {
+    const defaults = { ...DEFAULT_SIDEBAR_ICONS };
+    setIconSelections(defaults);
     setSelectedItem(null);
     handleRemoveLogo();
-    toast({
-      title: "Reset Successful",
-      description: "Sidebar icons restored to default.",
-    });
+    persistIcons(defaults);
+    setSaving(true);
+    try {
+      await saveUiSettings({
+        [SETTING_KEYS.sidebarIcons]: JSON.stringify(defaults),
+      });
+      await fetchSettings?.();
+      toast({
+        title: "Reset Successful",
+        description: "Sidebar icons restored to default.",
+      });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: getErrorFromCatch(err, "Failed to reset sidebar icons"),
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
 
@@ -446,10 +413,10 @@ export const ChangeSidebarIconSettings = () => {
 
       {/* Actions */}
       <div className="flex gap-3">
-        <Button onClick={handleSaveAll}>
+        <Button onClick={handleSaveAll} disabled={saving}>
           Save Changes
         </Button>
-        <Button variant="outline" onClick={handleReset}>
+        <Button variant="outline" onClick={handleReset} disabled={saving}>
           Reset to Default
         </Button>
       </div>

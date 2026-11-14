@@ -2,7 +2,8 @@ import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useSettings } from "@/context/SettingsContext";
+import { isSettingEnabled, useSettings } from "@/context/SettingsContext";
+import { SETTING_KEYS, postLoginPath, settingString } from "@/lib/platform-settings";
 import { useToast } from "@/hooks/use-toast";
 import { getAuthErrorMessage, login as authLogin } from "@/services/auth-service";
 import { motion } from "framer-motion";
@@ -17,7 +18,10 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [emailError, setEmailError] = useState("");
-  const { fetchSettings } = useSettings();
+  const { fetchSettings, settings } = useSettings();
+  const platformName = settingString(settings, SETTING_KEYS.displayName, "Identity Framework");
+  const maintenanceMode = isSettingEnabled(settings?.[SETTING_KEYS.maintenanceMode], false);
+  const allowSelfRegistration = isSettingEnabled(settings?.[SETTING_KEYS.allowSelfRegistration], true);
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -50,7 +54,7 @@ const Login = () => {
         throw new Error("Invalid login response");
       }
 
-      await fetchSettings();
+      const loadedSettings = await fetchSettings();
 
       window.dispatchEvent(new Event("auth-change"));
 
@@ -71,7 +75,7 @@ const Login = () => {
       );
       const isUserOnly = normalized.includes("user") && !isPrivileged;
       const isCompanyOnly = normalized.includes("company") && !isPrivileged;
-      navigate(isUserOnly || isCompanyOnly ? "/welcome" : "/dashboard");
+      navigate(postLoginPath(loadedSettings, { endUser: isUserOnly || isCompanyOnly }));
     } catch (err: unknown) {
       const rawMsg = getAuthErrorMessage(err, "Something went wrong.");
       const lower = rawMsg.toLowerCase();
@@ -126,7 +130,7 @@ const Login = () => {
                 <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full" />
                 <img
                   src="/assets/Identity.png"
-                  alt="Identity Framework"
+                  alt={platformName}
                   className="relative w-16 h-16 rounded-2xl object-contain border border-primary/20 bg-white p-2"
                 />
               </div>
@@ -135,8 +139,13 @@ const Login = () => {
             <div className="text-center mb-8">
               <h1 className="text-2xl font-bold mb-2">Welcome back</h1>
               <p className="text-muted-foreground">
-                Sign in to your account to continue
+                Sign in to {platformName} to continue
               </p>
+              {maintenanceMode && (
+                <p className="text-sm text-amber-600 mt-3">
+                  Maintenance mode is on. Only Super Admin can sign in.
+                </p>
+              )}
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -220,15 +229,17 @@ const Login = () => {
               </Button>
             </form>
 
-            <p className="text-center text-sm text-muted-foreground mt-6">
-              Don't have an account?{" "}
-              <Link
-                to="/register"
-                className="text-primary hover:underline font-medium"
-              >
-                Sign up
-              </Link>
-            </p>
+            {allowSelfRegistration && (
+              <p className="text-center text-sm text-muted-foreground mt-6">
+                Don't have an account?{" "}
+                <Link
+                  to="/register"
+                  className="text-primary hover:underline font-medium"
+                >
+                  Sign up
+                </Link>
+              </p>
+            )}
           </div>
         </motion.div>
       </main>

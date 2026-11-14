@@ -39,6 +39,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ManageDelegatesDialog } from "@/components/dashboard/ManageDelegatesDialog";
+import { listingPageSize } from "@/lib/platform-settings";
+import { useSettings } from "@/context/SettingsContext";
 import { DEFAULT_COMPANY_NAME, getUniqueManagers } from "@/lib/delegate-users";
 import { fetchDelegatedUsers } from "@/services/delegate-api";
 import { motion } from "framer-motion";
@@ -120,7 +122,7 @@ const getStatusColor = (status: string) => {
 };
 
 /* ─── Shared User Table ─── */
-const PAGE_SIZE = 20;
+const DEFAULT_PAGE_SIZE = 20;
 
 type SortDirection = "asc" | "desc";
 
@@ -246,6 +248,8 @@ const UserTable = ({
   loading?: boolean;
 }) => {
   const navigate = useNavigate();
+  const { settings } = useSettings();
+  const PAGE_SIZE = listingPageSize(settings, DEFAULT_PAGE_SIZE);
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<UserSortField>("firstName");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
@@ -589,6 +593,8 @@ const DelegateTable = ({
   loading?: boolean;
 }) => {
   const navigate = useNavigate();
+  const { settings } = useSettings();
+  const PAGE_SIZE = listingPageSize(settings, DEFAULT_PAGE_SIZE);
   const [currentPage, setCurrentPage] = useState(1);
   const [sortField, setSortField] = useState<DelegateSortField>("firstName");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");

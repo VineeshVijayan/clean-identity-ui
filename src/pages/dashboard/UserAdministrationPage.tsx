@@ -40,6 +40,8 @@ import {
 } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { identityFetch } from "@/services/api-config";
+import { listingPageSize } from "@/lib/platform-settings";
+import { useSettings } from "@/context/SettingsContext";
 import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
 import { getUserDetails } from "@/services/jwt-service";
 import { useToast } from "@/hooks/use-toast";
@@ -184,6 +186,7 @@ export const UserAdministrationPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { toast } = useToast();
+    const { settings } = useSettings();
     const [users, setUsers] = useState<User[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [fetchType, setFetchType] = useState<FetchType>("ALL");
@@ -200,7 +203,7 @@ export const UserAdministrationPage = () => {
     const [deletePassword, setDeletePassword] = useState("");
     const [deletePasswordError, setDeletePasswordError] = useState("");
     const [deleting, setDeleting] = useState(false);
-    const PAGE_SIZE = 20;
+    const PAGE_SIZE = listingPageSize(settings);
 
     const activeFilterCount = [roleFilter, companyFilter].filter(
         (value) => value !== "all"
