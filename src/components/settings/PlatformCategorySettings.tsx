@@ -182,9 +182,15 @@ export const PlatformCategorySettings = ({ category }: Props) => {
                 />
               )}
             </div>
-            {item.dataType === "STRING" || item.dataType === "EMAIL" ? (
+            {item.dataType === "STRING" || item.dataType === "EMAIL" || item.dataType === "SECRET" ? (
               <Input
-                type={item.dataType === "EMAIL" ? "email" : "text"}
+                type={item.dataType === "EMAIL" ? "email" : item.dataType === "SECRET" ? "password" : "text"}
+                autoComplete={item.dataType === "SECRET" ? "new-password" : undefined}
+                placeholder={
+                  item.dataType === "SECRET" && saved[item.key]
+                    ? "Saved — type a new password to replace it"
+                    : undefined
+                }
                 value={draft[item.key] ?? ""}
                 disabled={!item.editable || saving}
                 onChange={(event) => setValue(item.key, event.target.value)}

@@ -121,7 +121,7 @@ export const IDFSettingsPage = () => {
                 </TabsTrigger>
                 {isSuperAdmin && (
                   <>
-                    <TabsTrigger
+                    {/* <TabsTrigger
                       value="general"
                       className="data-[state=active]:bg-muted rounded-none border-b-2 border-transparent data-[state=active]:border-primary px-6 py-4 gap-2"
                     >
@@ -162,7 +162,7 @@ export const IDFSettingsPage = () => {
                     >
                       <ScrollText className="h-4 w-4" />
                       Audit
-                    </TabsTrigger>
+                    </TabsTrigger> */}
                   </>
                 )}
                 <TabsTrigger
