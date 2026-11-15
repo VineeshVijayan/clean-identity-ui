@@ -18,7 +18,6 @@ import { ChangePasswordPage } from "./pages/dashboard/ChangePasswordPage";
 import { CheckoutPage } from "./pages/dashboard/CheckoutPage";
 import { CreateCompanyPage } from "./pages/dashboard/CreateCompanyPage";
 import { CreateUserPage } from "./pages/dashboard/CreateUserPage";
-import { DetailedReportPage } from "./pages/dashboard/DetailedReportPage";
 import { EditProfilePage } from "./pages/dashboard/EditProfilePage";
 import { IDFAdministrationPage } from "./pages/dashboard/IDFAdministrationPage";
 import { IDFSettingsPage } from "./pages/dashboard/IDFSettingsPage";
@@ -112,9 +111,10 @@ const App = () => (
           {/* Other Routes */}
           <Route path="/reports" element={<DashboardLayout />}>
             <Route index element={<ReportsPage />} />
-            <Route path="new" element={<ReportsPage />} />
-            <Route path="run" element={<ReportsPage />} />
-            <Route path="detailed" element={<DetailedReportPage />} />
+            <Route path="new" element={<Navigate to="/reports" replace />} />
+            <Route path="run" element={<Navigate to="/reports" replace />} />
+            <Route path="detailed" element={<Navigate to="/reports" replace />} />
+            <Route path=":reportKey" element={<ReportsPage />} />
           </Route>
 
           <Route path="/checkout" element={<DashboardLayout />}>

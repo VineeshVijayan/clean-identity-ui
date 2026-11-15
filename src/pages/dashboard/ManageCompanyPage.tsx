@@ -1,8 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -33,8 +35,15 @@ import { Switch } from "@/components/ui/switch";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { identityFetch } from "@/services/api-config";
 import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
+import {
+  displayEmployeeStatus,
+  displayManagerName,
+  filterCompanyEmployees,
+  unwrapCompanyEmployees,
+  type CompanyEmployeeRow,
+} from "@/lib/company-employees";
 import { motion } from "framer-motion";
-import { Building2, ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Download, Edit, Filter, Loader2, Plus, Search } from "lucide-react";
+import { Building2, ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, Download, Edit, Filter, Loader2, Plus, Search, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -48,6 +57,7 @@ interface Company {
   primaryContact: string;
   approverId: number;
   isEnabled: boolean;
+  employeeCount: number;
 }
 
 interface Approver {
@@ -56,6 +66,8 @@ interface Approver {
   lastName: string;
   email: string;
 }
+
+type CompanyEmployee = CompanyEmployeeRow;
 
 type FetchType = "ALL" | "ACTIVE" | "INACTIVE";
 
@@ -167,7 +179,14 @@ export const ManageCompanyPage = () => {
   const [locationFilter, setLocationFilter] = useState("all");
   const [approverFilter, setApproverFilter] = useState("all");
   const [filterOpen, setFilterOpen] = useState(false);
+  const [employeesOpen, setEmployeesOpen] = useState(false);
+  const [employeesCompany, setEmployeesCompany] = useState<Company | null>(null);
+  const [employees, setEmployees] = useState<CompanyEmployee[]>([]);
+  const [employeesLoading, setEmployeesLoading] = useState(false);
+  const [employeeSearch, setEmployeeSearch] = useState("");
+  const [employeePage, setEmployeePage] = useState(1);
   const PAGE_SIZE = 20;
+  const EMPLOYEE_PAGE_SIZE = 20;
 
   const activeFilterCount = [locationFilter, approverFilter].filter(
     (value) => value !== "all"
@@ -273,6 +292,55 @@ export const ManageCompanyPage = () => {
     if (currentPage > totalPages) setCurrentPage(totalPages);
   }, [totalPages, currentPage]);
 
+  const filteredEmployees = useMemo(
+    () => filterCompanyEmployees(employees, employeeSearch),
+    [employees, employeeSearch]
+  );
+
+  const employeeTotalPages = Math.max(1, Math.ceil(filteredEmployees.length / EMPLOYEE_PAGE_SIZE));
+  const paginatedEmployees = useMemo(
+    () =>
+      filteredEmployees.slice(
+        (employeePage - 1) * EMPLOYEE_PAGE_SIZE,
+        employeePage * EMPLOYEE_PAGE_SIZE
+      ),
+    [filteredEmployees, employeePage]
+  );
+
+  useEffect(() => {
+    setEmployeePage(1);
+  }, [employeeSearch, employeesCompany?.id]);
+
+  useEffect(() => {
+    if (employeePage > employeeTotalPages) setEmployeePage(employeeTotalPages);
+  }, [employeeTotalPages, employeePage]);
+
+  const handleViewEmployees = async (company: Company) => {
+    setEmployeesCompany(company);
+    setEmployeesOpen(true);
+    setEmployeeSearch("");
+    setEmployeePage(1);
+    setEmployeesLoading(true);
+    setEmployees([]);
+
+    try {
+      const res = await identityFetch(`/companies/${company.id}/employees`, {
+        skipLoader: true,
+      });
+      const body = await readResponseBody(res);
+      if (!res.ok) {
+        toast.error(getApiErrorMessage(body, "Failed to load employees"));
+        return;
+      }
+
+      setEmployees(unwrapCompanyEmployees(body));
+    } catch (err) {
+      toast.error(getErrorFromCatch(err, "Failed to load employees"));
+    } finally {
+      setEmployeesLoading(false);
+    }
+  };
+
   const handleEdit = (company: Company) => {
     const isActive = statusMap[company.id] ?? company.isEnabled;
     if(!isActive){
@@ -340,6 +408,7 @@ export const ManageCompanyPage = () => {
           primaryContact: c.contactName || "",
           approverId: c.approverId,
           isEnabled: c.enabled,
+          employeeCount: Number(c.employeeCount ?? 0),
         }));
 
         setCompanies(mapped);
@@ -625,15 +694,25 @@ export const ManageCompanyPage = () => {
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEdit(company)}
-                            disabled ={!isActive}
-                          >
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit
-                          </Button>
+                          <div className="flex flex-wrap items-center justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleViewEmployees(company)}
+                            >
+                              <Users className="h-4 w-4 mr-2" />
+                              View Employees ({company.employeeCount})
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEdit(company)}
+                              disabled={!isActive}
+                            >
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -674,6 +753,134 @@ export const ManageCompanyPage = () => {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog
+        open={employeesOpen}
+        onOpenChange={(open) => {
+          setEmployeesOpen(open);
+          if (!open) {
+            setEmployeesCompany(null);
+            setEmployees([]);
+            setEmployeeSearch("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-5xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {employeesCompany
+                ? `Employees — ${employeesCompany.name}`
+                : "Employees"}
+            </DialogTitle>
+            <DialogDescription>
+              Employees belonging to this company, including each person's current manager.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="relative max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name or email..."
+                className="pl-10"
+                value={employeeSearch}
+                onChange={(e) => setEmployeeSearch(e.target.value)}
+              />
+            </div>
+            <div className="relative rounded-lg border border-border overflow-x-auto">
+              {employeesLoading && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-[1px]">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              )}
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Employee Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Employee ID</TableHead>
+                    <TableHead>Job Title</TableHead>
+                    <TableHead>Department</TableHead>
+                    <TableHead>Manager Name</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {!employeesLoading && paginatedEmployees.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                        No employees found
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    paginatedEmployees.map((employee) => {
+                      const managerName = displayManagerName(employee.managerName);
+                      const statusLabel = displayEmployeeStatus(employee.status);
+                      return (
+                      <TableRow key={String(employee.employeeId)}>
+                        <TableCell className="font-medium">
+                          {employee.employeeName || "—"}
+                        </TableCell>
+                        <TableCell>{employee.email || "—"}</TableCell>
+                        <TableCell>{employee.employeeId ?? "—"}</TableCell>
+                        <TableCell>{employee.jobTitle || "—"}</TableCell>
+                        <TableCell>{employee.department || "—"}</TableCell>
+                        <TableCell>
+                          {managerName === "Not Assigned" ? (
+                            <span className="text-muted-foreground">Not Assigned</span>
+                          ) : (
+                            managerName
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={statusLabel === "Active" ? "default" : "secondary"}
+                          >
+                            {statusLabel}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+            <div className="flex items-center justify-between pt-2">
+              <p className="text-sm text-muted-foreground">
+                Showing{" "}
+                {filteredEmployees.length === 0
+                  ? 0
+                  : (employeePage - 1) * EMPLOYEE_PAGE_SIZE + 1}
+                -{Math.min(employeePage * EMPLOYEE_PAGE_SIZE, filteredEmployees.length)} of{" "}
+                {filteredEmployees.length} employees
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setEmployeePage((page) => Math.max(1, page - 1))}
+                  disabled={employeePage <= 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Page {employeePage} of {employeeTotalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() =>
+                    setEmployeePage((page) => Math.min(employeeTotalPages, page + 1))
+                  }
+                  disabled={employeePage >= employeeTotalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent>
