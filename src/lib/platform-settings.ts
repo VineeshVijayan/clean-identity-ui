@@ -8,6 +8,7 @@ export const SETTING_KEYS = {
   listingPageSize: "users.defaultListingPageSize",
   allowSelfRegistration: "users.allowSelfRegistration",
   allowProfileUpdate: "users.allowProfileUpdate",
+  mailFrom: "notifications.mailFrom",
   sidebarIcons: "ui.sidebarIcons",
   buttonColors: "ui.buttonColors",
   showCompanyMenu: "SHOW_COMPANY_MENU",

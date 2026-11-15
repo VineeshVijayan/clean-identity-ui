@@ -40,6 +40,13 @@ type Props = {
 const toDraft = (settings: SettingItem[]) =>
   Object.fromEntries(settings.map((item) => [item.key, item.value ?? ""]));
 
+const visibleSettings = (category: string, settings: SettingItem[]) => {
+  if (category !== "NOTIFICATIONS") {
+    return settings;
+  }
+  return settings.filter((item) => item.key === SETTING_KEYS.mailFrom);
+};
+
 export const PlatformCategorySettings = ({ category }: Props) => {
   const { toast } = useToast();
   const { fetchSettings } = useSettings();
@@ -61,8 +68,9 @@ export const PlatformCategorySettings = ({ category }: Props) => {
         if (cancelled) return;
         setLabel(data.label);
         setDescription(data.description);
-        setItems(data.settings);
-        const values = toDraft(data.settings);
+        const settings = visibleSettings(category, data.settings);
+        setItems(settings);
+        const values = toDraft(settings);
         setDraft(values);
         setSaved(values);
       } catch (err) {
@@ -96,8 +104,9 @@ export const PlatformCategorySettings = ({ category }: Props) => {
     setSaving(true);
     try {
       const data = await updateSettingCategory(category, values);
-      setItems(data.settings);
-      const next = toDraft(data.settings);
+      const settings = visibleSettings(category, data.settings);
+      setItems(settings);
+      const next = toDraft(settings);
       setDraft(next);
       setSaved(next);
       await fetchSettings?.();
@@ -132,8 +141,9 @@ export const PlatformCategorySettings = ({ category }: Props) => {
     setSaving(true);
     try {
       const data = await resetSettingCategory(category);
-      setItems(data.settings);
-      const next = toDraft(data.settings);
+      const settings = visibleSettings(category, data.settings);
+      setItems(settings);
+      const next = toDraft(settings);
       setDraft(next);
       setSaved(next);
       await fetchSettings?.();
@@ -170,6 +180,11 @@ export const PlatformCategorySettings = ({ category }: Props) => {
               <div>
                 <Label className="text-base font-medium">{item.label}</Label>
                 <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
+                {item.key === SETTING_KEYS.mailFrom && saved[item.key] ? (
+                  <p className="text-sm mt-2">
+                    Currently configured: <span className="font-medium">{saved[item.key]}</span>
+                  </p>
+                ) : null}
                 {draft[item.key] !== saved[item.key] && (
                   <p className="text-xs text-amber-600 mt-2">Unsaved change</p>
                 )}
@@ -187,7 +202,9 @@ export const PlatformCategorySettings = ({ category }: Props) => {
                 type={item.dataType === "EMAIL" ? "email" : item.dataType === "SECRET" ? "password" : "text"}
                 autoComplete={item.dataType === "SECRET" ? "new-password" : undefined}
                 placeholder={
-                  item.dataType === "SECRET" && saved[item.key]
+                  item.key === SETTING_KEYS.mailFrom
+                    ? "Leave blank to use the address from application properties"
+                    : item.dataType === "SECRET" && saved[item.key]
                     ? "Saved — type a new password to replace it"
                     : undefined
                 }
