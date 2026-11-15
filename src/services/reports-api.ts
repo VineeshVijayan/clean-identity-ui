@@ -32,6 +32,8 @@ export type WorkforceRow = {
   managerName: string | null;
   source: string | null;
   status: string | null;
+  createdAt: string | null;
+  lastLoginAt: string | null;
 };
 
 export type WorkforceReport = {

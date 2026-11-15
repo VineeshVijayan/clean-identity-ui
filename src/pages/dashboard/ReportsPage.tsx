@@ -607,7 +607,7 @@ export const ReportsPage = () => {
                 <NamedPie title="Source" items={workforce.bySource} />
               </div>
               <DataTable
-                columns={["Employee", "Email", "Company", "Department", "Job title", "Manager", "Status"]}
+                columns={["Employee", "Email", "Company", "Department", "Job title", "Manager", "Status", "Last login"]}
                 page={workforce.employees}
                 currentPage={page}
                 onPage={setPage}
@@ -619,6 +619,7 @@ export const ReportsPage = () => {
                   row.jobTitle || "—",
                   row.managerName || "Not Assigned",
                   row.status || "—",
+                  formatWhen(row.lastLoginAt),
                 ])}
               />
             </>

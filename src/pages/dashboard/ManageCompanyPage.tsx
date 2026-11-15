@@ -35,6 +35,7 @@ import { Switch } from "@/components/ui/switch";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { identityFetch } from "@/services/api-config";
 import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
+import { formatDateTime } from "@/lib/application-access";
 import {
   displayEmployeeStatus,
   displayManagerName,
@@ -801,13 +802,14 @@ export const ManageCompanyPage = () => {
                     <TableHead>Job Title</TableHead>
                     <TableHead>Department</TableHead>
                     <TableHead>Manager Name</TableHead>
+                    <TableHead>Last Login</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {!employeesLoading && paginatedEmployees.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                         No employees found
                       </TableCell>
                     </TableRow>
@@ -831,6 +833,7 @@ export const ManageCompanyPage = () => {
                             managerName
                           )}
                         </TableCell>
+                        <TableCell>{formatDateTime(employee.lastLoginAt)}</TableCell>
                         <TableCell>
                           <Badge
                             variant={statusLabel === "Active" ? "default" : "secondary"}

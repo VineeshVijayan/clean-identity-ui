@@ -39,6 +39,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ManageDelegatesDialog } from "@/components/dashboard/ManageDelegatesDialog";
+import { formatDateTime } from "@/lib/application-access";
 import { listingPageSize } from "@/lib/platform-settings";
 import { useSettings } from "@/context/SettingsContext";
 import { DEFAULT_COMPANY_NAME, getUniqueManagers } from "@/lib/delegate-users";
@@ -1004,7 +1005,7 @@ export const UsersListPage = () => {
         email: u.email || "",
         role: "Employee",
         status: mapUserStatus(u),
-        lastLogin: "—",
+        lastLogin: formatDateTime(u.lastLoginAt),
         departmentId: "",
         departmentName: "",
         managerName: u.managerName || "—",

@@ -40,6 +40,7 @@ import {
 } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { identityFetch } from "@/services/api-config";
+import { formatDateTime } from "@/lib/application-access";
 import { listingPageSize } from "@/lib/platform-settings";
 import { useSettings } from "@/context/SettingsContext";
 import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
@@ -246,7 +247,7 @@ export const UserAdministrationPage = () => {
                     email: u.email,
                     role: u.roles?.join(", ") || "N/A",
                     status: mapUserStatus(u),
-                    lastLogin: u.lastLogin || "—",
+                    lastLogin: formatDateTime(u.lastLoginAt || u.lastLogin),
                     companyName:
                         u.companyName ||
                         u.company?.name ||

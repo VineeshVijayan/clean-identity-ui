@@ -7,6 +7,8 @@ export type CompanyEmployeeRow = {
   managerId?: number | string | null;
   managerName?: string | null;
   status?: string | null;
+  createdAt?: string | null;
+  lastLoginAt?: string | null;
 };
 
 export const displayManagerName = (managerName?: string | null) => {
