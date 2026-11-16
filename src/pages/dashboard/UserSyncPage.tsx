@@ -248,7 +248,7 @@ export const UserSyncPage = () => {
         <div>
           <h1 className="text-2xl font-bold">User Sync</h1>
           <p className="text-muted-foreground">
-            Import users from Azure AD and review execution history
+            Import users from the configured directory and review execution history
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">

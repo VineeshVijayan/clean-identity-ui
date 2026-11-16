@@ -9,6 +9,8 @@ vi.mock("@/services/api-config", () => ({
 import {
   listPlatformIntegrations,
   previewHrEmployees,
+  syncHrEmployees,
+  syncPlatformIntegration,
   testPlatformIntegration,
 } from "./platform-api";
 
@@ -90,5 +92,40 @@ describe("platform-api", () => {
       { externalId: "15", name: "Ada Lovelace", email: "ada@example.com" },
     ]);
     expect(identityFetch).toHaveBeenCalledWith("/platform/hr/employees/preview?provider=odoo");
+  });
+
+  it("syncs a named integration through the platform API", async () => {
+    identityFetch.mockResolvedValue({
+      ok: true,
+      text: async () =>
+        JSON.stringify({
+          data: { key: "odoo", type: "HR", success: true, message: "Odoo HR employee sync completed" },
+        }),
+    });
+
+    await expect(syncPlatformIntegration("odoo")).resolves.toEqual({
+      key: "odoo",
+      type: "HR",
+      success: true,
+      message: "Odoo HR employee sync completed",
+    });
+    expect(identityFetch).toHaveBeenCalledWith("/platform/integrations/odoo/sync", {
+      method: "POST",
+    });
+  });
+
+  it("syncs the primary HR provider", async () => {
+    identityFetch.mockResolvedValue({
+      ok: true,
+      text: async () =>
+        JSON.stringify({
+          data: { key: "odoo", type: "HR", success: true, message: "Odoo HR employee sync completed" },
+        }),
+    });
+
+    await expect(syncHrEmployees()).resolves.toMatchObject({ key: "odoo", type: "HR" });
+    expect(identityFetch).toHaveBeenCalledWith("/platform/hr/employees/sync", {
+      method: "POST",
+    });
   });
 });

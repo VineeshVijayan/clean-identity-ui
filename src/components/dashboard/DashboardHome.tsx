@@ -196,7 +196,7 @@ export const DashboardHome = () => {
   const activeUsers = overview?.activeUsers ?? 0;
   const sourceData = [
     { name: "Created in app", value: overview?.activeUsersFromApp ?? 0 },
-    { name: "Entra ID", value: overview?.activeUsersFromEntra ?? 0 },
+    { name: "Directory", value: overview?.activeUsersFromEntra ?? 0 },
     { name: "HR", value: overview?.activeUsersFromHr ?? 0 },
   ];
   const sourceTotal = sourceData.reduce((sum, item) => sum + item.value, 0);
@@ -466,7 +466,7 @@ export const DashboardHome = () => {
             </div>
             <div className="text-sm">
               <div className="flex justify-between gap-3">
-                <span className="text-muted-foreground">Latest Entra sync</span>
+                <span className="text-muted-foreground">Latest directory sync</span>
                 <span className="font-semibold">{sync?.status ?? "None"}</span>
               </div>
               {sync && (

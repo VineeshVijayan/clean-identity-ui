@@ -24,6 +24,13 @@ export type IntegrationTestResult = {
   message: string;
 };
 
+export type IntegrationSyncResult = {
+  key: string;
+  type: IntegrationType;
+  success: boolean;
+  message: string;
+};
+
 export type HrEmployeePreview = {
   externalId: string | null;
   name: string | null;
@@ -47,6 +54,29 @@ export const testPlatformIntegration = async (
     })
   );
   return unwrapApiData<IntegrationTestResult>(body);
+};
+
+export const syncPlatformIntegration = async (
+  key: string
+): Promise<IntegrationSyncResult> => {
+  const body = await parseResponse(
+    await identityFetch(`/platform/integrations/${encodeURIComponent(key)}/sync`, {
+      method: "POST",
+    })
+  );
+  return unwrapApiData<IntegrationSyncResult>(body);
+};
+
+export const syncHrEmployees = async (
+  provider?: string
+): Promise<IntegrationSyncResult> => {
+  const query = provider ? `?provider=${encodeURIComponent(provider)}` : "";
+  const body = await parseResponse(
+    await identityFetch(`/platform/hr/employees/sync${query}`, {
+      method: "POST",
+    })
+  );
+  return unwrapApiData<IntegrationSyncResult>(body);
 };
 
 export const previewHrEmployees = async (

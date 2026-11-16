@@ -3,13 +3,25 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { getErrorFromCatch } from "@/lib/api-errors";
-import { listPlatformIntegrations, type PlatformIntegration } from "@/services/platform-api";
+import {
+  listPlatformIntegrations,
+  syncPlatformIntegration,
+  type PlatformIntegration,
+} from "@/services/platform-api";
 import { motion } from "framer-motion";
 import { Cloud, Database, PlugZap, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 const typeLabel = (type: PlatformIntegration["type"]) =>
   type === "DIRECTORY" ? "Auth source" : "HR tool";
+
+const integrationsCopy = (integrations: PlatformIntegration[]) => {
+  const directory = integrations.find((item) => item.type === "DIRECTORY" && item.primary);
+  const hr = integrations.find((item) => item.type === "HR" && item.primary);
+  const directoryName = directory?.displayName ?? "the configured directory";
+  const hrName = hr?.displayName ?? "the configured HR tool";
+  return `Sign-in stays on local email and password. ${directoryName} is the user directory. ${hrName} is the employee source.`;
+};
 
 type AuthSourcesPageProps = {
   type?: PlatformIntegration["type"];
@@ -20,6 +32,7 @@ export const AuthSourcesPage = ({ type, embedded = false }: AuthSourcesPageProps
   const { toast } = useToast();
   const [integrations, setIntegrations] = useState<PlatformIntegration[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncingKey, setSyncingKey] = useState<string | null>(null);
 
   const loadIntegrations = useCallback(async () => {
     try {
@@ -39,6 +52,26 @@ export const AuthSourcesPage = ({ type, embedded = false }: AuthSourcesPageProps
   useEffect(() => {
     void loadIntegrations();
   }, [loadIntegrations]);
+
+  const handleSync = async (key: string) => {
+    try {
+      setSyncingKey(key);
+      const result = await syncPlatformIntegration(key);
+      toast({
+        title: result.success ? "Sync completed" : "Sync failed",
+        description: result.message,
+        variant: result.success ? "default" : "destructive",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Sync failed",
+        description: getErrorFromCatch(error, "Failed to sync this integration"),
+      });
+    } finally {
+      setSyncingKey(null);
+    }
+  };
 
   const visibleIntegrations = type
     ? integrations.filter((integration) => integration.type === type)
@@ -80,8 +113,7 @@ export const AuthSourcesPage = ({ type, embedded = false }: AuthSourcesPageProps
               Identity & HR integrations
             </h1>
             <p className="text-muted-foreground">
-              Sign-in stays on local email and password. Azure Entra is the user directory.
-              Odoo remains the HR employee source.
+              {integrationsCopy(integrations)}
             </p>
           </div>
           <Button variant="outline" onClick={() => void loadIntegrations()} disabled={loading}>
@@ -124,6 +156,14 @@ export const AuthSourcesPage = ({ type, embedded = false }: AuthSourcesPageProps
                     <Badge variant={integration.configured ? "default" : "secondary"}>
                       {integration.configured ? "Configured" : "Not configured"}
                     </Badge>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={!integration.configured || syncingKey === integration.key}
+                      onClick={() => void handleSync(integration.key)}
+                    >
+                      {syncingKey === integration.key ? "Syncing…" : "Sync"}
+                    </Button>
                   </div>
                 </CardHeader>
                 <CardContent>

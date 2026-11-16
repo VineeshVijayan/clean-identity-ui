@@ -65,8 +65,9 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { connectorFetch, identityFetch } from "@/services/api-config";
+import { identityFetch } from "@/services/api-config";
 import { getApiErrorMessage, getErrorFromCatch, readResponseBody } from "@/lib/api-errors";
+import { syncHrEmployees } from "@/services/platform-api";
 import { toast } from "sonner";
 
 const acceptJsonHeaders = {
@@ -944,21 +945,12 @@ export const UsersListPage = () => {
   const handleSyncUsers = async () => {
     try {
       setSyncing(true);
-
-      const res = await connectorFetch("/odoo/hr/employees/sync", {
-        method: "POST",
-        headers: acceptJsonHeaders,
-        skipLoader: true,
-      });
-
-      if (!res.ok) {
-        const body = await readResponseBody(res);
-        toast.error(getApiErrorMessage(body, "Failed to sync users"));
+      const result = await syncHrEmployees();
+      if (!result.success) {
+        toast.error(result.message || "Failed to sync users");
         return;
       }
-
-      toast.success("Users synced successfully");
-
+      toast.success(result.message || "Users synced successfully");
       await fetchUsers();
     } catch (error) {
       console.error(error);
